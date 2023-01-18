@@ -137,7 +137,7 @@ void insertMaxHeap(Heap * H, FLOAT_TYPE val, size_t array_idx){
         H -> data[0].value = val;
         H -> data[0].array_idx = array_idx;
     }
-    if(H -> count < H -> N){
+    else if(H -> count < H -> N){
         size_t node = H->count;
         ++(H -> count);
         H -> data[node].value = val;
@@ -174,7 +174,6 @@ void insertMaxHeap(Heap * H, FLOAT_TYPE val, size_t array_idx){
 
 void initializeKDnodes(kd_node * node_array, FLOAT_TYPE* d, size_t n )
 {
-    #pragma omp parallel for
     for(size_t i = 0; i < n; ++i)
     {
         node_array[i].data = d + (i*data_dims);
@@ -189,7 +188,6 @@ void initializeKDnodes(kd_node * node_array, FLOAT_TYPE* d, size_t n )
 
 void initializePTRS(kd_node** node_ptr_array, kd_node* node_array, size_t n )
 {
-    #pragma omp parallel for
     for(size_t i = 0; i < n; ++i)
     {
         node_ptr_array[i] = node_array + i;

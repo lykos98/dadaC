@@ -3,7 +3,7 @@
 #include <string.h>
 #include <math.h>
 #include <limits.h>
-#define T float
+#define T double
 #define DATA_DIMS 0 
 #define FLOAT_TYPE double 
 

@@ -1,6 +1,6 @@
 LIBRARIES=-lm -fopenmp 
-OPTIM=-O3 -march=native
-DEBUG= 
+OPTIM=-O1 -march=native
+DEBUG=-g 
 id: read_fof_snapshot.o kdtree.o id.o
 	gcc kdtree.o read_fof_snapshot.o id.o -o id ${LIBRARIES} 
 	rm *.o
