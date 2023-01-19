@@ -31,7 +31,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "../include/datapoint.h"
+#include "../include/read_fof_snapshot.h"
 
 file_info read_data_from_file(char* filename){
   data_t *data;

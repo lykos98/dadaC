@@ -1,76 +1,6 @@
-#include "../include/kdtree.h"
-#include "../include/datapoint.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include <string.h>
-#include <omp.h>
-#include <stdint.h>
+#include "../include/read_fof_snapshot.h"
+#include "../include/clustering.h"
 
-#define DTHR 23.92812698
-#define PI_F 3.1415926f
-#define ARRAY_INCREMENT 500
-#define DA_DTYPE size_t
-#define NOBORDER SIZE_MAX 
-unsigned int data_dims = 0;
-
-
-/**********************************
- * DATA STRUCTURES FOR CLUSTERING *
- **********************************/
-struct Node {
-    size_t data;
-    struct Node* next;
-    
-};
-
-struct LinkedList {
-    size_t count;
-    struct Node* head; 
-};
-
-
-struct lu_dynamicArray {
-    size_t * data;
-    size_t size;
-    size_t count;
-};
-
-struct Datapoint_info {
-    FLOAT_TYPE log_rho;
-    FLOAT_TYPE log_rho_c;
-    FLOAT_TYPE log_rho_err;
-    FLOAT_TYPE g;
-    size_t kstar;
-    int is_center;
-    int cluster_idx;
-    Heap ngbh;
-    size_t array_idx;
-};
-
-
-struct Clusters {
-    struct lu_dynamicArray centers;
-    struct LinkedList* clusters;   
-    struct Node* _LLnodes;
-    FLOAT_TYPE** border_density;
-    FLOAT_TYPE** border_err;
-    size_t** border_idx;
-    FLOAT_TYPE* __border_density_data;
-    FLOAT_TYPE* __border_err_data;
-    size_t* __border_idx_data;
-    
-};
-
-typedef struct Datapoint_info Datapoint_info;
-typedef struct lu_dynamicArray lu_dynamicArray;
-typedef struct Clusters Clusters;
-typedef struct Node Node;
-typedef struct LinkedList LinkedList;
-
-/*****************
- * * LINKED LIST *
- *****************/
 
 void LinkedList_Insert(LinkedList* L, Node* n)
 {
@@ -535,11 +465,6 @@ void Heuristic2(Clusters* cluster, Datapoint_info* particles)
             if(pp != NOBORDER)
             {
                 int ppc = particles[pp].cluster_idx;
-                if(c == 11 && (i == 415 || i == 6607)){
-                    printf("%lu %d %d\n", n -> data, pp, ppc);
-                    printf("%lf %lf\n",particles[i].g, border_density[c][ppc]);
-                    printf("%ld\n",particles[i].array_idx);
-                } 
                 if(particles[i].g > border_density[c][ppc])
                 {
                     border_density[c][ppc] = particles[i].g;
@@ -703,7 +628,7 @@ void Heuristic3(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE Z, int 
 
             size_t imod = ipos.data[barrier_index];
             size_t jmod = jpos.data[barrier_index];
-            printf("%lu %lu %lu\n",imod,jmod,barrier_index);
+            //printf("%lu %lu %lu\n",imod,jmod,barrier_index);
             size_t ci = cluster->centers.data[imod];
             size_t cj = cluster->centers.data[jmod];
             
@@ -903,125 +828,4 @@ void Clusters_allocate(Clusters * c)
             c -> border_density[i][j]   = 0.0;
         }
     }
-}
-
-int main(int argc, char** argv){
-    data_dims = 5;
-    
-    FILE* f = fopen("/home/francesco/Desktop/dssc/tirocinio/datafiles/0001_std","r");
-    if(!f)
-    {
-        printf("Nope\n");
-        exit(1);
-    }
-    fseek(f,0,SEEK_END);
-    size_t n = ftell(f);
-    rewind(f);
-    n = n/(sizeof(float)*data_dims);
-    printf("Reading %lu particles\n",n);
-    FLOAT_TYPE* data = (FLOAT_TYPE*)malloc(data_dims*n*sizeof(FLOAT_TYPE));
-    float* df = (float*)malloc(data_dims*n*sizeof(float));
-    fread(df,sizeof(float),data_dims*n,f);
-    fclose(f);
-
-    for(size_t i = 0; i < n*data_dims; ++i) data[i] = (FLOAT_TYPE)(df[i]);
-
-    free(df);
-
-    kd_node* kd_node_array = (kd_node*)malloc(n*sizeof(kd_node));
-    kd_node** kd_ptrs = (kd_node**)malloc(n*sizeof(kd_node*));
-
-    initializeKDnodes(kd_node_array,data,n);
-    initializePTRS(kd_ptrs, kd_node_array,n);
-
-    data_dims = 5;
-
-    kd_node* root = make_tree(kd_ptrs, 0, n-1, NULL ,0);
-
-    printf("The root of the tree is\n");
-    printKDnode(root);
-
-    int k = 1001;
-
-
-    Datapoint_info* particles = (Datapoint_info*)malloc(n*sizeof(Datapoint_info));
-
-    /**************
-     * KNN search *
-     **************/
-
-    for(int p = 0; p < n; ++p)
-    {
-        particles[p].ngbh = KNN(data + data_dims*p, root, k);
-        particles[p].array_idx = p;
-    }
-
-    f = fopen("/home/francesco/Desktop/dssc/tirocinio/datafiles/ngbh","w");
-    for(size_t i = 0; i < n; ++i)
-    {
-        for(size_t j = 0; j < k; ++j) fprintf(f,"%lu\t",particles[i].ngbh.data[j].array_idx);
-
-        fprintf(f,"\n");
-    }
-    fclose(f);
-
-    double id = idEstimate(particles, n);
-    printf("Instrinsic dimension %lf\n",id);
-
-    computeRho(particles,id,n);
-    calculateCorrection(particles,n,1.96);
-    Clusters c = Heuristic1(particles, data, n);
-
-    Clusters_allocate(&c);  
-
-    Heuristic2(&c, particles);
-
-    size_t nclus = c.centers.count; 
-    f = fopen("/home/francesco/Desktop/dssc/tirocinio/datafiles/brdrs","w");
-    for(size_t i = 0; i < nclus; ++i)
-    {
-        for(size_t j = 0; j < nclus; ++j) c.border_idx[i][j] == NOBORDER ? fprintf(f,"%d\t",-1) : fprintf(f,"%d\t",(int)c.border_idx[i][j]);
-        fprintf(f,"\n");
-    }
-    fclose(f);
-    
-    f = fopen("/home/francesco/Desktop/dssc/tirocinio/datafiles/bden","w");
-    for(size_t i = 0; i < nclus; ++i)
-    {
-        for(size_t j = 0; j < nclus; ++j) fprintf(f,"%lf\t",c.border_density[i][j]);
-        fprintf(f,"\n");
-    }
-    fclose(f);
-
-    f = fopen("/home/francesco/Desktop/dssc/tirocinio/datafiles/nope","w");
-    for(size_t i = 0; i < n; ++i)
-    {
-        fprintf(f,"%lu\t",particles[i].kstar);
-        fprintf(f,"%d\t", particles[i].cluster_idx);
-        fprintf(f,"%.12lf\t",particles[i].log_rho);
-        fprintf(f,"%.12lf\t",particles[i].log_rho_c);
-        fprintf(f,"%.12lf\t",particles[i].log_rho_err);
-        fprintf(f,"%.12lf\t",particles[i].g);
-        fprintf(f,"\n");
-    }
-    fclose(f);
-
-    Heuristic3(&c, particles, 1.96, 0);
-
-
-
-    for (size_t i = 0; i < n; ++i)
-    {
-        freeHeap(&particles[i].ngbh);
-    }
-
-
-
-
-    free(particles);
-    free(kd_ptrs);
-    free(kd_node_array);
-    free(data);
-    Clusters_free(&c);
-
 }

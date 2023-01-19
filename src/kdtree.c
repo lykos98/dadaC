@@ -8,6 +8,7 @@
 #define HP_RIGHT_SIDE 1
 
 extern unsigned int data_dims;
+
 int c = 0;
 void swap(T* a, T* b){
     T tmp;
