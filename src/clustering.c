@@ -9,6 +9,64 @@ void LinkedList_Insert(LinkedList* L, Node* n)
     L -> head = n;
 }
 
+/*****************************
+ * Clusters object functions *
+ *****************************/
+
+
+void Clusters_allocate(Clusters * c)
+{
+    /*************************************
+     * allocate additional resources and *
+     * pointers for Clusters object      *
+     *************************************/
+    if(c -> centers.count == 0)
+    {
+        printf("Provide a valid cluster centers list\n");
+        return;
+    }
+
+    size_t nclus = c -> centers.count;
+
+    c -> __border_idx_data      = (size_t*)malloc(nclus*nclus*sizeof(size_t));
+    c -> border_idx             = (size_t**)malloc(nclus*sizeof(size_t*));
+    c -> __border_density_data  = (FLOAT_TYPE*)malloc(nclus*nclus*sizeof(FLOAT_TYPE));
+    c -> border_density         = (FLOAT_TYPE**)malloc(nclus*sizeof(FLOAT_TYPE*));
+    c -> __border_err_data      = (FLOAT_TYPE*)malloc(nclus*nclus*sizeof(FLOAT_TYPE));
+    c -> border_err             = (FLOAT_TYPE**)malloc(nclus*sizeof(FLOAT_TYPE*));
+    for(size_t i = 0; i < nclus; ++i)
+    {
+        c -> border_idx[i]      = c -> __border_idx_data + i*nclus;
+        c -> border_density[i]  = c -> __border_density_data + i*nclus;
+        c -> border_err[i]      = c -> __border_err_data + i*nclus;
+        for(size_t j = 0; j < nclus; ++j)
+        {
+            c -> border_err[i][j]       = 0.0;
+            c -> border_idx[i][j]       = NOBORDER;
+            c -> border_density[i][j]   = 0.0;
+        }
+    }
+}
+
+void Clusters_Reset(Clusters * c)
+{
+    free(c -> centers.data);
+    free(c -> border_err);
+    free(c -> border_density);
+    free(c -> border_idx);
+    free(c -> __border_err_data);
+    free(c -> __border_density_data);
+    free(c -> __border_idx_data);
+    free(c -> clusters);
+}
+
+void Clusters_free(Clusters * c)
+{
+
+    Clusters_Reset(c);
+    free(c -> _LLnodes);
+}
+
 /*****************
  * Dyanmic Array *
  *****************/
@@ -32,6 +90,23 @@ void DynamicArray_pushBack(lu_dynamicArray * a, size_t p)
         a -> data = realloc(a -> data, a -> size * sizeof(size_t));
         a -> data[a -> count] =  p;
     }
+}
+
+void DynamicArray_Reset(lu_dynamicArray * a){
+    a -> count = 0;
+}
+
+void DynamicArray_Reserve(lu_dynamicArray * a, size_t n)
+{
+    a -> data = realloc(a -> data, n*sizeof(size_t));
+    a -> size = n;
+}
+
+void DynamicArray_Init(lu_dynamicArray * a)
+{
+    a -> data = NULL;
+    a -> count = 0;
+    a -> size = 0;
 }
 
 /*Quake inverse square root, just an experiment
@@ -79,6 +154,17 @@ FLOAT_TYPE avg(const FLOAT_TYPE * x, const size_t n)
 
 FLOAT_TYPE mEst2(FLOAT_TYPE * x, FLOAT_TYPE *y, size_t n)
 {
+
+    /********************************************
+     * Estimate the m coefficient of a straight *
+     * line passing through the origin          *
+     * params:                                  *
+     * - x: x values of the points              *
+     * - y: y values of the points              *
+     * - n: size of the arrays                  *
+     ********************************************/
+     
+
     FLOAT_TYPE x_avg, y_avg;
     FLOAT_TYPE num = 0;
     FLOAT_TYPE den = 0;
@@ -120,6 +206,19 @@ FLOAT_TYPE mEst(FLOAT_TYPE * x, FLOAT_TYPE *y, size_t n)
 
 FLOAT_TYPE idEstimate(Datapoint_info* particles, size_t n)
 {
+
+    /*********************************************************************************************
+     * Estimation of the intrinsic dimension of a dataset                                        *
+     * args:                                                                                     *
+     * - particles: array of structs                                                             *
+     * - n: number of particles                                                                  *
+     * Estimates the id via 2NN method. Computation of the log ratio of the                      *
+     * distances of the first 2 neighbors of each point. Then compute the empirical distribution *
+     * of these log ratii                                                                        *
+     * The intrinsic dimension is found by fitting with a straight line passing through the      *
+     * origin                                                                                    *
+     *********************************************************************************************/
+
     FLOAT_TYPE fraction = 0.9;
     FLOAT_TYPE* r = (FLOAT_TYPE*)malloc(n*sizeof(FLOAT_TYPE));
     FLOAT_TYPE* Pemp = (FLOAT_TYPE*)malloc(n*sizeof(FLOAT_TYPE));
@@ -142,13 +241,13 @@ FLOAT_TYPE idEstimate(Datapoint_info* particles, size_t n)
 
 void computeRho(Datapoint_info* particles, const FLOAT_TYPE d, const size_t points){
 
-/****************************************************
- * Point density computation:                       *
- * args:                                            *
- * -   paricles: array of structs                   *
- * -   d       : intrinsic dimension of the dataset *
- * -   points  : number of points in the dataset    *
- ****************************************************/
+    /****************************************************
+     * Point density computation:                       *
+     * args:                                            *
+     * -   paricles: array of structs                   *
+     * -   d       : intrinsic dimension of the dataset *
+     * -   points  : number of points in the dataset    *
+     ****************************************************/
 
     size_t kMAX = particles[0].ngbh.N;   
 
@@ -207,10 +306,10 @@ int cmpPP(const void* p1, const void *p2)
 }
 void calculateCorrection(Datapoint_info* particles, size_t n, FLOAT_TYPE Z)
 {
-/*****************************************************************************
- * Utility function, find the minimum value of the density of the datapoints *
- * and shift them up in order to further work with values greater than 0     *
- *****************************************************************************/
+    /*****************************************************************************
+     * Utility function, find the minimum value of the density of the datapoints *
+     * and shift them up in order to further work with values greater than 0     *
+     *****************************************************************************/
     FLOAT_TYPE min_log_rho = 999999.9;
     
 
@@ -241,19 +340,36 @@ void calculateCorrection(Datapoint_info* particles, size_t n, FLOAT_TYPE Z)
 
 Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
 {
+    /**************************************************************
+     * Heurisitc 1, from paper of Errico, Facco, Laio & Rodriguez *
+     * ( https://doi.org/10.1016/j.ins.2021.01.010 )              *
+     *                                                            *
+     * args:                                                      *
+     * - particles: array of Datapoint structures                 *
+     * - data: pointer to the dataset                             *
+     * - n: number of Datapoints                                  *
+     **************************************************************/
+
     size_t ncenters = 0;
     size_t putativeCenters = n;
     size_t max_k = particles[0].ngbh.N;
-    lu_dynamicArray allCenters, removedCenters, effectiveCenters, max_rho;
+    lu_dynamicArray allCenters, removedCenters, actualCenters, max_rho;
     DynamicArray_allocate(&allCenters);
     DynamicArray_allocate(&removedCenters);
-    DynamicArray_allocate(&effectiveCenters);
+    DynamicArray_allocate(&actualCenters);
     DynamicArray_allocate(&max_rho);
 
     Datapoint_info** particles_ptrs = (Datapoint_info**)malloc(n*sizeof(Datapoint_info*));
 
     for(size_t i = 0; i < n; ++i)
     {   
+        /*
+
+        Find the centers of the clusters as the points of higher density in their neighborhoods
+        A point is tagged as a putative center if it is the point of higer density of its neighborhood 
+        
+        */
+
         particles_ptrs[i] = particles + i;
         size_t maxk = particles[i].kstar + 1;
         FLOAT_TYPE gi = particles[i].g;
@@ -277,6 +393,12 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
 
     for(size_t p = 0; p < allCenters.count; ++p)
     {   
+        /*
+
+        Check if the center spotted in the previous part belongs to the neighborhood
+        of a point of higher density. If this is true remove it from the actual centers
+
+        */
         size_t i = allCenters.data[p];
         int e = 0;
         FLOAT_TYPE gi = particles[i].g;
@@ -288,7 +410,7 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
             //e = 0;
             size_t kMAXj = particles[j].kstar;
             FLOAT_TYPE gj = particles[j].g;
-            //check if there is point in which the point i is a neighbour with grater g
+            //check if there is point in which the point i is a neighbor with grater g
                 //if gj > gi check the neighborhood
                 for(size_t k = 1; k < kMAXj + 1; ++k )
                 {
@@ -322,11 +444,11 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
             }
         else 
         {
-            DynamicArray_pushBack(&effectiveCenters,i);
-            particles[i].cluster_idx = effectiveCenters.count - 1;
+            DynamicArray_pushBack(&actualCenters,i);
+            particles[i].cluster_idx = actualCenters.count - 1;
         }
     }
-    printf("Found %lu centers\n", effectiveCenters.count);
+    printf("Found %lu centers\n", actualCenters.count);
     size_t nclusters = 0;
     qsort(particles_ptrs, n, sizeof(Datapoint_info*), cmpPP);
     FILE* f; //= fopen("nope7.dat","w");
@@ -384,11 +506,11 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
      * Create the clusters object in order to have a more usefull division of the particles
     */
     Clusters c_all;
-    c_all.centers = effectiveCenters;
+    c_all.centers = actualCenters;
     c_all._LLnodes = (Node*)malloc(n*sizeof(Node));
-    c_all.clusters = (LinkedList*)malloc(effectiveCenters.count*sizeof(LinkedList));
+    c_all.clusters = (LinkedList*)malloc(actualCenters.count*sizeof(LinkedList));
 
-    for(size_t i = 0; i < effectiveCenters.count; ++i)
+    for(size_t i = 0; i < actualCenters.count; ++i)
     {
         c_all.clusters[i].count = 0;
         c_all.clusters[i].head = NULL;
@@ -506,41 +628,6 @@ void Heuristic2(Clusters* cluster, Datapoint_info* particles)
     return;
    }
 
-void DynamicArray_Reset(lu_dynamicArray * a){
-    a -> count = 0;
-}
-
-void DynamicArray_Reserve(lu_dynamicArray * a, size_t n)
-{
-    a -> data = realloc(a -> data, n*sizeof(size_t));
-    a -> size = n;
-}
-
-void DynamicArray_Init(lu_dynamicArray * a)
-{
-    a -> data = NULL;
-    a -> count = 0;
-    a -> size = 0;
-}
-
-void Clusters_Reset(Clusters * c)
-{
-    free(c -> centers.data);
-    free(c -> border_err);
-    free(c -> border_density);
-    free(c -> border_idx);
-    free(c -> __border_err_data);
-    free(c -> __border_density_data);
-    free(c -> __border_idx_data);
-    free(c -> clusters);
-}
-
-void Clusters_free(Clusters * c)
-{
-
-    Clusters_Reset(c);
-    free(c -> _LLnodes);
-}
 
 void mergeClusters(Clusters * cc, size_t i, size_t j)
 {
@@ -800,32 +887,3 @@ void Heuristic3(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE Z, int 
 }
 
 
-void Clusters_allocate(Clusters * c)
-{
-    if(c -> centers.count == 0)
-    {
-        printf("Provide a valid cluster centers list\n");
-        return;
-    }
-
-    size_t nclus = c -> centers.count;
-
-    c -> __border_idx_data      = (size_t*)malloc(nclus*nclus*sizeof(size_t));
-    c -> border_idx             = (size_t**)malloc(nclus*sizeof(size_t*));
-    c -> __border_density_data  = (FLOAT_TYPE*)malloc(nclus*nclus*sizeof(FLOAT_TYPE));
-    c -> border_density         = (FLOAT_TYPE**)malloc(nclus*sizeof(FLOAT_TYPE*));
-    c -> __border_err_data      = (FLOAT_TYPE*)malloc(nclus*nclus*sizeof(FLOAT_TYPE));
-    c -> border_err             = (FLOAT_TYPE**)malloc(nclus*sizeof(FLOAT_TYPE*));
-    for(size_t i = 0; i < nclus; ++i)
-    {
-        c -> border_idx[i]      = c -> __border_idx_data + i*nclus;
-        c -> border_density[i]  = c -> __border_density_data + i*nclus;
-        c -> border_err[i]      = c -> __border_err_data + i*nclus;
-        for(size_t j = 0; j < nclus; ++j)
-        {
-            c -> border_err[i][j]       = 0.0;
-            c -> border_idx[i][j]       = NOBORDER;
-            c -> border_density[i][j]   = 0.0;
-        }
-    }
-}
