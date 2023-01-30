@@ -10,10 +10,11 @@ int main(int argc, char** argv){
     /*************************************************************
      * TODO: Boilerplate code for reading the datafile from argv *
      *************************************************************/
-    if(argc < 3 || strcasecmp(argv[1],"-h"))
+    if(argc < 2 || strcasecmp(argv[1],"-h"))
     {
         printf("USAGE: ./driver [INPUT_FILE] [OUTPUT_FILE]");
-        printf("\nThe program gives as output the cluster assignment of each datapoint");
+        printf("\nThe program gives as output the cluster assignment of each datapoint\n");
+        return;
     }
     
     FILE* f = fopen(argv[1],"r");
