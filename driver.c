@@ -108,8 +108,8 @@ int main(int argc, char** argv){
         fprintf(f,"%d\t", particles[i].cluster_idx);
         fprintf(f,"%.12lf\t",particles[i].log_rho);
         //fprintf(f,"%.12lf\t",particles[i].log_rho_c);
-        fprintf(f,"%.12lf\t",particles[i].log_rho_err);
-        fprintf(f,"%.12lf\t",particles[i].g);
+        //fprintf(f,"%.12lf\t",particles[i].log_rho_err);
+        //fprintf(f,"%.12lf\t",particles[i].g);
         fprintf(f,"%d\t",particles[i].is_center);
         fprintf(f,"\n");
     }
