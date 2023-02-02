@@ -89,6 +89,7 @@ void DynamicArray_pushBack(lu_dynamicArray * a, size_t p)
         a -> size += ARRAY_INCREMENT;
         a -> data = realloc(a -> data, a -> size * sizeof(size_t));
         a -> data[a -> count] =  p;
+        a -> count += 1;
     }
 }
 
@@ -427,7 +428,10 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
             
             
         }
-        if(mr != SIZE_MAX && particles[mr].g > gi) e = 1;
+        if(mr != SIZE_MAX)
+        {
+            if(particles[mr].g > gi) e = 1;
+        }
         if(e)
             {
                 DynamicArray_pushBack(&removedCenters,i);
@@ -451,7 +455,6 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
     printf("Found %lu centers\n", actualCenters.count);
     size_t nclusters = 0;
     qsort(particles_ptrs, n, sizeof(Datapoint_info*), cmpPP);
-    FILE* f; //= fopen("nope7.dat","w");
     for(size_t i = 0; i < n; ++i)
     {   
         Datapoint_info* p = particles_ptrs[i];
@@ -497,10 +500,19 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
 
         }
     }
+
+    //FILE* f = fopen("nope7.dat","w");
+    //for(int i = 0; i < allCenters.count; ++i)
+    //{
+    //    fprintf(f,"%lu\n",allCenters.data[i]);
+    //}
+    //fclose(f);
+
     free(particles_ptrs);
     free(max_rho.data);
     free(removedCenters.data);
     free(allCenters.data);
+
 
     /**
      * Create the clusters object in order to have a more usefull division of the particles
@@ -528,7 +540,7 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
         LinkedList_Insert(c_all.clusters + cluster_idx, c_all._LLnodes + i);
 
     }
-    printf("created lisist\n");
+    //printf("created lisist\n");
     return c_all;
 }
 

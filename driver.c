@@ -10,7 +10,7 @@ int main(int argc, char** argv){
     /*************************************************************
      * TODO: Boilerplate code for reading the datafile from argv *
      *************************************************************/
-    if(argc < 2 || strcasecmp(argv[1],"-h"))
+    if(argc < 3 )
     {
         printf("USAGE: ./driver [INPUT_FILE] [OUTPUT_FILE]");
         printf("\nThe program gives as output the cluster assignment of each datapoint\n");
@@ -95,26 +95,24 @@ int main(int argc, char** argv){
 
     Clusters_allocate(&c);  
 
+    f = fopen(argv[2],"w");
+    for(size_t i = 0; i < n; ++i)
+    {
+        fprintf(f,"%lu\t",particles[i].kstar);
+        fprintf(f,"%d\t", particles[i].cluster_idx);
+        fprintf(f,"%.12lf\t",particles[i].log_rho);
+        //fprintf(f,"%.12lf\t",particles[i].log_rho_c);
+        fprintf(f,"%.12lf\t",particles[i].log_rho_err);
+        fprintf(f,"%.12lf\t",particles[i].g);
+        fprintf(f,"%d\t",particles[i].is_center);
+        fprintf(f,"\n");
+    }
+    fclose(f);
+
     Heuristic2(&c, particles);
 
     Heuristic3(&c, particles, 1.96, 0);
 
-    if(print_results)
-    {
-        f = fopen(argv[2],"w");
-        for(size_t i = 0; i < n; ++i)
-        {
-            fprintf(f,"%lu\t",particles[i].kstar);
-            fprintf(f,"%d\t", particles[i].cluster_idx);
-            fprintf(f,"%.12lf\t",particles[i].log_rho);
-            //fprintf(f,"%.12lf\t",particles[i].log_rho_c);
-            fprintf(f,"%.12lf\t",particles[i].log_rho_err);
-            fprintf(f,"%.12lf\t",particles[i].g);
-            fprintf(f,"%d\t",particles[i].is_center);
-            fprintf(f,"\n");
-        }
-        fclose(f);
-    }
 
 
     /*******************
