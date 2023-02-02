@@ -95,6 +95,12 @@ int main(int argc, char** argv){
 
     Clusters_allocate(&c);  
 
+    
+
+    Heuristic2(&c, particles);
+
+    Heuristic3(&c, particles, 1.96, 0);
+    
     f = fopen(argv[2],"w");
     for(size_t i = 0; i < n; ++i)
     {
@@ -108,11 +114,6 @@ int main(int argc, char** argv){
         fprintf(f,"\n");
     }
     fclose(f);
-
-    Heuristic2(&c, particles);
-
-    Heuristic3(&c, particles, 1.96, 0);
-
 
 
     /*******************
