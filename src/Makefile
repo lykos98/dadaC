@@ -1,6 +1,6 @@
 LIBRARIES=-lm 
-OPTIM=-O3 
-DEBUG=-g 
+OPTIM=-O3 -march=native
+DEBUG= 
 
 all:libclustering.so 
 

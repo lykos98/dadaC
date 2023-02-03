@@ -1,5 +1,6 @@
 #include "./include/clustering.h"
 #include <stdio.h>
+#include <time.h>
 
 unsigned int data_dims = 5;
 
@@ -48,13 +49,25 @@ int main(int argc, char** argv){
 
     data_dims = 5;
 
+    struct timespec start, finish;
+    double elapsed;
+    /*Making the tree*/
+
+    clock_gettime(CLOCK_MONOTONIC, &start);
+
     kd_node* root = make_tree(kd_ptrs, 0, n-1, NULL ,0);
+
+    clock_gettime(CLOCK_MONOTONIC, &finish);
+
+    elapsed = (finish.tv_sec - start.tv_sec);
+    elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+
+    printf("%.3lfs for building the KDtree\n",elapsed);
 
     printf("The root of the tree is\n");
     printKDnode(root);
 
     int k = 1001;
-
 
     Datapoint_info* particles = (Datapoint_info*)malloc(n*sizeof(Datapoint_info));
 
@@ -62,6 +75,7 @@ int main(int argc, char** argv){
      * KNN search *
      **************/
 
+    clock_gettime(CLOCK_MONOTONIC, &start);
     #pragma omp parallel for
     for(int p = 0; p < n; ++p)
     {
@@ -69,38 +83,85 @@ int main(int argc, char** argv){
         particles[p].array_idx = p;
     }
 
+    clock_gettime(CLOCK_MONOTONIC, &finish);
+
+    elapsed = (finish.tv_sec - start.tv_sec);
+    elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+
+    printf("%.3lfs KNN search\n",elapsed);
+
     /********************************
      * Intrinsic Dimension estimate *
      ********************************/
 
+    clock_gettime(CLOCK_MONOTONIC, &start);
+
     double id = idEstimate(particles, n);
+
     printf("Instrinsic dimension %lf\n",id);
 
+    clock_gettime(CLOCK_MONOTONIC, &finish);
+
+    elapsed = (finish.tv_sec - start.tv_sec);
+    elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+
+    printf("%.3lfs id estimation\n",elapsed);
     /***********************
      * Density computation *
      ***********************/
+    clock_gettime(CLOCK_MONOTONIC, &start);
     computeRho(particles,id,n);
     calculateCorrection(particles,n,1.96);
 
+    clock_gettime(CLOCK_MONOTONIC, &finish);
+
+    elapsed = (finish.tv_sec - start.tv_sec);
+    elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+
+    printf("%.3lfs Density and kstar computation\n",elapsed);
     /********************
      * First clustering *
      ********************/
 
+    clock_gettime(CLOCK_MONOTONIC, &start);
     Clusters c = Heuristic1(particles, data, n);
 
+    clock_gettime(CLOCK_MONOTONIC, &finish);
+
+    elapsed = (finish.tv_sec - start.tv_sec);
+    elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+
+    printf("%.3lfs H1\n",elapsed);
     /***************************************************************************************
      * Allocate borders and other things to store clustering info                          *
      * Then Find borders between clusters and then merge clusters using peaks significance *
      ***************************************************************************************/
 
+    clock_gettime(CLOCK_MONOTONIC, &start);
     Clusters_allocate(&c);  
 
     
 
     Heuristic2(&c, particles);
 
+    clock_gettime(CLOCK_MONOTONIC, &finish);
+
+    elapsed = (finish.tv_sec - start.tv_sec);
+    elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+
+    printf("%.3lfs H2\n",elapsed);
+    
+    clock_gettime(CLOCK_MONOTONIC, &start);
     Heuristic3(&c, particles, 1.96, 0);
     
+    clock_gettime(CLOCK_MONOTONIC, &finish);
+
+    elapsed = (finish.tv_sec - start.tv_sec);
+    elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+
+    printf("%.3lfs H3\n",elapsed);
+
+    clock_gettime(CLOCK_MONOTONIC, &start);
     f = fopen(argv[2],"w");
     for(size_t i = 0; i < n; ++i)
     {
@@ -115,6 +176,12 @@ int main(int argc, char** argv){
     }
     fclose(f);
 
+    clock_gettime(CLOCK_MONOTONIC, &finish);
+
+    elapsed = (finish.tv_sec - start.tv_sec);
+    elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+
+    printf("%.3lfs writing results \n",elapsed);
 
     /*******************
      * Free all memory *

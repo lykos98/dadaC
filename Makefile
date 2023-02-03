@@ -1,6 +1,6 @@
 LIBRARIES=-lm -fopenmp 
-OPTIM=-O3
-DEBUG=-g 
+OPTIM=-O3 -march=native
+DEBUG= 
 
 DADAC=bin/clustering.o bin/kdtree.o bin/read_fof_snapshot.o
 

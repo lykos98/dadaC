@@ -258,6 +258,7 @@ void computeRho(Datapoint_info* particles, const FLOAT_TYPE d, const size_t poin
 
     //printf("Omega d %f\n", omega);
 
+    #pragma omp parallel for
     for(size_t i = 0; i < points; ++i)
     {
 
@@ -336,7 +337,7 @@ void calculateCorrection(Datapoint_info* particles, size_t n, FLOAT_TYPE Z)
             particles[i].g = particles[i].log_rho_c - particles[i].log_rho_err;
         }
     }
-    printf("%lf\n",min_log_rho);
+    //printf("%lf\n",min_log_rho);
 }
 
 Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
@@ -387,7 +388,9 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
                 break;
             }
         }
-        if(particles[i].is_center) DynamicArray_pushBack(&allCenters, i);
+        if(particles[i].is_center){
+                DynamicArray_pushBack(&allCenters, i);
+        }
 
 
     }
@@ -419,8 +422,8 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
                     {
                         if(gj > max_g)
                         {
-                            mr = j;
-                            max_g = gj;
+                                mr = j;
+                                max_g = gj;
                         }
                         break;
                     }
@@ -432,26 +435,54 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
         {
             if(particles[mr].g > gi) e = 1;
         }
-        if(e)
-            {
-                DynamicArray_pushBack(&removedCenters,i);
-                particles[i].is_center = 0;
-                for(size_t c = 0; c < removedCenters.count - 1; ++c)
-                {
-                    if(mr == removedCenters.data[c])
-                    {
-                        mr = max_rho.data[c];
-                    }
-                }
-                DynamicArray_pushBack(&max_rho,mr);
-                
-            }
-        else 
+        //if(e)
+        //{
+        //            DynamicArray_pushBack(&removedCenters,i);
+        //            particles[i].is_center = 0;
+        //            for(size_t c = 0; c < removedCenters.count - 1; ++c)
+        //            {
+        //                if(mr == removedCenters.data[c])
+        //                {
+        //                    mr = max_rho.data[c];
+        //                }
+        //            }
+        //            DynamicArray_pushBack(&max_rho,mr);
+        //}
+        //else
+        //{
+        //            DynamicArray_pushBack(&actualCenters,i);
+        //            particles[i].cluster_idx = actualCenters.count - 1;
+        //}
+        switch (e)
         {
-            DynamicArray_pushBack(&actualCenters,i);
-            particles[i].cluster_idx = actualCenters.count - 1;
+            case 1:
+                {
+                    DynamicArray_pushBack(&removedCenters,i);
+                    particles[i].is_center = 0;
+                    for(size_t c = 0; c < removedCenters.count - 1; ++c)
+                    {
+                        if(mr == removedCenters.data[c])
+                        {
+                            mr = max_rho.data[c];
+                        }
+                    }
+                    DynamicArray_pushBack(&max_rho,mr);
+                    
+                }
+                break;
+            case 0:
+                {
+                    DynamicArray_pushBack(&actualCenters,i);
+                    particles[i].cluster_idx = actualCenters.count - 1;
+                }
+                break;
+            default:
+                break;
         }
     }
+
+
+
     printf("Found %lu centers\n", actualCenters.count);
     size_t nclusters = 0;
     qsort(particles_ptrs, n, sizeof(Datapoint_info*), cmpPP);
@@ -460,6 +491,7 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
         Datapoint_info* p = particles_ptrs[i];
         size_t ele = p -> array_idx;
         //fprintf(f,"%lu\n",ele);
+
         if(!(p -> is_center))
         {
             int cluster = -1;
