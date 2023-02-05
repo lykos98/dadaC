@@ -17,5 +17,5 @@ kdtree.o: kdtree.c
 	gcc -c kdtree.c -o ../bin/kdtree.o ${OPTIM} -fopenmp ${DEBUG} -fpic
 
 clean:
-	rm ../bin/*.o
 	rm ../bin/*.so
+	rm ../bin/*.o
