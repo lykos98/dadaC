@@ -1,6 +1,6 @@
 #include "../include/read_fof_snapshot.h"
 #include "../include/clustering.h"
-
+#include <time.h>
 
 void LinkedList_Insert(LinkedList* L, Node* n)
 {
@@ -363,6 +363,11 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
 
     Datapoint_info** particles_ptrs = (Datapoint_info**)malloc(n*sizeof(Datapoint_info*));
 
+    struct timespec start, finish;
+    double elapsed;
+
+
+    clock_gettime(CLOCK_MONOTONIC, &start);
     for(size_t i = 0; i < n; ++i)
     {   
         /*
@@ -378,13 +383,13 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
         particles[i].is_center = 1;
         particles[i].cluster_idx = -1;
         //printf("%lf\n",p -> g);
+        Heap i_ngbh = particles[i].ngbh;
         for(size_t k = 1; k < maxk; ++k)
         {
-            size_t ngbh_index = particles[i].ngbh.data[k].array_idx;
+            size_t ngbh_index = i_ngbh.data[k].array_idx;
             FLOAT_TYPE gj = particles[ngbh_index].g;
             if(gj > gi){
                 particles[i].is_center = 0;
-                --putativeCenters;
                 break;
             }
         }
@@ -395,6 +400,17 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
 
     }
 
+    clock_gettime(CLOCK_MONOTONIC, &finish);
+    elapsed = (finish.tv_sec - start.tv_sec);
+    elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+
+    printf("%.3lfs p1\n",elapsed);
+    
+    clock_gettime(CLOCK_MONOTONIC, &start);
+
+    size_t * to_remove = (size_t*)malloc(allCenters.count*sizeof(size_t));
+
+    #pragma omp parallel for
     for(size_t p = 0; p < allCenters.count; ++p)
     {   
         /*
@@ -405,20 +421,21 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
         */
         size_t i = allCenters.data[p];
         int e = 0;
-        FLOAT_TYPE gi = particles[i].g;
+        //FLOAT_TYPE gi = particles[i].g;
         size_t i_arrIdx = particles[i].array_idx;
         size_t mr = SIZE_MAX;
         FLOAT_TYPE max_g = -99999.0;
         for(size_t j = 0; j < n; ++j)
         {
             //e = 0;
+            Heap j_ngbh = particles[j].ngbh;
             size_t kMAXj = particles[j].kstar;
             FLOAT_TYPE gj = particles[j].g;
             //check if there is point in which the point i is a neighbor with grater g
                 //if gj > gi check the neighborhood
                 for(size_t k = 1; k < kMAXj + 1; ++k )
                 {
-                    if(particles[j].ngbh.data[k].array_idx == i_arrIdx )
+                    if(j_ngbh.data[k].array_idx == i_arrIdx )
                     {
                         if(gj > max_g)
                         {
@@ -431,10 +448,11 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
             
             
         }
-        if(mr != SIZE_MAX)
-        {
-            if(particles[mr].g > gi) e = 1;
-        }
+        to_remove[p] = mr;
+        //if(mr != SIZE_MAX)
+        //{
+        //    if(particles[mr].g > gi) e = 1;
+        //}
         //if(e)
         //{
         //            DynamicArray_pushBack(&removedCenters,i);
@@ -453,19 +471,66 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
         //            DynamicArray_pushBack(&actualCenters,i);
         //            particles[i].cluster_idx = actualCenters.count - 1;
         //}
+        //switch (e)
+        //{
+        //    case 1:
+        //        #pragma omp critical
+        //        {
+        //            DynamicArray_pushBack(&removedCenters,i);
+        //            particles[i].is_center = 0;
+        //            //for(size_t c = 0; c < removedCenters.count - 1; ++c)
+        //            //{
+        //            //    if(mr == removedCenters.data[c])
+        //            //    {
+        //            //        mr = max_rho.data[c];
+        //            //    }
+        //            //}
+        //            DynamicArray_pushBack(&max_rho,mr);
+        //            
+        //        }
+        //        break;
+        //    case 0:
+        //        #pragma omp critical
+        //        {
+        //            DynamicArray_pushBack(&actualCenters,i);
+        //            particles[i].cluster_idx = actualCenters.count - 1;
+        //        }
+        //        break;
+        //    default:
+        //        break;
+        //}
+    }
+    
+    clock_gettime(CLOCK_MONOTONIC, &finish);
+    elapsed = (finish.tv_sec - start.tv_sec);
+    elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+
+    printf("%.3lfs p2\n",elapsed);
+
+    clock_gettime(CLOCK_MONOTONIC, &start);
+    for(size_t p = 0; p < allCenters.count; ++p)
+    {
+        size_t i = allCenters.data[p];
+        int e = 0;
+        FLOAT_TYPE gi = particles[i].g;
+        size_t mr = to_remove[p];
+        if(mr != SIZE_MAX)
+        {
+            if(particles[mr].g > gi) e = 1;
+        }
         switch (e)
         {
             case 1:
                 {
                     DynamicArray_pushBack(&removedCenters,i);
                     particles[i].is_center = 0;
-                    for(size_t c = 0; c < removedCenters.count - 1; ++c)
-                    {
-                        if(mr == removedCenters.data[c])
-                        {
-                            mr = max_rho.data[c];
-                        }
-                    }
+                    //for(size_t c = 0; c < removedCenters.count - 1; ++c)
+                    //{
+                    //    if(mr == removedCenters.data[c])
+                    //    {
+                    //        mr = max_rho.data[c];
+                    //    }
+                    //}
                     DynamicArray_pushBack(&max_rho,mr);
                     
                 }
@@ -480,12 +545,17 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
                 break;
         }
     }
+    clock_gettime(CLOCK_MONOTONIC, &finish);
+    elapsed = (finish.tv_sec - start.tv_sec);
+    elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
 
-
+    printf("%.3lfs p2\n",elapsed);
 
     printf("Found %lu centers\n", actualCenters.count);
     size_t nclusters = 0;
     qsort(particles_ptrs, n, sizeof(Datapoint_info*), cmpPP);
+
+    clock_gettime(CLOCK_MONOTONIC, &start);
     for(size_t i = 0; i < n; ++i)
     {   
         Datapoint_info* p = particles_ptrs[i];
@@ -533,6 +603,11 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
         }
     }
 
+    clock_gettime(CLOCK_MONOTONIC, &finish);
+    elapsed = (finish.tv_sec - start.tv_sec);
+    elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+
+    printf("%.3lfs p3\n",elapsed);
     //FILE* f = fopen("nope7.dat","w");
     //for(int i = 0; i < allCenters.count; ++i)
     //{

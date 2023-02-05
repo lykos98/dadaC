@@ -35,15 +35,15 @@ struct lu_dynamicArray {
 };
 
 struct Datapoint_info {
+    FLOAT_TYPE g;
+    Heap ngbh;
+    size_t array_idx;
     FLOAT_TYPE log_rho;
     FLOAT_TYPE log_rho_c;
     FLOAT_TYPE log_rho_err;
-    FLOAT_TYPE g;
     size_t kstar;
     int is_center;
     int cluster_idx;
-    Heap ngbh;
-    size_t array_idx;
 };
 
 
