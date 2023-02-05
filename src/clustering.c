@@ -428,19 +428,16 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
         FLOAT_TYPE max_g = -99999.0;
         for(size_t j = 0; j < n; ++j)
         {
-            //e = 0;
-            Heap j_ngbh = particles[j].ngbh;
             size_t kMAXj = particles[j].kstar;
+            Heap j_ngbh = particles[j].ngbh;
             FLOAT_TYPE gj = particles[j].g;
+            //e = 0;
             //check if there is point in which the point i is a neighbor with grater g
                 //if gj > gi check the neighborhood
             //preliminarity check, if i is more distant than k* neighbor break
             FLOAT_TYPE dk = j_ngbh.data[kMAXj + 1].value;
             FLOAT_TYPE di = euclidean_distance(data + (i*data_dims), data + (j*data_dims));
-            if(dk < di){
-                continue;
-            }
-            else
+            if(dk > di)
             {
                 for(size_t k = 1; k < kMAXj + 1; ++k )
                 {
