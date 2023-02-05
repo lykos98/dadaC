@@ -1,6 +1,7 @@
 #include "../include/read_fof_snapshot.h"
 #include "../include/clustering.h"
 #include <time.h>
+extern unsigned int data_dims;
 
 void LinkedList_Insert(LinkedList* L, Node* n)
 {
@@ -433,6 +434,14 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
             FLOAT_TYPE gj = particles[j].g;
             //check if there is point in which the point i is a neighbor with grater g
                 //if gj > gi check the neighborhood
+            //preliminarity check, if i is more distant than k* neighbor break
+            FLOAT_TYPE dk = j_ngbh.data[kMAXj + 1].value;
+            FLOAT_TYPE di = euclidean_distance(data + (i*data_dims), data + (j*data_dims));
+            if(dk < di){
+                continue;
+            }
+            else
+            {
                 for(size_t k = 1; k < kMAXj + 1; ++k )
                 {
                     if(j_ngbh.data[k].array_idx == i_arrIdx )
@@ -445,7 +454,7 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
                         break;
                     }
                 }
-            
+            } 
             
         }
         to_remove[p] = mr;
