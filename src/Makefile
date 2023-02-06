@@ -1,6 +1,7 @@
 LIBRARIES=-lm 
 OPTIM=-O3 -march=native
 DEBUG= 
+VERBOSE=-DVERBOSE
 
 all:libclustering.so 
 
@@ -9,7 +10,7 @@ libclustering.so: clustering.o kdtree.o read_fof_snapshot.o
 	rm ../bin/*.o
 
 clustering.o: clustering.c
-	gcc -c clustering.c -o ../bin/clustering.o ${OPTIM} -fopenmp ${DEBUG} -fpic
+	gcc -c clustering.c -o ../bin/clustering.o ${OPTIM} -fopenmp ${DEBUG} -fpic ${VERBOSE}
 
 read_fof_snapshot.o: read_fof_snapshot.c
 	gcc -c read_fof_snapshot.c -o ../bin/read_fof_snapshot.o ${OPTIM} -fpic

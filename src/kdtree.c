@@ -1,4 +1,5 @@
 #include "../include/kdtree.h"
+#include <time.h>
 
 #define HEAP_LCH(x) (2*x + 1)
 #define HEAP_RCH(x) (2*x + 2)
@@ -389,4 +390,29 @@ Heap KNN(FLOAT_TYPE* point, kd_node* kdtree_root, int maxk)
     KNN_sub_tree_search(point, kdtree_root,&H);
     HeapSort(&H);
     return H;
+}
+
+kd_node * build_tree(kd_node** kd_ptrs, size_t n)
+{
+    
+
+    /*************************************************
+     * Wrapper for make_tree function.               *
+     * Simplifies interfaces and takes time measures *
+     *************************************************/
+    
+    
+    struct timespec start_tot, finish_tot;
+    double elapsed_tot;
+    printf("Building the KDtree:\n");
+    clock_gettime(CLOCK_MONOTONIC, &start_tot);
+
+    kd_node* root = make_tree(kd_ptrs, 0, n-1, NULL ,0);
+
+    clock_gettime(CLOCK_MONOTONIC, &finish_tot);
+    elapsed_tot = (finish_tot.tv_sec - start_tot.tv_sec);
+    elapsed_tot += (finish_tot.tv_nsec - start_tot.tv_nsec) / 1000000000.0;
+    printf("\tTotal time: %.3lfs\n\n", elapsed_tot);
+    return root;
+
 }

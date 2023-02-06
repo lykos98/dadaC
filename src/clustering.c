@@ -134,6 +134,29 @@ void DynamicArray_Init(lu_dynamicArray * a)
  * Clustering part *
  *******************/
 
+void KNN_search(Datapoint_info * particles, FLOAT_TYPE * data, kd_node* root, size_t n, size_t k)
+{
+    struct timespec start_tot, finish_tot;
+    double elapsed_tot;
+    printf("KNN search:\n");
+    clock_gettime(CLOCK_MONOTONIC, &start_tot);
+
+
+    #pragma omp parallel for
+    for(int p = 0; p < n; ++p)
+    {
+        particles[p].ngbh = KNN(data + data_dims*p, root, k);
+        particles[p].array_idx = p;
+    }
+
+    clock_gettime(CLOCK_MONOTONIC, &finish_tot);
+    elapsed_tot = (finish_tot.tv_sec - start_tot.tv_sec);
+    elapsed_tot += (finish_tot.tv_nsec - start_tot.tv_nsec) / 1000000000.0;
+    printf("\tTotal time: %.3lfs\n\n", elapsed_tot);
+    return;
+
+}
+
 int cmp(const void * a, const void * b){
     FLOAT_TYPE aa = *((FLOAT_TYPE*)a);
     FLOAT_TYPE bb = *((FLOAT_TYPE*)b);
@@ -221,6 +244,12 @@ FLOAT_TYPE idEstimate(Datapoint_info* particles, size_t n)
      * origin                                                                                    *
      *********************************************************************************************/
 
+    struct timespec start_tot, finish_tot;
+    double elapsed_tot;
+
+    printf("ID estimation:\n");
+    clock_gettime(CLOCK_MONOTONIC, &start_tot);
+
     FLOAT_TYPE fraction = 0.9;
     FLOAT_TYPE* r = (FLOAT_TYPE*)malloc(n*sizeof(FLOAT_TYPE));
     FLOAT_TYPE* Pemp = (FLOAT_TYPE*)malloc(n*sizeof(FLOAT_TYPE));
@@ -237,6 +266,13 @@ FLOAT_TYPE idEstimate(Datapoint_info* particles, size_t n)
     FLOAT_TYPE d = mEst2(r,Pemp,Neff); 
     free(r);
     free(Pemp);
+
+    clock_gettime(CLOCK_MONOTONIC, &finish_tot);
+    elapsed_tot = (finish_tot.tv_sec - start_tot.tv_sec);
+    elapsed_tot += (finish_tot.tv_nsec - start_tot.tv_nsec) / 1000000000.0;
+    printf("\tID value: %.6lf\n", d);
+    printf("\tTotal time: %.3lfs\n\n", elapsed_tot);
+
     return d;
 
 }
@@ -250,6 +286,12 @@ void computeRho(Datapoint_info* particles, const FLOAT_TYPE d, const size_t poin
      * -   d       : intrinsic dimension of the dataset *
      * -   points  : number of points in the dataset    *
      ****************************************************/
+
+    struct timespec start_tot, finish_tot;
+    double elapsed_tot;
+
+    printf("Density and k* estimation:\n");
+    clock_gettime(CLOCK_MONOTONIC, &start_tot);
 
     size_t kMAX = particles[0].ngbh.N;   
 
@@ -291,6 +333,11 @@ void computeRho(Datapoint_info* particles, const FLOAT_TYPE d, const size_t poin
         particles[i].log_rho_err =   1.0/sqrt((FLOAT_TYPE)k); //(FLOAT_TYPE)(-Q_rsqrt((float)k));
         particles[i].g = particles[i].log_rho - particles[i].log_rho_err;
     }
+
+    clock_gettime(CLOCK_MONOTONIC, &finish_tot);
+    elapsed_tot = (finish_tot.tv_sec - start_tot.tv_sec);
+    elapsed_tot += (finish_tot.tv_nsec - start_tot.tv_nsec) / 1000000000.0;
+    printf("\tTotal time: %.3lfs\n\n", elapsed_tot);
 
     return;
 
@@ -353,6 +400,12 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
      * - n: number of Datapoints                                  *
      **************************************************************/
 
+    struct timespec start_tot, finish_tot;
+    double elapsed_tot;
+
+    printf("H1: Preliminary cluster assignment\n");
+    clock_gettime(CLOCK_MONOTONIC, &start_tot);
+
     size_t ncenters = 0;
     size_t putativeCenters = n;
     size_t max_k = particles[0].ngbh.N;
@@ -368,7 +421,10 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
     double elapsed;
 
 
-    clock_gettime(CLOCK_MONOTONIC, &start);
+    #ifdef VERBOSE
+        clock_gettime(CLOCK_MONOTONIC, &start);
+    #endif
+
     for(size_t i = 0; i < n; ++i)
     {   
         /*
@@ -401,13 +457,13 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
 
     }
 
-    clock_gettime(CLOCK_MONOTONIC, &finish);
-    elapsed = (finish.tv_sec - start.tv_sec);
-    elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
-
-    printf("%.3lfs p1\n",elapsed);
-    
-    clock_gettime(CLOCK_MONOTONIC, &start);
+    #ifdef VERBOSE
+        clock_gettime(CLOCK_MONOTONIC, &finish);
+        elapsed = (finish.tv_sec - start.tv_sec);
+        elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+        printf("\tFinding putative centers: %.3lfs\n",elapsed);
+        clock_gettime(CLOCK_MONOTONIC, &start);
+    #endif
 
     size_t * to_remove = (size_t*)malloc(allCenters.count*sizeof(size_t));
 
@@ -455,65 +511,9 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
             
         }
         to_remove[p] = mr;
-        //if(mr != SIZE_MAX)
-        //{
-        //    if(particles[mr].g > gi) e = 1;
-        //}
-        //if(e)
-        //{
-        //            DynamicArray_pushBack(&removedCenters,i);
-        //            particles[i].is_center = 0;
-        //            for(size_t c = 0; c < removedCenters.count - 1; ++c)
-        //            {
-        //                if(mr == removedCenters.data[c])
-        //                {
-        //                    mr = max_rho.data[c];
-        //                }
-        //            }
-        //            DynamicArray_pushBack(&max_rho,mr);
-        //}
-        //else
-        //{
-        //            DynamicArray_pushBack(&actualCenters,i);
-        //            particles[i].cluster_idx = actualCenters.count - 1;
-        //}
-        //switch (e)
-        //{
-        //    case 1:
-        //        #pragma omp critical
-        //        {
-        //            DynamicArray_pushBack(&removedCenters,i);
-        //            particles[i].is_center = 0;
-        //            //for(size_t c = 0; c < removedCenters.count - 1; ++c)
-        //            //{
-        //            //    if(mr == removedCenters.data[c])
-        //            //    {
-        //            //        mr = max_rho.data[c];
-        //            //    }
-        //            //}
-        //            DynamicArray_pushBack(&max_rho,mr);
-        //            
-        //        }
-        //        break;
-        //    case 0:
-        //        #pragma omp critical
-        //        {
-        //            DynamicArray_pushBack(&actualCenters,i);
-        //            particles[i].cluster_idx = actualCenters.count - 1;
-        //        }
-        //        break;
-        //    default:
-        //        break;
-        //}
     }
     
-    clock_gettime(CLOCK_MONOTONIC, &finish);
-    elapsed = (finish.tv_sec - start.tv_sec);
-    elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
 
-    printf("%.3lfs p2\n",elapsed);
-
-    clock_gettime(CLOCK_MONOTONIC, &start);
     for(size_t p = 0; p < allCenters.count; ++p)
     {
         size_t i = allCenters.data[p];
@@ -551,17 +551,30 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
                 break;
         }
     }
-    clock_gettime(CLOCK_MONOTONIC, &finish);
-    elapsed = (finish.tv_sec - start.tv_sec);
-    elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
 
-    printf("%.3lfs p2\n",elapsed);
+    #ifdef VERBOSE
+        clock_gettime(CLOCK_MONOTONIC, &finish);
+        elapsed = (finish.tv_sec - start.tv_sec);
+        elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+        printf("\tFinding actual centers:   %.3lfs\n",elapsed);
 
-    printf("Found %lu centers\n", actualCenters.count);
+        clock_gettime(CLOCK_MONOTONIC, &start);
+    #endif
+
+    free(to_remove);
+
     size_t nclusters = 0;
+
+
+    /*******************************************************************************
+     *                                                                          *
+     *  Sort all the particles based on g and then perform the cluster assignment *
+     *  in asceding order                                                         *
+     *                                                                           *
+     *******************************************************************************/
+
     qsort(particles_ptrs, n, sizeof(Datapoint_info*), cmpPP);
 
-    clock_gettime(CLOCK_MONOTONIC, &start);
     for(size_t i = 0; i < n; ++i)
     {   
         Datapoint_info* p = particles_ptrs[i];
@@ -609,11 +622,14 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
         }
     }
 
-    clock_gettime(CLOCK_MONOTONIC, &finish);
-    elapsed = (finish.tv_sec - start.tv_sec);
-    elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+    #ifdef VERBOSE
+        clock_gettime(CLOCK_MONOTONIC, &finish);
+        elapsed = (finish.tv_sec - start.tv_sec);
+        elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+        printf("\tTentative clustering:     %.3lfs\n",elapsed);
 
-    printf("%.3lfs p3\n",elapsed);
+        clock_gettime(CLOCK_MONOTONIC, &start);
+    #endif
     //FILE* f = fopen("nope7.dat","w");
     //for(int i = 0; i < allCenters.count; ++i)
     //{
@@ -653,12 +669,32 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
         LinkedList_Insert(c_all.clusters + cluster_idx, c_all._LLnodes + i);
 
     }
-    //printf("created lisist\n");
+    #ifdef VERBOSE
+        clock_gettime(CLOCK_MONOTONIC, &finish);
+        elapsed = (finish.tv_sec - start.tv_sec);
+        elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+        printf("\tFinalizing clustering:    %.3lfs\n",elapsed);
+        printf("\n");
+    #endif
+
+    clock_gettime(CLOCK_MONOTONIC, &finish_tot);
+    elapsed_tot = (finish_tot.tv_sec - start_tot.tv_sec);
+    elapsed_tot += (finish_tot.tv_nsec - start_tot.tv_nsec) / 1000000000.0;
+
+
+    printf("\tFound %ld clusters\n",actualCenters.count);
+    printf("\tTotal time: %.3lf\n\n", elapsed_tot);
     return c_all;
 }
 
 void Heuristic2(Clusters* cluster, Datapoint_info* particles)
 {
+    struct timespec start_tot, finish_tot;
+    double elapsed_tot;
+
+    printf("H2: Finding border points\n");
+    clock_gettime(CLOCK_MONOTONIC, &start_tot);
+
     size_t**     border_idx     = cluster->border_idx;
     FLOAT_TYPE** border_density = cluster->border_density;
     FLOAT_TYPE** border_err     = cluster->border_err;
@@ -750,6 +786,12 @@ void Heuristic2(Clusters* cluster, Datapoint_info* particles)
         border_density[i][i] = -1.0;
         border_err[i][i] = 0.0;
     }
+
+    clock_gettime(CLOCK_MONOTONIC, &finish_tot);
+    elapsed_tot = (finish_tot.tv_sec - start_tot.tv_sec);
+    elapsed_tot += (finish_tot.tv_nsec - start_tot.tv_nsec) / 1000000000.0;
+    printf("\tTotal time: %.3lf\n\n", elapsed_tot);
+
     return;
    }
 
@@ -773,6 +815,12 @@ void mergeClusters(Clusters * cc, size_t i, size_t j)
 
 void Heuristic3(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE Z, int halo)
 {
+    struct timespec start_tot, finish_tot;
+    double elapsed_tot;
+
+    printf("H3: Merging clusters\n");
+    clock_gettime(CLOCK_MONOTONIC, &start_tot);
+
     size_t**     border_idx     = cluster->border_idx;
     FLOAT_TYPE** border_density = cluster->border_density;
     FLOAT_TYPE** border_err     = cluster->border_err;
@@ -790,8 +838,6 @@ void Heuristic3(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE Z, int 
     DynamicArray_Init(&jpos);
     DynamicArray_Reserve(&ipos,nclus);
     DynamicArray_Reserve(&jpos,nclus);
-
-    printf("%ld\n",nclus);
 
     while(check)
     {
@@ -914,7 +960,6 @@ void Heuristic3(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE Z, int 
         }
     }
 
-    printf("Surviving clusters %lu\n", final_cluster_count);
     /*allocate auxiliary pointers to store results of the finalization of the procedure*/
 
     FLOAT_TYPE** tmp_border_density = (FLOAT_TYPE**)malloc(final_cluster_count*sizeof(FLOAT_TYPE*));
@@ -1009,6 +1054,12 @@ void Heuristic3(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE Z, int 
     free(ipos.data);
     free(jpos.data);
     free(surviving_clusters);
+
+    clock_gettime(CLOCK_MONOTONIC, &finish_tot);
+    elapsed_tot = (finish_tot.tv_sec - start_tot.tv_sec);
+    elapsed_tot += (finish_tot.tv_nsec - start_tot.tv_nsec) / 1000000000.0;
+    printf("\tSurviving clusters %lu\n", final_cluster_count);
+    printf("\tTotal time: %.3lf\n\n", elapsed_tot);
 }
 
 

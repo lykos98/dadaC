@@ -107,3 +107,5 @@ void KNN_sub_tree_search(FLOAT_TYPE* point, kd_node* kdtree_root, Heap * H);
 void HeapSort(Heap* H);
 
 Heap KNN(FLOAT_TYPE* point, kd_node* kdtree_root, int maxk);
+
+kd_node * build_tree(kd_node** kd_ptrs, size_t n);

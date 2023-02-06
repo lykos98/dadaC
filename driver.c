@@ -8,9 +8,9 @@ int main(int argc, char** argv){
 
     int print_results = 0;
 
-    /*************************************************************
-     * TODO: Boilerplate code for reading the datafile from argv *
-     *************************************************************/
+    /***********************************************************************
+     * TODO: Make a function to perform KNN search, fix verbose and timing *
+     ***********************************************************************/
     if(argc < 3 )
     {
         printf("USAGE: ./driver [INPUT_FILE] [OUTPUT_FILE]");
@@ -51,18 +51,11 @@ int main(int argc, char** argv){
 
     struct timespec start, finish;
     double elapsed;
-    /*Making the tree*/
 
-    clock_gettime(CLOCK_MONOTONIC, &start);
 
-    kd_node* root = make_tree(kd_ptrs, 0, n-1, NULL ,0);
+    kd_node* root = build_tree(kd_ptrs, n);
 
     clock_gettime(CLOCK_MONOTONIC, &finish);
-
-    elapsed = (finish.tv_sec - start.tv_sec);
-    elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
-
-    printf("%.3lfs for building the KDtree\n",elapsed);
 
     printf("The root of the tree is\n");
     printKDnode(root);
@@ -75,91 +68,35 @@ int main(int argc, char** argv){
      * KNN search *
      **************/
 
-    clock_gettime(CLOCK_MONOTONIC, &start);
-    #pragma omp parallel for
-    for(int p = 0; p < n; ++p)
-    {
-        particles[p].ngbh = KNN(data + data_dims*p, root, k);
-        particles[p].array_idx = p;
-    }
-
-    clock_gettime(CLOCK_MONOTONIC, &finish);
-
-    elapsed = (finish.tv_sec - start.tv_sec);
-    elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
-
-    printf("%.3lfs KNN search\n",elapsed);
+    KNN_search(particles,data, root, n, k);
 
     /********************************
      * Intrinsic Dimension estimate *
      ********************************/
 
-    clock_gettime(CLOCK_MONOTONIC, &start);
-
     double id = idEstimate(particles, n);
 
-    printf("Instrinsic dimension %lf\n",id);
-
-    clock_gettime(CLOCK_MONOTONIC, &finish);
-
-    elapsed = (finish.tv_sec - start.tv_sec);
-    elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
-
-    printf("%.3lfs id estimation\n",elapsed);
     /***********************
      * Density computation *
      ***********************/
-    clock_gettime(CLOCK_MONOTONIC, &start);
     computeRho(particles,id,n);
     calculateCorrection(particles,n,1.96);
 
-    clock_gettime(CLOCK_MONOTONIC, &finish);
-
-    elapsed = (finish.tv_sec - start.tv_sec);
-    elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
-
-    printf("%.3lfs Density and kstar computation\n",elapsed);
     /********************
      * First clustering *
      ********************/
 
-    clock_gettime(CLOCK_MONOTONIC, &start);
     Clusters c = Heuristic1(particles, data, n);
 
-    clock_gettime(CLOCK_MONOTONIC, &finish);
-
-    elapsed = (finish.tv_sec - start.tv_sec);
-    elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
-
-    printf("%.3lfs H1\n",elapsed);
     /***************************************************************************************
      * Allocate borders and other things to store clustering info                          *
      * Then Find borders between clusters and then merge clusters using peaks significance *
      ***************************************************************************************/
-
-    clock_gettime(CLOCK_MONOTONIC, &start);
     Clusters_allocate(&c);  
 
-    
-
     Heuristic2(&c, particles);
-
-    clock_gettime(CLOCK_MONOTONIC, &finish);
-
-    elapsed = (finish.tv_sec - start.tv_sec);
-    elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
-
-    printf("%.3lfs H2\n",elapsed);
     
-    clock_gettime(CLOCK_MONOTONIC, &start);
     Heuristic3(&c, particles, 1.96, 0);
-    
-    clock_gettime(CLOCK_MONOTONIC, &finish);
-
-    elapsed = (finish.tv_sec - start.tv_sec);
-    elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
-
-    printf("%.3lfs H3\n",elapsed);
 
     clock_gettime(CLOCK_MONOTONIC, &start);
     f = fopen(argv[2],"w");
@@ -181,7 +118,7 @@ int main(int argc, char** argv){
     elapsed = (finish.tv_sec - start.tv_sec);
     elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
 
-    printf("%.3lfs writing results \n",elapsed);
+    printf("Writing results: %.3lf\n",elapsed);
 
     /*******************
      * Free all memory *
