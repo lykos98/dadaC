@@ -467,7 +467,7 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
 
     size_t * to_remove = (size_t*)malloc(allCenters.count*sizeof(size_t));
 
-    #pragma omp parallel for
+    #pragma omp parallel for num_threads(8)
     for(size_t p = 0; p < allCenters.count; ++p)
     {   
         /*

@@ -39,7 +39,7 @@ file_info read_data_from_file(char* filename){
   int     id_size;
   int     float_size;
   size_t  ret;
-  
+  //aaa 
   FILE *file = fopen( filename, "r" );
 
   if( file == NULL ) {
