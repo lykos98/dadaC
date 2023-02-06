@@ -683,7 +683,7 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
 
 
     printf("\tFound %ld clusters\n",actualCenters.count);
-    printf("\tTotal time: %.3lf\n\n", elapsed_tot);
+    printf("\tTotal time: %.3lfs\n\n", elapsed_tot);
     return c_all;
 }
 
@@ -790,7 +790,7 @@ void Heuristic2(Clusters* cluster, Datapoint_info* particles)
     clock_gettime(CLOCK_MONOTONIC, &finish_tot);
     elapsed_tot = (finish_tot.tv_sec - start_tot.tv_sec);
     elapsed_tot += (finish_tot.tv_nsec - start_tot.tv_nsec) / 1000000000.0;
-    printf("\tTotal time: %.3lf\n\n", elapsed_tot);
+    printf("\tTotal time: %.3lfs\n\n", elapsed_tot);
 
     return;
    }
@@ -1059,7 +1059,7 @@ void Heuristic3(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE Z, int 
     elapsed_tot = (finish_tot.tv_sec - start_tot.tv_sec);
     elapsed_tot += (finish_tot.tv_nsec - start_tot.tv_nsec) / 1000000000.0;
     printf("\tSurviving clusters %lu\n", final_cluster_count);
-    printf("\tTotal time: %.3lf\n\n", elapsed_tot);
+    printf("\tTotal time: %.3lfs\n\n", elapsed_tot);
 }
 
 
