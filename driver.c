@@ -7,15 +7,25 @@ unsigned int data_dims = 5;
 int main(int argc, char** argv){
 
     int print_results = 0;
+    double Z;
+    int halo;
 
     /***********************************************************************
      * TODO: Make a function to perform KNN search, fix verbose and timing *
      ***********************************************************************/
-    if(argc < 3 )
+    if(argc < 5 )
     {
-        printf("USAGE: ./driver [INPUT_FILE] [OUTPUT_FILE]");
+        printf("USAGE: ./driver [INPUT_FILE] [OUTPUT_FILE] [Z] [HALO]");
         printf("\nThe program gives as output the cluster assignment of each datapoint\n");
         return;
+    }
+    else
+    {
+        Z = atof(argv[3]);
+        halo = atoi(argv[4]);
+        if(halo != 0 || halo != 1){
+            printf("Insert valid halo identifier: 0 do not assign halo, 1 assign particles to the halo");
+        }
     }
     
     FILE* f = fopen(argv[1],"r");
