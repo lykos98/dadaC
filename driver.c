@@ -91,7 +91,7 @@ int main(int argc, char** argv){
      * Density computation *
      ***********************/
     computeRho(particles,id,n);
-    calculateCorrection(particles,n,1.96);
+    calculateCorrection(particles,n,Z);
 
     /********************
      * First clustering *
@@ -107,7 +107,7 @@ int main(int argc, char** argv){
 
     Heuristic2(&c, particles);
     
-    Heuristic3(&c, particles, 1.96, 0);
+    Heuristic3(&c, particles, Z, halo);
 
     clock_gettime(CLOCK_MONOTONIC, &start);
     f = fopen(argv[2],"w");
