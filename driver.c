@@ -23,8 +23,8 @@ int main(int argc, char** argv){
     {
         Z = atof(argv[3]);
         halo = atoi(argv[4]);
-        if(halo != 0 || halo != 1){
-            printf("Insert valid halo identifier: 0 do not assign halo, 1 assign particles to the halo");
+        if(halo != 0 && halo != 1){
+            printf("Insert valid halo identifier: 0 do not assign halo, 1 assign particles to the halo\n");
             return;
         }
     }
