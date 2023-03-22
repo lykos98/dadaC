@@ -709,7 +709,7 @@ void Heuristic2(Clusters* cluster, Datapoint_info* particles)
             /*retrive the index of the particle in the cluster c*/
             size_t i = n -> data;
             size_t pp = NOBORDER;
-            /*loop over n neighbours*/
+            /*loop over n neighbors*/
             if(!particles[i].is_center)
             {
                 for(size_t k = 1; k < particles[i].kstar + 1; ++k)
@@ -718,7 +718,7 @@ void Heuristic2(Clusters* cluster, Datapoint_info* particles)
                     size_t j = particles[i].ngbh.data[k].array_idx;
                     pp = NOBORDER;
                     /*Loop over kn neigbhours to find if n is the nearest*/
-                    /*if cluster of the particle in nbhg is c then check is neighbourhood*/                                                
+                    /*if cluster of the particle in nbhg is c then check is neighborhood*/                                                
                     if(particles[j].cluster_idx != c)
                     {
                         pp = j;
