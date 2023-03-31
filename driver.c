@@ -2,13 +2,48 @@
 #include <stdio.h>
 #include <time.h>
 
-unsigned int data_dims = 5;
+unsigned int data_dims;
+
+void write_border_idx(const char * fname, Clusters * c)
+{
+    FILE * f = fopen(fname, "w");
+    for(int i = 0; i < c -> centers.count; ++i)
+    {
+        for(int j = 0; j < c -> centers.count; ++j)
+        {
+            int a = c -> border_idx[i][j] == NOBORDER ? -1 : c -> border_idx[i][j];
+            fprintf(f,"%d ",a);
+        }
+        fprintf(f,"\n");
+    }
+    fclose(f);
+}
+
+void write_point_info(const char * fname, Datapoint_info * particles, size_t n)
+{
+    FILE * f = fopen(fname,"w");
+    for(size_t i = 0; i < n; ++i)
+    {
+        fprintf(f,"%lu\t",particles[i].kstar);
+        fprintf(f,"%d\t", particles[i].cluster_idx);
+        fprintf(f,"%.12lf\t",particles[i].log_rho);
+        //fprintf(f,"%.12lf\t",particles[i].log_rho_c);
+        //fprintf(f,"%.12lf\t",particles[i].log_rho_err);
+        //fprintf(f,"%.12lf\t",particles[i].g);
+        fprintf(f,"%d\t",particles[i].is_center);
+        fprintf(f,"\n");
+    }
+    fclose(f);
+}
 
 int main(int argc, char** argv){
 
     int print_results = 0;
     double Z;
     int halo;
+    char aux_fname[80];
+
+    data_dims = 5;
 
     /***********************************************************************
      * TODO: Make a function to perform KNN search, fix verbose and timing *
@@ -58,8 +93,6 @@ int main(int argc, char** argv){
     initializeKDnodes(kd_node_array,data,n);
     initializePTRS(kd_ptrs, kd_node_array,n);
 
-    data_dims = 5;
-
     struct timespec start, finish;
     double elapsed;
 
@@ -105,32 +138,27 @@ int main(int argc, char** argv){
      ***************************************************************************************/
     Clusters_allocate(&c);  
 
+    // sprintf(aux_fname, "%s_int", argv[2]);
+    // write_point_info(aux_fname,particles,n);
+
     Heuristic2(&c, particles);
+
+    //sprintf(aux_fname, "%s_bord_int", argv[2]);
+    //write_border_idx(aux_fname,&c);
     
     Heuristic3(&c, particles, Z, halo);
 
-    clock_gettime(CLOCK_MONOTONIC, &start);
-    f = fopen(argv[2],"w");
-    for(size_t i = 0; i < n; ++i)
-    {
-        fprintf(f,"%lu\t",particles[i].kstar);
-        fprintf(f,"%d\t", particles[i].cluster_idx);
-        fprintf(f,"%.12lf\t",particles[i].log_rho);
-        //fprintf(f,"%.12lf\t",particles[i].log_rho_c);
-        //fprintf(f,"%.12lf\t",particles[i].log_rho_err);
-        //fprintf(f,"%.12lf\t",particles[i].g);
-        fprintf(f,"%d\t",particles[i].is_center);
-        fprintf(f,"\n");
-    }
-    fclose(f);
+    sprintf(aux_fname, "%s_bord", argv[2]);
+    write_border_idx(aux_fname,&c);
 
+    clock_gettime(CLOCK_MONOTONIC, &start);
+    write_point_info(argv[2],particles,n);
     clock_gettime(CLOCK_MONOTONIC, &finish);
 
     elapsed = (finish.tv_sec - start.tv_sec);
     elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
 
     printf("Writing results: %.3lf\n",elapsed);
-
     /*******************
      * Free all memory *
      *******************/

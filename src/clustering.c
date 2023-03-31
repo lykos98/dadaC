@@ -990,6 +990,8 @@ void Heuristic3(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE Z, int 
         Node * n = tmp_cluster_list[c].head;
         while(n){
             particles[n -> data].cluster_idx = c;
+            /*reset all centers to 0*/
+            particles[n -> data].is_center = 0;
             n = (n -> next);
         }
         /*Fix border matrices*/
@@ -1021,6 +1023,14 @@ void Heuristic3(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE Z, int 
 
     cluster -> clusters = tmp_cluster_list;
     cluster -> centers = tmp_centers;
+    /**
+     * Fix center assignment
+    */
+    for(int i = 0; i < cluster -> centers.count; ++i)
+    {
+        int idx = cluster -> centers.data[i];
+        particles[idx].is_center = 1;
+    }
     /*Halo*/
     switch (halo)
     {
