@@ -346,10 +346,10 @@ void computeRho(Datapoint_info* particles, const FLOAT_TYPE d, const size_t poin
 
 int cmpPP(const void* p1, const void *p2)
 {
-/***********************************************
- * Utility function to perform quicksort then, *
- * when clustering assignment is performed     *
- ***********************************************/
+    /***********************************************
+     * Utility function to perform quicksort then  *
+     * when clustering assignment is performed     *
+     ***********************************************/
     Datapoint_info* pp1 = *(Datapoint_info**)p1;
     Datapoint_info* pp2 = *(Datapoint_info**)p2;
     return 2*(pp1 -> g < pp2 -> g) - 1;
@@ -468,6 +468,10 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
     size_t * to_remove = (size_t*)malloc(allCenters.count*sizeof(size_t));
 
     #pragma omp parallel for num_threads(4)
+    /*****************************************************************************************************
+     * /!\ This part is VERY time consuming, complexity depends on the number of center previously found *
+     * /!\ It is actually faster when using only a few threads                                           *
+     *****************************************************************************************************/
     for(size_t p = 0; p < allCenters.count; ++p)
     {   
         /*
