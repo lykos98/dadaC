@@ -467,14 +467,11 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
 
     size_t * to_remove = (size_t*)malloc(allCenters.count*sizeof(size_t));
 
-    #pragma omp parallel
-    {
     /*****************************************************************************************************
      * /!\ This part is VERY time consuming, complexity depends on the number of center previously found *
      * /!\ It is actually faster when using only a few threads                                           *
      *****************************************************************************************************/
-    #pragma omp master
-    {
+    #pragma omp parallel for num_threads(4)
     for(size_t p = 0; p < allCenters.count; ++p)
     {   
         /*
@@ -502,30 +499,23 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
             FLOAT_TYPE di = euclidean_distance(data + (i*data_dims), data + (j*data_dims));
             if(dk > di && gj > gi)
             {
-                #pragma omp task
-                {
                 for(size_t k = 1; k < kMAXj + 1; ++k )
                 {
                     if(j_ngbh.data[k].array_idx == i_arrIdx )
                     {
                         if(gj > max_g)
                         {
-                            #pragma omp critical
-                            {
                                 mr = j;
                                 max_g = gj;
-                            }
                         }
                         break;
                     }
                 }
-                }
+                
             } 
             
         }
         to_remove[p] = mr;
-    }
-    }
     }
     
 
