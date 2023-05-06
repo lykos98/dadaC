@@ -80,7 +80,7 @@ FLOAT_TYPE mEst(FLOAT_TYPE * x, FLOAT_TYPE *y, size_t n);
 FLOAT_TYPE idEstimate(Datapoint_info* particles, size_t n);
 void computeRho(Datapoint_info* particles, const FLOAT_TYPE d, const size_t points);
 int cmpPP(const void* p1, const void *p2);
-void calculateCorrection(Datapoint_info* particles, size_t n, FLOAT_TYPE Z);
+void computeCorrection(Datapoint_info* particles, size_t n, FLOAT_TYPE Z);
 void KNN_search(Datapoint_info * particles, FLOAT_TYPE * data, kd_node* root, size_t n, size_t k);
 
 

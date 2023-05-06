@@ -124,7 +124,7 @@ int main(int argc, char** argv){
      * Density computation *
      ***********************/
     computeRho(particles,id,n);
-    calculateCorrection(particles,n,Z);
+    computeCorrection(particles,n,Z);
 
     /********************
      * First clustering *

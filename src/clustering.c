@@ -354,7 +354,7 @@ int cmpPP(const void* p1, const void *p2)
     Datapoint_info* pp2 = *(Datapoint_info**)p2;
     return 2*(pp1 -> g < pp2 -> g) - 1;
 }
-void calculateCorrection(Datapoint_info* particles, size_t n, FLOAT_TYPE Z)
+void computeCorrection(Datapoint_info* particles, size_t n, FLOAT_TYPE Z)
 {
     /*****************************************************************************
      * Utility function, find the minimum value of the density of the datapoints *
@@ -482,7 +482,7 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
         */
         size_t i = allCenters.data[p];
         int e = 0;
-        //FLOAT_TYPE gi = particles[i].g;
+        FLOAT_TYPE gi = particles[i].g;
         size_t i_arrIdx = particles[i].array_idx;
         size_t mr = SIZE_MAX;
         FLOAT_TYPE max_g = -99999.0;
@@ -497,7 +497,7 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
             //preliminarity check, if i is more distant than k* neighbor break
             FLOAT_TYPE dk = j_ngbh.data[kMAXj + 1].value;
             FLOAT_TYPE di = euclidean_distance(data + (i*data_dims), data + (j*data_dims));
-            if(dk > di)
+            if(dk > di && gj > gi)
             {
                 for(size_t k = 1; k < kMAXj + 1; ++k )
                 {
