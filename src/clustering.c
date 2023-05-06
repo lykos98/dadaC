@@ -510,8 +510,11 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
                     {
                         if(gj > max_g)
                         {
+                            #pragma omp critical
+                            {
                                 mr = j;
                                 max_g = gj;
+                            }
                         }
                         break;
                     }
