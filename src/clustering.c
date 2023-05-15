@@ -467,6 +467,7 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
 
     size_t * to_remove = (size_t*)malloc(allCenters.count*sizeof(size_t));
 
+    qsort(particles_ptrs, n, sizeof(Datapoint_info*), cmpPP);
     /*****************************************************************************************************
      * /!\ This part is VERY time consuming, complexity depends on the number of center previously found *
      * /!\ It is actually faster when using only a few threads                                           *
@@ -488,35 +489,87 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
         FLOAT_TYPE max_g = -99999.0;
         for(size_t j = 0; j < n; ++j)
         {
-            size_t kMAXj = particles[j].kstar;
-            Heap j_ngbh = particles[j].ngbh;
-            FLOAT_TYPE gj = particles[j].g;
+            //retrive the particle pointed by the pointer
+            Datapoint_info pp = *(particles_ptrs[j]);
+            size_t kMAXj = pp.kstar;
+            Heap j_ngbh = pp.ngbh;
+            FLOAT_TYPE gj = pp.g;
             //e = 0;
             //check if there is point in which the point i is a neighbor with grater g
                 //if gj > gi check the neighborhood
             //preliminarity check, if i is more distant than k* neighbor break
             FLOAT_TYPE dk = j_ngbh.data[kMAXj + 1].value;
             FLOAT_TYPE di = euclidean_distance(data + (i*data_dims), data + (j*data_dims));
-            if(dk > di && gj > gi)
+            int stop = 0;
+            if(dk > di )
             {
                 for(size_t k = 1; k < kMAXj + 1; ++k )
                 {
                     if(j_ngbh.data[k].array_idx == i_arrIdx )
                     {
-                        if(gj > max_g)
-                        {
-                                mr = j;
-                                max_g = gj;
-                        }
+                        mr = j;
+                        //found a neighborhood with higher g, break
+                        stop = 1;
+                        //max_g = gj;
                         break;
                     }
                 }
                 
             } 
+            if(stop || j == pp.array_idx)
+            {
+                break;
+            }
             
         }
         to_remove[p] = mr;
     }
+    
+    //for(size_t p = 0; p < allCenters.count; ++p)
+    //{   
+    //    /*
+
+    //    Check if the center spotted in the previous part belongs to the neighborhood
+    //    of a point of higher density. If this is true remove it from the actual centers
+
+    //    */
+    //    size_t i = allCenters.data[p];
+    //    int e = 0;
+    //    FLOAT_TYPE gi = particles[i].g;
+    //    size_t i_arrIdx = particles[i].array_idx;
+    //    size_t mr = SIZE_MAX;
+    //    FLOAT_TYPE max_g = -99999.0;
+    //    for(size_t j = 0; j < n; ++j)
+    //    {
+    //        size_t kMAXj = particles[j].kstar;
+    //        Heap j_ngbh = particles[j].ngbh;
+    //        FLOAT_TYPE gj = particles[j].g;
+    //        //e = 0;
+    //        //check if there is point in which the point i is a neighbor with grater g
+    //            //if gj > gi check the neighborhood
+    //        //preliminarity check, if i is more distant than k* neighbor break
+    //        FLOAT_TYPE dk = j_ngbh.data[kMAXj + 1].value;
+    //        FLOAT_TYPE di = euclidean_distance(data + (i*data_dims), data + (j*data_dims));
+    //        if(dk > di && gj > gi)
+    //        {
+    //            for(size_t k = 1; k < kMAXj + 1; ++k )
+    //            {
+    //                if(j_ngbh.data[k].array_idx == i_arrIdx )
+    //                {
+    //                    if(gj > max_g)
+    //                    {
+    //                            mr = j;
+    //                            max_g = gj;
+    //                    }
+    //                    break;
+    //                }
+    //            }
+    //            
+    //        } 
+    //        
+    //    }
+    //    to_remove[p] = mr;
+    //}
     
 
     for(size_t p = 0; p < allCenters.count; ++p)
@@ -578,7 +631,7 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
      *                                                                           *
      *******************************************************************************/
 
-    qsort(particles_ptrs, n, sizeof(Datapoint_info*), cmpPP);
+    //qsort(particles_ptrs, n, sizeof(Datapoint_info*), cmpPP);
 
     for(size_t i = 0; i < n; ++i)
     {   
