@@ -57,6 +57,7 @@ struct Clusters {
     FLOAT_TYPE* __border_density_data;
     FLOAT_TYPE* __border_err_data;
     size_t* __border_idx_data;
+    size_t n;
     
 };
 
@@ -85,5 +86,5 @@ void KNN_search(Datapoint_info * particles, FLOAT_TYPE * data, kd_node* root, si
 
 
 Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n);
-void Heuristic2(Clusters* cluster, Datapoint_info* particles, size_t n);
+void Heuristic2(Clusters* cluster, Datapoint_info* particles);
 void Heuristic3(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE Z, int halo);
