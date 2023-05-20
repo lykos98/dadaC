@@ -2,6 +2,7 @@ LIBRARIES=-lm -fopenmp
 OPTIM=-O4 -march=native
 DEBUG= 
 SRC="src"
+VERBOSE=-DVERBOSE
 
 DADAC=bin/clustering.o bin/kdtree.o 
 
