@@ -2,3 +2,4 @@ driver.o
 driver
 bin/*
 nope*
+run.sh

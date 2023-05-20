@@ -98,9 +98,9 @@ int medianOfNodes(kd_node** a, int left, int right, int split_var);
 
 kd_node* make_tree(kd_node** t, int start, int end, kd_node* parent, int level);
 
-inline FLOAT_TYPE hyper_plane_dist(FLOAT_TYPE* p1, FLOAT_TYPE* p2, int var);
+//inline FLOAT_TYPE hyper_plane_dist(FLOAT_TYPE* p1, FLOAT_TYPE* p2, int var);
 
-inline int hyper_plane_side(FLOAT_TYPE* p1, FLOAT_TYPE* p2, int var);
+//inline int hyper_plane_side(FLOAT_TYPE* p1, FLOAT_TYPE* p2, int var);
 
 void KNN_sub_tree_search(FLOAT_TYPE* point, kd_node* kdtree_root, Heap * H);
 

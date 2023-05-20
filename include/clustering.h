@@ -85,5 +85,5 @@ void KNN_search(Datapoint_info * particles, FLOAT_TYPE * data, kd_node* root, si
 
 
 Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n);
-void Heuristic2(Clusters* cluster, Datapoint_info* particles);
+void Heuristic2(Clusters* cluster, Datapoint_info* particles, size_t n);
 void Heuristic3(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE Z, int halo);

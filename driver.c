@@ -141,7 +141,7 @@ int main(int argc, char** argv){
     // sprintf(aux_fname, "%s_int", argv[2]);
     // write_point_info(aux_fname,particles,n);
 
-    Heuristic2(&c, particles);
+    Heuristic2(&c, particles, n);
 
     //sprintf(aux_fname, "%s_bord_int", argv[2]);
     //write_border_idx(aux_fname,&c);

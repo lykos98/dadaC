@@ -1,7 +1,8 @@
-#include "../include/read_fof_snapshot.h"
+//#include "../include/read_fof_snapshot.h"
 #include "../include/clustering.h"
 #include <time.h>
 extern unsigned int data_dims;
+size_t Npart;
 
 void LinkedList_Insert(LinkedList* L, Node* n)
 {
@@ -472,7 +473,8 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
      * /!\ This part is VERY time consuming, complexity depends on the number of center previously found *
      * /!\ It is actually faster when using only a few threads                                           *
      *****************************************************************************************************/
-    #pragma omp parallel for num_threads(4)
+    //#pragma omp parallel for num_threads(4)
+    #pragma omp parallel for 
     for(size_t p = 0; p < allCenters.count; ++p)
     {   
         /*
@@ -499,7 +501,7 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
                 //if gj > gi check the neighborhood
             //preliminarity check, if i is more distant than k* neighbor break
             FLOAT_TYPE dk = j_ngbh.data[kMAXj + 1].value;
-            FLOAT_TYPE di = euclidean_distance(data + (i*data_dims), data + (j*data_dims));
+            FLOAT_TYPE di = euclidean_distance(data + (i*data_dims), data + (pp.array_idx*data_dims));
             int stop = 0;
             if(dk > di )
             {
@@ -507,7 +509,7 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
                 {
                     if(j_ngbh.data[k].array_idx == i_arrIdx )
                     {
-                        mr = j;
+                        mr = pp.array_idx;
                         //found a neighborhood with higher g, break
                         stop = 1;
                         //max_g = gj;
@@ -516,7 +518,7 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
                 }
                 
             } 
-            if(stop || j == pp.array_idx)
+            if(stop == 1|| i == pp.array_idx)
             {
                 break;
             }
@@ -525,6 +527,7 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
         to_remove[p] = mr;
     }
     
+    //#pragma omp parallel for 
     //for(size_t p = 0; p < allCenters.count; ++p)
     //{   
     //    /*
@@ -745,7 +748,7 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
     return c_all;
 }
 
-void Heuristic2(Clusters* cluster, Datapoint_info* particles)
+void Heuristic2(Clusters* cluster, Datapoint_info* particles, size_t n)
 {
     struct timespec start_tot, finish_tot;
     double elapsed_tot;
@@ -759,15 +762,13 @@ void Heuristic2(Clusters* cluster, Datapoint_info* particles)
 
     size_t nclus = cluster->centers.count; 
     size_t max_k = particles[0].ngbh.N;
-    for(int c = 0; c < nclus; ++c)
+
+    for(size_t i = 0; i < n; ++i)
     {
-        Node* n = cluster -> clusters[c].head;
-        while(n)
-        {
             /*retrive the index of the particle in the cluster c*/
-            size_t i = n -> data;
             size_t pp = NOBORDER;
             /*loop over n neighbors*/
+            int c = particles[i].cluster_idx;
             if(!particles[i].is_center)
             {
                 for(size_t k = 1; k < particles[i].kstar + 1; ++k)
@@ -817,11 +818,72 @@ void Heuristic2(Clusters* cluster, Datapoint_info* particles)
 
             /*step into the linked list*/
             //printf("%p %d %d\n", n -> next, particles[n -> data].cluster_idx, c);
-            n = n -> next;
-        }
-
-
     }
+
+
+    //for(int c = 0; c < nclus; ++c)
+    //{
+    //    Node* n = cluster -> clusters[c].head;
+    //    while(n)
+    //    {
+    //        /*retrive the index of the particle in the cluster c*/
+    //        size_t i = n -> data;
+    //        size_t pp = NOBORDER;
+    //        /*loop over n neighbors*/
+    //        if(!particles[i].is_center)
+    //        {
+    //            for(size_t k = 1; k < particles[i].kstar + 1; ++k)
+    //            {
+    //                /*index of the kth ngbh of n*/
+    //                size_t j = particles[i].ngbh.data[k].array_idx;
+    //                pp = NOBORDER;
+    //                /*Loop over kn neigbhours to find if n is the nearest*/
+    //                /*if cluster of the particle in nbhg is c then check is neighborhood*/                                                
+    //                if(particles[j].cluster_idx != c)
+    //                {
+    //                    pp = j;
+    //                    break;
+    //                }
+
+    //            }
+    //        }
+
+    //        if(pp != NOBORDER)
+    //        {
+    //            for(size_t k = 1; k < max_k; ++k)
+    //            {
+    //                size_t pp_ngbh_idx = particles[pp].ngbh.data[k].array_idx;
+    //                if(pp_ngbh_idx == i)
+    //                {
+    //                    break;
+    //                }
+    //                if(particles[pp_ngbh_idx].cluster_idx == c)
+    //                {
+    //                    pp = NOBORDER;
+    //                    break;
+    //                }
+    //            }
+    //        }
+    //                        /*if it is the maximum one add it to the cluster*/
+    //        if(pp != NOBORDER)
+    //        {
+    //            int ppc = particles[pp].cluster_idx;
+    //            if(particles[i].g > border_density[c][ppc])
+    //            {
+    //                border_density[c][ppc] = particles[i].g;
+    //                border_density[ppc][c] = particles[i].g;
+    //                border_idx[c][ppc] = i;
+    //                border_idx[ppc][c] = i;
+    //            }
+    //        }
+
+    //        /*step into the linked list*/
+    //        //printf("%p %d %d\n", n -> next, particles[n -> data].cluster_idx, c);
+    //        n = n -> next;
+    //    }
+
+
+    //}
     for(size_t i = 0; i < nclus - 1; ++i)
     {
         for(size_t j = i + 1; j < nclus; ++j)
@@ -907,23 +969,36 @@ void Heuristic3(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE Z, int 
         {
             for(size_t j = i + 1; j < nclus; ++j)   
             {
-                FLOAT_TYPE a1 = particles[cluster->centers.data[i]].log_rho_c - border_density[i][j];
-                FLOAT_TYPE a2 = particles[cluster->centers.data[j]].log_rho_c - border_density[i][j];
+		switch(border_idx[i][j] != NOBORDER)
+		{
+			
+			case 1:		
+			{
+				FLOAT_TYPE a1 = particles[cluster->centers.data[i]].log_rho_c - border_density[i][j];
+				FLOAT_TYPE a2 = particles[cluster->centers.data[j]].log_rho_c - border_density[i][j];
 
-                FLOAT_TYPE e1 = Z*(particles[cluster->centers.data[i]].log_rho_err + border_err[i][j]);
-                FLOAT_TYPE e2 = Z*(particles[cluster->centers.data[j]].log_rho_err + border_err[i][j]);
+				FLOAT_TYPE e1 = Z*(particles[cluster->centers.data[i]].log_rho_err + border_err[i][j]);
+				FLOAT_TYPE e2 = Z*(particles[cluster->centers.data[j]].log_rho_err + border_err[i][j]);
 
-                //printf("%lf %lf %lf %lf\n", a1,a2,e1,e2);
-                //printf("%lf %lf\n",particles[cluster->centers.data[i]].log_rho_c, border_density[i][j]);
+				//printf("%lf %lf %lf %lf\n", a1,a2,e1,e2);
+				//printf("%lf %lf\n",particles[cluster->centers.data[i]].log_rho_c, border_density[i][j]);
 
-                
-                if( a1 < e1 || a2 < e2)
-                {
-                    //printf("%lu %lu\n", cluster -> centers.data[i], cluster -> centers.data[j]);
-                    DynamicArray_pushBack(&ipos, i);
-                    DynamicArray_pushBack(&jpos, j);
-                    check = 1;
-                }
+				
+				if( a1 < e1 || a2 < e2)
+				{
+				    //printf("%lu %lu\n", cluster -> centers.data[i], cluster -> centers.data[j]);
+				    DynamicArray_pushBack(&ipos, i);
+				    DynamicArray_pushBack(&jpos, j);
+				    check = 1;
+				}
+				break;
+			}
+			default:
+			{
+				break;
+			}
+			
+		}
             }
         }
 
@@ -967,6 +1042,9 @@ void Heuristic3(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE Z, int 
             border_err[imod][jmod] = 0;
             border_err[jmod][imod] = 0;
 
+            border_idx[imod][jmod] = NOBORDER;
+            border_idx[jmod][imod] = NOBORDER;
+
             mergeClusters(cluster, imod, jmod);
 
             /*Recompute borders*/
@@ -990,6 +1068,8 @@ void Heuristic3(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE Z, int 
                     border_density[i][jmod] = -1.0;
                     border_err[jmod][i] = 0;
                     border_err[i][jmod] = 0;
+                    border_idx[jmod][i] = NOBORDER;
+                    border_idx[i][jmod] = NOBORDER;
 
                 }
             }
