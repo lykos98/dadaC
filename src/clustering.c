@@ -486,10 +486,10 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
             int stop = 0;
             if(dk > di)
             {
-                        mr = pp.array_idx;
-                        //found a neighborhood with higher g, break
-                        stop = 1;
-                        //max_g = gj;
+                mr = pp.array_idx;
+                //found a neighborhood with higher g, break
+                stop = 1;
+                //max_g = gj;
             } 
             if(stop == 1|| i == pp.array_idx)
             {
@@ -929,6 +929,44 @@ void Heuristic3(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE Z, int 
     //Initialize table
     for(size_t i = 0; i < nclus; ++i){ merging_table[i] = i;}
 
+    //Find borders to be candidates for merging
+    //for(size_t i = 0; i < nclus - 1; ++i)   
+    //{
+    //    for(size_t j = i + 1; j < nclus; ++j)   
+    //    {
+    //        switch(border_idx[i][j] != NOBORDER)
+    //        {
+    //            
+    //            case 1:		
+    //            {
+    //                FLOAT_TYPE a1 = particles[cluster->centers.data[i]].log_rho_c - border_density[i][j];
+    //                FLOAT_TYPE a2 = particles[cluster->centers.data[j]].log_rho_c - border_density[i][j];
+
+    //                FLOAT_TYPE e1 = Z*(particles[cluster->centers.data[i]].log_rho_err + border_err[i][j]);
+    //                FLOAT_TYPE e2 = Z*(particles[cluster->centers.data[j]].log_rho_err + border_err[i][j]);
+
+    //                //printf("%lf %lf %lf %lf\n", a1,a2,e1,e2);
+    //                //printf("%lf %lf\n",particles[cluster->centers.data[i]].log_rho_c, border_density[i][j]);
+
+    //                
+    //                if( a1 < e1 || a2 < e2)
+    //                {
+    //                    //printf("%lu %lu\n", cluster -> centers.data[i], cluster -> centers.data[j]);
+    //                    DynamicArray_pushBack(&ipos, i);
+    //                    DynamicArray_pushBack(&jpos, j);
+    //                    check = 1;
+    //                }
+    //                break;
+    //            }
+    //            default:
+    //            {
+    //                break;
+    //            }
+    //            
+    //        }
+    //    }
+    //}
+
     while(check)
     {
         check = 0;
@@ -939,36 +977,36 @@ void Heuristic3(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE Z, int 
         {
             for(size_t j = i + 1; j < nclus; ++j)   
             {
-		switch(border_idx[i][j] != NOBORDER)
-		{
-			
-			case 1:		
-			{
-				FLOAT_TYPE a1 = particles[cluster->centers.data[i]].log_rho_c - border_density[i][j];
-				FLOAT_TYPE a2 = particles[cluster->centers.data[j]].log_rho_c - border_density[i][j];
+                switch(border_idx[i][j] != NOBORDER)
+                {
+                    
+                    case 1:		
+                    {
+                        FLOAT_TYPE a1 = particles[cluster->centers.data[i]].log_rho_c - border_density[i][j];
+                        FLOAT_TYPE a2 = particles[cluster->centers.data[j]].log_rho_c - border_density[i][j];
 
-				FLOAT_TYPE e1 = Z*(particles[cluster->centers.data[i]].log_rho_err + border_err[i][j]);
-				FLOAT_TYPE e2 = Z*(particles[cluster->centers.data[j]].log_rho_err + border_err[i][j]);
+                        FLOAT_TYPE e1 = Z*(particles[cluster->centers.data[i]].log_rho_err + border_err[i][j]);
+                        FLOAT_TYPE e2 = Z*(particles[cluster->centers.data[j]].log_rho_err + border_err[i][j]);
 
-				//printf("%lf %lf %lf %lf\n", a1,a2,e1,e2);
-				//printf("%lf %lf\n",particles[cluster->centers.data[i]].log_rho_c, border_density[i][j]);
+                        //printf("%lf %lf %lf %lf\n", a1,a2,e1,e2);
+                        //printf("%lf %lf\n",particles[cluster->centers.data[i]].log_rho_c, border_density[i][j]);
 
-				
-				if( a1 < e1 || a2 < e2)
-				{
-				    //printf("%lu %lu\n", cluster -> centers.data[i], cluster -> centers.data[j]);
-				    DynamicArray_pushBack(&ipos, i);
-				    DynamicArray_pushBack(&jpos, j);
-				    check = 1;
-				}
-				break;
-			}
-			default:
-			{
-				break;
-			}
-			
-		}
+                        
+                        if( a1 < e1 || a2 < e2)
+                        {
+                            //printf("%lu %lu\n", cluster -> centers.data[i], cluster -> centers.data[j]);
+                            DynamicArray_pushBack(&ipos, i);
+                            DynamicArray_pushBack(&jpos, j);
+                            check = 1;
+                        }
+                        break;
+                    }
+                    default:
+                    {
+                        break;
+                    }
+                    
+                }
             }
         }
 
