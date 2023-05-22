@@ -49,7 +49,6 @@ struct Datapoint_info {
 
 struct Clusters {
     struct lu_dynamicArray centers;
-    struct Node* _LLnodes;
     FLOAT_TYPE** border_density;
     FLOAT_TYPE** border_err;
     size_t** border_idx;
