@@ -4,4 +4,5 @@ bin/*
 nope*
 run.sh
 example.sh
+bb.txt
 src/clustering\ copy.c
