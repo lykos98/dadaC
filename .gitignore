@@ -3,3 +3,5 @@ driver
 bin/*
 nope*
 run.sh
+example.sh
+src/clustering\ copy.c

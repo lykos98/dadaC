@@ -3,6 +3,7 @@
 #include <time.h>
 extern unsigned int data_dims;
 size_t Npart;
+const border_t border_null = {.density = -1.0, .error = 0, .idx = NOBORDER};
 
 void LinkedList_Insert(LinkedList* L, Node* n)
 {
@@ -29,23 +30,15 @@ void Clusters_allocate(Clusters * c)
     }
 
     size_t nclus = c -> centers.count;
-
-    c -> __border_idx_data      = (size_t*)malloc(nclus*nclus*sizeof(size_t));
-    c -> border_idx             = (size_t**)malloc(nclus*sizeof(size_t*));
-    c -> __border_density_data  = (FLOAT_TYPE*)malloc(nclus*nclus*sizeof(FLOAT_TYPE));
-    c -> border_density         = (FLOAT_TYPE**)malloc(nclus*sizeof(FLOAT_TYPE*));
-    c -> __border_err_data      = (FLOAT_TYPE*)malloc(nclus*nclus*sizeof(FLOAT_TYPE));
-    c -> border_err             = (FLOAT_TYPE**)malloc(nclus*sizeof(FLOAT_TYPE*));
+    
+    c -> __borders_data         = (border_t*)malloc(nclus*nclus*sizeof(border_t)); 
+    c -> borders                = (border_t**)malloc(nclus*sizeof(border_t*));
     for(size_t i = 0; i < nclus; ++i)
     {
-        c -> border_idx[i]      = c -> __border_idx_data + i*nclus;
-        c -> border_density[i]  = c -> __border_density_data + i*nclus;
-        c -> border_err[i]      = c -> __border_err_data + i*nclus;
+        c -> borders[i]         = c -> __borders_data + i*nclus;
         for(size_t j = 0; j < nclus; ++j)
         {
-            c -> border_err[i][j]       = 0.0;
-            c -> border_idx[i][j]       = NOBORDER;
-            c -> border_density[i][j]   = 0.0;
+            c -> borders[i][j] = border_null;
         }
     }
 }
@@ -53,19 +46,14 @@ void Clusters_allocate(Clusters * c)
 void Clusters_Reset(Clusters * c)
 {
     free(c -> centers.data);
-    free(c -> border_err);
-    free(c -> border_density);
-    free(c -> border_idx);
-    free(c -> __border_err_data);
-    free(c -> __border_density_data);
-    free(c -> __border_idx_data);
+    free(c -> __borders_data);
+    free(c -> borders);
 }
 
 void Clusters_free(Clusters * c)
 {
 
     Clusters_Reset(c);
-    free(c -> _LLnodes);
 }
 
 /*****************
@@ -703,6 +691,9 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
 
 void Heuristic2(Clusters* cluster, Datapoint_info* particles)
 {
+
+    #define borders cluster->borders
+
     struct timespec start_tot, finish_tot;
     double elapsed_tot;
     size_t n = cluster -> n;
@@ -710,9 +701,6 @@ void Heuristic2(Clusters* cluster, Datapoint_info* particles)
     printf("H2: Finding border points\n");
     clock_gettime(CLOCK_MONOTONIC, &start_tot);
 
-    size_t**     border_idx     = cluster->border_idx;
-    FLOAT_TYPE** border_density = cluster->border_density;
-    FLOAT_TYPE** border_err     = cluster->border_err;
 
     size_t nclus = cluster->centers.count; 
     size_t max_k = particles[0].ngbh.N;
@@ -761,12 +749,12 @@ void Heuristic2(Clusters* cluster, Datapoint_info* particles)
             if(pp != NOBORDER)
             {
                 int ppc = particles[pp].cluster_idx;
-                if(particles[i].g > border_density[c][ppc])
+                if(particles[i].g > borders[c][ppc].density)
                 {
-                    border_density[c][ppc] = particles[i].g;
-                    border_density[ppc][c] = particles[i].g;
-                    border_idx[c][ppc] = i;
-                    border_idx[ppc][c] = i;
+                    borders[c][ppc].density = particles[i].g;
+                    borders[ppc][c].density = particles[i].g;
+                    borders[c][ppc].idx = i;
+                    borders[ppc][c].idx = i;
                 }
             }
 
@@ -842,23 +830,23 @@ void Heuristic2(Clusters* cluster, Datapoint_info* particles)
     {
         for(size_t j = i + 1; j < nclus; ++j)
         {
-            size_t p = border_idx[i][j];
+            size_t p = borders[i][j].idx;
             if(p != NOBORDER)
             {   
 
-                border_density[i][j] = particles[p].log_rho_c;
-                border_density[j][i] = particles[p].log_rho_c;
+                borders[i][j].density = particles[p].log_rho_c;
+                borders[j][i].density = particles[p].log_rho_c;
 
-                border_err[i][j] = particles[p].log_rho_err;
-                border_err[j][i] = particles[p].log_rho_err;
+                borders[i][j].error = particles[p].log_rho_err;
+                borders[j][i].error = particles[p].log_rho_err;
             }
         }
     }
 
     for(size_t i = 0; i < nclus; ++i)
     {
-        border_density[i][i] = -1.0;
-        border_err[i][i] = 0.0;
+        borders[i][i].density = -1.0;
+        borders[i][i].error = 0.0;
     }
 
     clock_gettime(CLOCK_MONOTONIC, &finish_tot);
@@ -867,223 +855,325 @@ void Heuristic2(Clusters* cluster, Datapoint_info* particles)
     printf("\tTotal time: %.3lfs\n\n", elapsed_tot);
 
     return;
+    #undef borders
    }
 
 
-void mergeClusters(Clusters * cc, size_t i, size_t j)
-{
-    LinkedList * li = (cc->clusters) + i;
-    LinkedList * lj = (cc->clusters) + j;
-    Node * n = li -> head;
-    /*find the tail node of li*/
-    while(n -> next)
-    {
-        n = n -> next;
-    }
-    
-    n -> next = lj -> head;
-    /*Reset list lj*/
-    lj -> head = NULL;
-    lj -> count = 0;
-}
+//void mergeClusters(Clusters * cc, size_t i, size_t j)
+//{
+//    LinkedList * li = (cc->clusters) + i;
+//    LinkedList * lj = (cc->clusters) + j;
+//    Node * n = li -> head;
+//    /*find the tail node of li*/
+//    while(n -> next)
+//    {
+//        n = n -> next;
+//    }
+//    
+//    n -> next = lj -> head;
+//    /*Reset list lj*/
+//    lj -> head = NULL;
+//    lj -> count = 0;
+//}
 
-void Merge_A_into_B(size_t* merging_table, size_t cluster_A, size_t cluster_B, size_t n)
+void Merge_A_into_B(size_t* who_amI, size_t cluster_A, size_t cluster_B, size_t n)
 {
     size_t tmp;
     for(size_t i = 0; i < n; ++i)
     {   
         //substitute occurencies of b with a 
-        tmp = merging_table[i] == cluster_A ? cluster_B : merging_table[i];
-        merging_table[i] = tmp;
+        tmp = who_amI[i] == cluster_A ? cluster_B : who_amI[i];
+        who_amI[i] = tmp;
     }
     return;
 }
 
+
+int compare_merging_density( const void *A, const void *B)
+{
+  FLOAT_TYPE DensA = ((merge_t*)A)->density;
+  FLOAT_TYPE DensB = ((merge_t*)B)->density;
+
+  return - ( DensA > DensB) + (DensA < DensB);
+}
+
+
+inline int is_a_merging( FLOAT_TYPE dens1, FLOAT_TYPE dens1_err,
+			 FLOAT_TYPE dens2, FLOAT_TYPE dens2_err,
+			 FLOAT_TYPE dens_border, FLOAT_TYPE dens_border_err,
+			 FLOAT_TYPE Z)
+/*
+ * dens1 : the density of the particle that is the center of the first cluster
+ * dens2 : the density of the particle that is the center of the second cluster
+ * dens_border : the density of the border btw the cluster 1 and the cluster 2
+ * *_err : the errors on the densities
+ * Z     : the desired accuracy
+ */
+{
+  /* in the original code it was:
+   *
+  FLOAT_TYPE a1 = particles[cluster->centers.data[i]].log_rho_c - border_density[i][j];
+  FLOAT_TYPE a2 = particles[cluster->centers.data[j]].log_rho_c - border_density[i][j];
+  
+  FLOAT_TYPE e1 = Z*(particles[cluster->centers.data[i]].log_rho_err + border_err[i][j]);
+  FLOAT_TYPE e2 = Z*(particles[cluster->centers.data[j]].log_rho_err + border_err[i][j]);
+  */
+
+  FLOAT_TYPE a1 = dens1 - dens_border;
+  FLOAT_TYPE a2 = dens2 - dens_border;
+
+  FLOAT_TYPE e1 = Z*(dens1_err + dens_border_err);
+  FLOAT_TYPE e2 = Z*(dens2_err + dens_border_err);
+
+  return (a1 < e1 || a2 < e2);
+}
+
+
+inline int merging_roles( FLOAT_TYPE dens1, FLOAT_TYPE dens1_err,
+			  FLOAT_TYPE dens2, FLOAT_TYPE dens2_err,
+			  FLOAT_TYPE dens_border, FLOAT_TYPE dens_border_err )
+{
+      
+  FLOAT_TYPE c1 = (dens1 - dens_border) / (dens1_err + dens_border_err); 
+  FLOAT_TYPE c2 = (dens2 - dens_border) / (dens2_err + dens_border_err);
+  //printf("%.10lf %.10lf %d\n",c1,c2, c1 > c2);
+  
+  return ( c1 < c2 );     // if 1, this signal to swap 1 and 2
+}
+
+void fix_borders_A_into_B(size_t A, size_t B, border_t** borders, size_t n)
+{
+   for(size_t i = 0; i < n; ++i) 
+   {
+        if(borders[A][i].idx != NOBORDER )
+        {
+            if(borders[B][i].idx != NOBORDER)
+            {
+                int mb = (borders[A][i].density > borders[B][i].density); 
+
+                borders[B][i] = mb ? borders[A][i] : borders[B][i];
+                borders[i][B] = borders[B][i];
+            }
+            else
+            {
+                borders[B][i] = borders[A][i];
+                borders[i][B] = borders[B][i];
+            }
+        } 
+        borders[A][i] = border_null;
+        borders[i][A] = border_null;
+   }
+}
+
 void Heuristic3(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE Z, int halo)
 {
-    struct timespec start_tot, finish_tot;
-    double elapsed_tot;
+  #define borders cluster->borders
 
-    printf("H3: Merging clusters\n");
-    clock_gettime(CLOCK_MONOTONIC, &start_tot);
+  struct timespec start_tot, finish_tot;
+  double elapsed_tot;
 
-    size_t**     border_idx     = cluster->border_idx;
-    FLOAT_TYPE** border_density = cluster->border_density;
-    FLOAT_TYPE** border_err     = cluster->border_err;
+  printf("H3: Merging clusters\n");
+  clock_gettime(CLOCK_MONOTONIC, &start_tot);
+  
 
-    int check = 1;
-    size_t nclus = cluster -> centers.count;  
-    int * surviving_clusters = (int*)malloc(nclus*sizeof(int));
-    for(size_t i = 0; i < nclus; ++i)
-    {
-        surviving_clusters[i] = 1;
+  size_t nclus              = cluster -> centers.count;  
+  size_t *  surviving_clusters = (size_t*)malloc(nclus*sizeof(size_t));
+  for(size_t i = 0; i < nclus; ++i)
+    { 
+        surviving_clusters[i] = i; 
     }
 
-    lu_dynamicArray jpos, ipos;
-    DynamicArray_Init(&ipos);
-    DynamicArray_Init(&jpos);
-    DynamicArray_Reserve(&ipos,nclus);
-    DynamicArray_Reserve(&jpos,nclus);
+  size_t   merge_count        = 0;
+  size_t   merging_table_size = 1000;
+  merge_t *merging_table      = (merge_t*)malloc(sizeof(merge_t)*merging_table_size);
+  
+  /*Find clusters to be merged*/
+  for(size_t i = 0; i < nclus - 1; ++i)   
+    for(size_t j = i + 1; j < nclus; ++j)   
+    {
 
-    size_t* merging_table = (size_t*)malloc(nclus*sizeof(size_t));
-    //Initialize table
-    for(size_t i = 0; i < nclus; ++i){ merging_table[i] = i;}
+	switch(borders[i][j].idx != NOBORDER)
+	{
+                    
+	  case 1:		
+	    {
+	      FLOAT_TYPE dens1           = particles[cluster->centers.data[i]].log_rho_c;
+	      FLOAT_TYPE dens1_err       = particles[cluster->centers.data[i]].log_rho_err;
+	      FLOAT_TYPE dens2           = particles[cluster->centers.data[j]].log_rho_c;
+	      FLOAT_TYPE dens2_err       = particles[cluster->centers.data[j]].log_rho_err;
+	      FLOAT_TYPE dens_border     = borders[i][j].density;
+          FLOAT_TYPE dens_border_err = borders[i][j].error;
+	      
+	    if ( is_a_merging( dens1, dens1_err, dens2, dens2_err, dens_border, dens_border_err, Z ) )
+		{
+		  
+		  if ( merge_count == merging_table_size ) {
+		    merging_table_size *= 1.1;
+		    merging_table = (merge_t*)realloc( merging_table, sizeof(merge_t) * merging_table_size ); }
 
-    //Find borders to be candidates for merging
-    //for(size_t i = 0; i < nclus - 1; ++i)   
-    //{
-    //    for(size_t j = i + 1; j < nclus; ++j)   
+		  //int swap = merging_roles( dens1, dens1_err, dens2, dens2_err, dens_border, dens_border_err);
+		  size_t src = j;
+		  size_t trg = i;
+		  //switch ( swap )
+		  //  {
+		  //  case 0: { src = j; trg = i;} break;
+		  //  case 1: { src = i; trg = j;} break;
+		  //  }
+
+		  merging_table[merge_count].source = src;
+		  merging_table[merge_count].target = trg;
+		  merging_table[merge_count].density = borders[src][trg].density;
+          ++merge_count;
+		}
+	      break;
+	    }
+        default:
+	    {
+	      break;
+	    }
+            
+	  }
+      }
+
+  qsort( (void*)merging_table, merge_count, sizeof(merge_t), compare_merging_density);
+  
+    printf("\tFound %lu possible merges\n", merge_count);
+  
+    for( size_t m = 0; m < merge_count; m++ )
+    {
+ //    #define BORDER_NULL( S, T ) { border_density[(S)][(T)] = -1.0; \
+ //     border_density[(T)][(S)] = -1.0;				\
+ //     border_err[(S)][(T)]     = 0;				\
+ //     border_err[(T)][(S)]     = 0;				\
+ //     border_idx[(S)][(T)]     = NOBORDER;			\
+ //     border_idx[(T)][(S)]     = NOBORDER; }
+
+      
+        #define src surviving_clusters[merging_table[m].source]
+        #define trg surviving_clusters[merging_table[m].target]
+        //printf("Found: %lu, %lu which now is %lu, %lu\n",merging_table[m].source, merging_table[m].target, src,trg);
+
+        int re_check = ( (src != merging_table[m].source) || (trg != merging_table[m].target) );
+		size_t new_src = (src < trg) ? src : trg;
+		size_t new_trg = (src < trg) ? trg : src;
+
+                //pick who am I
+
+                FLOAT_TYPE dens1           = particles[cluster->centers.data[new_src]].log_rho_c;
+                FLOAT_TYPE dens1_err       = particles[cluster->centers.data[new_src]].log_rho_err;
+                
+                FLOAT_TYPE dens2           = particles[cluster->centers.data[new_trg]].log_rho_c;
+                FLOAT_TYPE dens2_err       = particles[cluster->centers.data[new_trg]].log_rho_err;
+
+                FLOAT_TYPE dens_border     = borders[new_src][new_trg].density;
+                FLOAT_TYPE dens_border_err = borders[new_src][new_trg].error;
+
+                int i_have_to_merge = is_a_merging(dens1,dens1_err,dens2,dens2_err,dens_border,dens_border_err,Z);            
+                switch (i_have_to_merge && src != trg)
+                {
+                case 1:
+                    {
+                        int side = merging_roles(dens1,dens1_err,dens2,dens2_err,dens_border,dens_border_err);
+                        if(!side)
+                        {
+                            size_t tmp;
+                            tmp = new_src;
+                            new_src = new_trg;
+                            new_trg = tmp;
+                        }
+
+                        borders[new_src][new_trg] = border_null;
+                        borders[new_trg][new_src] = border_null;
+                        //printf("Merging %lu into %lu\n",new_src,new_trg);
+                        fix_borders_A_into_B(new_src,new_trg,borders,nclus);
+                        Merge_A_into_B ( surviving_clusters, new_src, new_trg, nclus );	  
+                    }
+                    break;
+                
+                default:
+                    break;
+                }
+        
+        #undef src
+        #undef trg
+    }
+
+
+  
+        /*Merge clusters*/
+    //    if(check)
     //    {
-    //        switch(border_idx[i][j] != NOBORDER)
+    //        //printf("Hey!\n");
+    //        size_t barrier_index = 0;
+    //        FLOAT_TYPE max_border = 0;
+    //        for(size_t k = 0; k < ipos.count; ++k)
     //        {
-    //            
-    //            case 1:		
+    //            if(border_density[ipos.data[k]][jpos.data[k]] > max_border)
     //            {
-    //                FLOAT_TYPE a1 = particles[cluster->centers.data[i]].log_rho_c - border_density[i][j];
-    //                FLOAT_TYPE a2 = particles[cluster->centers.data[j]].log_rho_c - border_density[i][j];
+    //                max_border = border_density[ipos.data[k]][jpos.data[k]];
+    //                barrier_index = k;
+    //            }
+    //        }
 
-    //                FLOAT_TYPE e1 = Z*(particles[cluster->centers.data[i]].log_rho_err + border_err[i][j]);
-    //                FLOAT_TYPE e2 = Z*(particles[cluster->centers.data[j]].log_rho_err + border_err[i][j]);
+    //        size_t imod = ipos.data[barrier_index];
+    //        size_t jmod = jpos.data[barrier_index];
+    //        //printf("%lu %lu %lu\n",imod,jmod,barrier_index);
+    //        size_t ci = cluster->centers.data[imod];
+    //        size_t cj = cluster->centers.data[jmod];
+    //        
 
-    //                //printf("%lf %lf %lf %lf\n", a1,a2,e1,e2);
-    //                //printf("%lf %lf\n",particles[cluster->centers.data[i]].log_rho_c, border_density[i][j]);
+    //        FLOAT_TYPE c1 = (particles[ci].log_rho_c - border_density[imod][jmod]) / (particles[ci].log_rho_err + border_err[imod][jmod]); 
+    //        FLOAT_TYPE c2 = (particles[cj].log_rho_c - border_density[imod][jmod]) / (particles[cj].log_rho_err + border_err[imod][jmod]); 
 
-    //                
-    //                if( a1 < e1 || a2 < e2)
+    //        if(c1 < c2) 
+    //        {
+    //            size_t tmp = jmod;
+    //            jmod = imod;
+    //            imod = tmp;
+    //        }
+    //        
+    //        surviving_clusters[jmod] = 0;
+
+    //        border_density[imod][jmod] = -1.0;
+    //        border_density[jmod][imod] = -1.0;
+
+    //        border_err[imod][jmod] = 0;
+    //        border_err[jmod][imod] = 0;
+
+    //        border_idx[imod][jmod] = NOBORDER;
+    //        border_idx[jmod][imod] = NOBORDER;
+    //        
+    //        Merge_A_into_B(who_amI, jmod, imod, nclus);
+    //        //mergeClusters(cluster, imod, jmod);
+
+    //        /*Recompute borders*/
+    //        for(size_t i = 0; i < nclus; ++i)
+    //        {
+    //            if(i != imod && i != jmod)
+    //            {
+    //                if(border_density[imod][i] < border_density[jmod][i])
     //                {
-    //                    //printf("%lu %lu\n", cluster -> centers.data[i], cluster -> centers.data[j]);
-    //                    DynamicArray_pushBack(&ipos, i);
-    //                    DynamicArray_pushBack(&jpos, j);
-    //                    check = 1;
+    //                    border_idx[imod][i] = border_idx[jmod][i];
+    //                    border_idx[i][imod] = border_idx[i][jmod];
+
+    //                    border_density[imod][i] = border_density[jmod][i];
+    //                    border_density[i][imod] = border_density[i][jmod];
+
+    //                    border_err[imod][i] = border_err[jmod][i];
+    //                    border_err[i][imod] = border_err[i][jmod];
     //                }
-    //                break;
+
+    //                border_density[jmod][i] = -1.0;
+    //                border_density[i][jmod] = -1.0;
+    //                border_err[jmod][i] = 0;
+    //                border_err[i][jmod] = 0;
+    //                border_idx[jmod][i] = NOBORDER;
+    //                border_idx[i][jmod] = NOBORDER;
+
     //            }
-    //            default:
-    //            {
-    //                break;
-    //            }
-    //            
     //        }
     //    }
     //}
-
-    while(check)
-    {
-        check = 0;
-        DynamicArray_Reset(&ipos);
-        DynamicArray_Reset(&jpos);
-        /*Find clusters to be merged*/
-        for(size_t i = 0; i < nclus - 1; ++i)   
-        {
-            for(size_t j = i + 1; j < nclus; ++j)   
-            {
-                switch(border_idx[i][j] != NOBORDER)
-                {
-                    
-                    case 1:		
-                    {
-                        FLOAT_TYPE a1 = particles[cluster->centers.data[i]].log_rho_c - border_density[i][j];
-                        FLOAT_TYPE a2 = particles[cluster->centers.data[j]].log_rho_c - border_density[i][j];
-
-                        FLOAT_TYPE e1 = Z*(particles[cluster->centers.data[i]].log_rho_err + border_err[i][j]);
-                        FLOAT_TYPE e2 = Z*(particles[cluster->centers.data[j]].log_rho_err + border_err[i][j]);
-
-                        //printf("%lf %lf %lf %lf\n", a1,a2,e1,e2);
-                        //printf("%lf %lf\n",particles[cluster->centers.data[i]].log_rho_c, border_density[i][j]);
-
-                        
-                        if( a1 < e1 || a2 < e2)
-                        {
-                            //printf("%lu %lu\n", cluster -> centers.data[i], cluster -> centers.data[j]);
-                            DynamicArray_pushBack(&ipos, i);
-                            DynamicArray_pushBack(&jpos, j);
-                            check = 1;
-                        }
-                        break;
-                    }
-                    default:
-                    {
-                        break;
-                    }
-                    
-                }
-            }
-        }
-
-        /*Merge clusters*/
-        if(check)
-        {
-            //printf("Hey!\n");
-            size_t barrier_index = 0;
-            FLOAT_TYPE max_border = 0;
-            for(size_t k = 0; k < ipos.count; ++k)
-            {
-                if(border_density[ipos.data[k]][jpos.data[k]] > max_border)
-                {
-                    max_border = border_density[ipos.data[k]][jpos.data[k]];
-                    barrier_index = k;
-                }
-            }
-
-            size_t imod = ipos.data[barrier_index];
-            size_t jmod = jpos.data[barrier_index];
-            //printf("%lu %lu %lu\n",imod,jmod,barrier_index);
-            size_t ci = cluster->centers.data[imod];
-            size_t cj = cluster->centers.data[jmod];
-            
-
-            FLOAT_TYPE c1 = (particles[ci].log_rho_c - border_density[imod][jmod]) / (particles[ci].log_rho_err + border_err[imod][jmod]); 
-            FLOAT_TYPE c2 = (particles[cj].log_rho_c - border_density[imod][jmod]) / (particles[cj].log_rho_err + border_err[imod][jmod]); 
-
-            if(c1 < c2) 
-            {
-                size_t tmp = jmod;
-                jmod = imod;
-                imod = tmp;
-            }
-            
-            surviving_clusters[jmod] = 0;
-
-            border_density[imod][jmod] = -1.0;
-            border_density[jmod][imod] = -1.0;
-
-            border_err[imod][jmod] = 0;
-            border_err[jmod][imod] = 0;
-
-            border_idx[imod][jmod] = NOBORDER;
-            border_idx[jmod][imod] = NOBORDER;
-            
-            Merge_A_into_B(merging_table, jmod, imod, nclus);
-            //mergeClusters(cluster, imod, jmod);
-
-            /*Recompute borders*/
-            for(size_t i = 0; i < nclus; ++i)
-            {
-                if(i != imod && i != jmod)
-                {
-                    if(border_density[imod][i] < border_density[jmod][i])
-                    {
-                        border_idx[imod][i] = border_idx[jmod][i];
-                        border_idx[i][imod] = border_idx[i][jmod];
-
-                        border_density[imod][i] = border_density[jmod][i];
-                        border_density[i][imod] = border_density[i][jmod];
-
-                        border_err[imod][i] = border_err[jmod][i];
-                        border_err[i][imod] = border_err[i][jmod];
-                    }
-
-                    border_density[jmod][i] = -1.0;
-                    border_density[i][jmod] = -1.0;
-                    border_err[jmod][i] = 0;
-                    border_err[i][jmod] = 0;
-                    border_idx[jmod][i] = NOBORDER;
-                    border_idx[i][jmod] = NOBORDER;
-
-                }
-            }
-        }
-    }
 
     /*Finalize clustering*/
     /*Acutally copying */
@@ -1104,40 +1194,33 @@ void Heuristic3(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE Z, int 
     for(size_t i = 0; i < nclus; ++i)
     {
         
-        final_cluster_count += surviving_clusters[i];
-        if(surviving_clusters[i]){
+        if(surviving_clusters[i] == i){
             DynamicArray_pushBack(&tmp_centers, cluster->centers.data[i]);
             DynamicArray_pushBack(&tmp_cluster_idx, i);
             old_to_new[i] = incremental_k;
             ++incremental_k;
+            ++final_cluster_count;
         }
     }
 
     //fill the rest of old_to_new
     for(size_t i = 0; i < nclus; ++i)
     {
-        if(!surviving_clusters[i]){
-            size_t cidx_to_copy_from = merging_table[i];
+        if(surviving_clusters[i] != i){
+            size_t cidx_to_copy_from = surviving_clusters[i];
             old_to_new[i] = old_to_new[cidx_to_copy_from];
         }
     }
 
     /*allocate auxiliary pointers to store results of the finalization of the procedure*/
 
-    FLOAT_TYPE** tmp_border_density = (FLOAT_TYPE**)malloc(final_cluster_count*sizeof(FLOAT_TYPE*));
-    FLOAT_TYPE** tmp_border_err     = (FLOAT_TYPE**)malloc(final_cluster_count*sizeof(FLOAT_TYPE*));
-    size_t**     tmp_border_idx     = (size_t**)malloc(final_cluster_count*sizeof(size_t*));
-
-    FLOAT_TYPE* tmp_border_density_data = (FLOAT_TYPE*)malloc(final_cluster_count*final_cluster_count*sizeof(FLOAT_TYPE));
-    FLOAT_TYPE* tmp_border_err_data     = (FLOAT_TYPE*)malloc(final_cluster_count*final_cluster_count*sizeof(FLOAT_TYPE)); 
-    size_t* tmp_border_idx_data         = (size_t*)malloc(final_cluster_count*final_cluster_count*sizeof(size_t*));
+    border_t** tmp_borders      = (border_t**)malloc(final_cluster_count*sizeof(border_t*));
+    border_t*  tmp_borders_data = (border_t*)malloc(final_cluster_count*final_cluster_count*sizeof(border_t));
 
     /*initialize all pointers*/
     for(size_t i = 0; i < final_cluster_count; ++i)
     {
-        tmp_border_density[i]   = tmp_border_density_data + i*final_cluster_count;
-        tmp_border_err[i]       = tmp_border_err_data + i*final_cluster_count;
-        tmp_border_idx[i]       = tmp_border_idx_data + i*final_cluster_count;
+        tmp_borders[i] = tmp_borders_data + i*final_cluster_count;
     }
 
     /*Fix cluster assignment*/
@@ -1157,26 +1240,23 @@ void Heuristic3(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE Z, int 
         for(size_t d = c; d < final_cluster_count; ++d)
         {
             size_t c_jdx = tmp_cluster_idx.data[d];
-            tmp_border_density[c][d] = border_density[c_idx][c_jdx];
-            tmp_border_density[d][c] = border_density[c_idx][c_jdx];
+            tmp_borders[c][d].density = borders[c_idx][c_jdx].density;
+            tmp_borders[d][c].density = borders[c_idx][c_jdx].density;
 
-            tmp_border_idx[c][d] = border_idx[c_idx][c_jdx];
-            tmp_border_idx[d][c] = border_idx[c_idx][c_jdx];
+            tmp_borders[c][d].idx = borders[c_idx][c_jdx].idx;
+            tmp_borders[d][c].idx = borders[c_idx][c_jdx].idx;
 
 
-            tmp_border_err[c][d] = border_err[c_idx][c_jdx];
-            tmp_border_err[d][c] = border_err[c_idx][c_jdx];
+            tmp_borders[c][d].error = borders[c_idx][c_jdx].error;
+            tmp_borders[d][c].error = borders[c_idx][c_jdx].error;
         } 
     }
 
     Clusters_Reset(cluster);
-    cluster -> border_density = tmp_border_density;
-    cluster -> border_idx = tmp_border_idx;
-    cluster -> border_err = tmp_border_err;
+    /*pay attention to the define borders*/
+    borders = tmp_borders;
 
-    cluster -> __border_density_data = tmp_border_density_data;
-    cluster -> __border_idx_data = tmp_border_idx_data;
-    cluster -> __border_err_data = tmp_border_err_data;
+    cluster -> __borders_data = tmp_borders_data;
 
     cluster -> centers = tmp_centers;
     /**
@@ -1200,9 +1280,9 @@ void Heuristic3(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE Z, int 
                 FLOAT_TYPE max_border_den = -2.;
                 for(size_t d = 0; d < final_cluster_count; ++d)
                 {
-                    if(tmp_border_density[c][d] > max_border_den)
+                    if(tmp_borders[c][d].density > max_border_den)
                     {
-                        max_border_den = tmp_border_density[c][d];
+                        max_border_den = tmp_borders[c][d].density;
                     }
                 }
                 max_border_den_array[c] = max_border_den;
@@ -1226,17 +1306,18 @@ void Heuristic3(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE Z, int 
 
     /*free memory and put the correct arrays into place*/
     free(tmp_cluster_idx.data);
-    free(ipos.data);
-    free(jpos.data);
+    //free(ipos.data);
+    //free(jpos.data);
     free(surviving_clusters);
     free(old_to_new);
-    free(merging_table);
 
     clock_gettime(CLOCK_MONOTONIC, &finish_tot);
     elapsed_tot = (finish_tot.tv_sec - start_tot.tv_sec);
     elapsed_tot += (finish_tot.tv_nsec - start_tot.tv_nsec) / 1000000000.0;
     printf("\tSurviving clusters %lu\n", final_cluster_count);
     printf("\tTotal time: %.3lfs\n\n", elapsed_tot);
+
+  #undef  borders  
 }
 
 

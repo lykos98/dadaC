@@ -46,8 +46,14 @@ struct Datapoint_info {
     int cluster_idx;
 };
 
+struct border_t
+{
+    FLOAT_TYPE density;
+    FLOAT_TYPE error;
+    size_t idx;        
+};
 
-struct Clusters {
+struct aClusters {
     struct lu_dynamicArray centers;
     FLOAT_TYPE** border_density;
     FLOAT_TYPE** border_err;
@@ -59,12 +65,28 @@ struct Clusters {
     
 };
 
+struct Clusters {
+    struct lu_dynamicArray centers;
+    struct border_t ** borders;
+    struct border_t * __borders_data; 
+    size_t n;
+};
+
+
+struct merge_t {
+  size_t source;
+  size_t target;
+  FLOAT_TYPE density;
+};
+
 
 typedef struct Datapoint_info Datapoint_info;
 typedef struct lu_dynamicArray lu_dynamicArray;
 typedef struct Clusters Clusters;
 typedef struct Node Node;
 typedef struct LinkedList LinkedList;
+typedef struct merge_t merge_t;
+typedef struct border_t border_t;
 
 void LinkedList_Insert(LinkedList* L, Node* n);
 void DynamicArray_allocate(lu_dynamicArray * a);
@@ -72,7 +94,6 @@ void DynamicArray_pushBack(lu_dynamicArray * a, size_t p);
 void Clusters_allocate(Clusters * c);
 void Clusters_free(Clusters * c);
 
-void mergeClusters(Clusters * cc, size_t i, size_t j);
 int cmp(const void * a, const void * b);
 FLOAT_TYPE avg(const FLOAT_TYPE * x, const size_t n);
 FLOAT_TYPE mEst2(FLOAT_TYPE * x, FLOAT_TYPE *y, size_t n);

@@ -1,0 +1,143 @@
+Reading 36857 particles
+Building the KDtree:
+	Total time: 0.021s
+
+The root of the tree is
+Node 0x7fb147cb2740:
+	 array_idx: 8401
+	 data:  0.037154  -0.140541  0.057777  -0.624774  -2.851761 
+	 parent: (nil)
+	 lch: 0x7fb147d33620
+	 rch: 0x7fb147c5b5c0
+	 level: 0
+	 split_var: 0
+
+KNN search:
+	Total time: 3.404s
+
+ID estimation:
+	ID value: 3.614569
+	Total time: 0.009s
+
+Density and k* estimation:
+	Total time: 0.059s
+
+H1: Preliminary cluster assignment
+	Finding putative centers: 0.002s
+	Finding actual centers:   0.070s
+	Tentative clustering:     0.002s
+	Finalizing clustering:    0.000s
+
+	Found 327 clusters
+	Total time: 0.074s
+
+H2: Finding border points
+	Total time: 0.008s
+
+H3: Merging clusters
+Merging 246 into 24
+Merging 182 into 24
+Merging 247 into 24
+Merging 201 into 200
+Merging 248 into 24
+Merging 32 into 24
+Merging 112 into 111
+Merging 31 into 24
+Merging 249 into 24
+Merging 30 into 24
+Merging 154 into 153
+Merging 33 into 24
+Merging 35 into 183
+Merging 72 into 139
+Merging 38 into 307
+Merging 166 into 165
+Merging 36 into 37
+Merging 184 into 146
+Merging 74 into 275
+Merging 253 into 282
+Merging 251 into 318
+Merging 55 into 282
+Merging 41 into 129
+Merging 67 into 160
+Merging 43 into 93
+Merging 48 into 134
+Merging 160 into 204
+Merging 64 into 146
+Merging 75 into 146
+Merging 296 into 306
+Merging 259 into 233
+Merging 77 into 139
+Merging 66 into 224
+Merging 82 into 121
+Merging 80 into 204
+Merging 45 into 204
+Merging 50 into 95
+Merging 240 into 241
+Merging 237 into 24
+Merging 241 into 275
+Merging 56 into 168
+Merging 185 into 143
+Merging 266 into 125
+Merging 26 into 197
+Merging 83 into 164
+Merging 264 into 306
+Merging 79 into 135
+Merging 256 into 94
+Merging 267 into 323
+Merging 9 into 228
+Merging 69 into 121
+Merging 58 into 306
+Merging 187 into 94
+Merging 4 into 63
+Merging 190 into 305
+Merging 81 into 302
+Merging 39 into 136
+Merging 51 into 85
+Merging 53 into 120
+Merging 252 into 174
+Merging 46 into 159
+Merging 0 into 24
+Merging 54 into 292
+Merging 188 into 151
+Merging 76 into 145
+Merging 192 into 305
+Merging 239 into 126
+Merging 49 into 125
+Merging 88 into 168
+Merging 258 into 151
+Merging 52 into 215
+Merging 13 into 14
+Merging 65 into 260
+Merging 44 into 143
+Merging 22 into 10
+Merging 262 into 171
+Merging 193 into 205
+Merging 62 into 206
+Merging 189 into 281
+Merging 12 into 105
+Merging 57 into 84
+Merging 1 into 124
+Merging 254 into 294
+Merging 16 into 179
+Merging 273 into 125
+Merging 181 into 179
+Merging 243 into 275
+Merging 269 into 268
+Merging 19 into 14
+Merging 268 into 157
+Merging 196 into 219
+Merging 263 into 86
+Merging 78 into 149
+Merging 15 into 6
+Merging 20 into 14
+Merging 2 into 24
+Merging 17 into 6
+Merging 11 into 179
+Merging 27 into 275
+Merging 25 into 24
+Merging 8 into 24
+Merging 7 into 24
+	Surviving clusters 225
+	Total time: 0.001s
+
+Writing results: 0.024

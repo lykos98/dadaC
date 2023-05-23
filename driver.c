@@ -11,7 +11,7 @@ void write_border_idx(const char * fname, Clusters * c)
     {
         for(int j = 0; j < c -> centers.count; ++j)
         {
-            int a = c -> border_idx[i][j] == NOBORDER ? -1 : c -> border_idx[i][j];
+            int a = c -> borders[i][j].idx == NOBORDER ? -1 : c -> borders[i][j].idx;
             fprintf(f,"%d ",a);
         }
         fprintf(f,"\n");
@@ -145,6 +145,8 @@ int main(int argc, char** argv){
 
     //sprintf(aux_fname, "%s_bord_int", argv[2]);
     //write_border_idx(aux_fname,&c);
+
+    c.n = n;
     
     Heuristic3(&c, particles, Z, halo);
 
