@@ -15,6 +15,7 @@ clustering.o: clustering.c
 read_fof_snapshot.o: read_fof_snapshot.c
 	gcc -c read_fof_snapshot.c -o ../bin/read_fof_snapshot.o ${OPTIM} -fpic
 kdtree.o: kdtree.c
+	mkdir bin
 	gcc -c kdtree.c -o ../bin/kdtree.o ${OPTIM} -fopenmp ${DEBUG} -fpic
 
 clean:
