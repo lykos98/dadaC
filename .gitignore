@@ -1,6 +1,7 @@
 driver.o
 driver
-bin/*
+bin/*.so
+bin/*.o
 nope*
 run.sh
 example.sh
