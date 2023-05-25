@@ -104,7 +104,7 @@ int main(int argc, char** argv){
     printf("The root of the tree is\n");
     printKDnode(root);
 
-    int k = 1001;
+    int k = 300;
 
     Datapoint_info* particles = (Datapoint_info*)malloc(n*sizeof(Datapoint_info));
 

@@ -466,7 +466,6 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
 
     size_t ncenters = 0;
     size_t putativeCenters = n;
-    size_t max_k = particles[0].ngbh.N;
     lu_dynamicArray allCenters, removedCenters, actualCenters, max_rho;
     DynamicArray_allocate(&allCenters);
     DynamicArray_allocate(&removedCenters);
@@ -642,12 +641,12 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
         Datapoint_info* p = particles_ptrs[i];
         size_t ele = p -> array_idx;
         //fprintf(f,"%lu\n",ele);
-
         if(!(p -> is_center))
         {
             int cluster = -1;
             size_t k = 0;
             size_t p_idx;
+            size_t max_k = p -> ngbh.N;
             //assign each particle at the same cluster as the nearest particle of higher density
             while( k < max_k - 1 && cluster == -1)
             {
