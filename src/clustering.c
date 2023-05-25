@@ -285,6 +285,7 @@ void computeRhoOpt(Datapoint_info* particles, kd_node* root, FLOAT_TYPE* data,  
         int cont = 0;
         while(1)
         {
+            size_t kMAX = particles[i].ngbh.N;   
             while(j < kMAX && dL < DTHR)
             {
                 size_t ksel = j - 1;
@@ -304,12 +305,11 @@ void computeRhoOpt(Datapoint_info* particles, kd_node* root, FLOAT_TYPE* data,  
             else if(j == kMAX)
             {
                 //reset ngbh and recalculate using a new size
+                j = j - 1;
                 freeHeap(&particles[i].ngbh);
-                size_t kMAX = 1.2*particles[i].ngbh.N;
-                particles[i].ngbh.N = kMAX > MAX_N_NGBH ? MAX_N_NGBH : kMAX;
-                allocateHeap(&particles[i].ngbh,particles[i].ngbh.N);
-                particles[i].ngbh.count = 0;
-                KNN_sub_tree_search(data + i*data_dims,root,&particles[i].ngbh);
+                kMAX = 1.2*particles[i].ngbh.N;
+                kMAX = kMAX > MAX_N_NGBH ? MAX_N_NGBH : kMAX;
+                particles[i].ngbh = KNN(data + i*data_dims, root, kMAX );
             }
             else
             {
