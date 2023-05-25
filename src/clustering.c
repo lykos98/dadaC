@@ -1,9 +1,12 @@
 //#include "../include/read_fof_snapshot.h"
 #include "../include/clustering.h"
 #include <time.h>
+
+#define MAX_N_NGBH 1000
 extern unsigned int data_dims;
 size_t Npart;
 const border_t border_null = {.density = -1.0, .error = 0, .idx = NOBORDER};
+
 
 void LinkedList_Insert(LinkedList* L, Node* n)
 {
@@ -244,6 +247,91 @@ FLOAT_TYPE idEstimate(Datapoint_info* particles, size_t n)
     printf("\tTotal time: %.3lfs\n\n", elapsed_tot);
 
     return d;
+
+}
+
+void computeRhoOpt(Datapoint_info* particles, kd_node* root, FLOAT_TYPE* data,  const FLOAT_TYPE d, const size_t points){
+
+    /****************************************************
+     * Point density computation:                       *
+     * args:                                            *
+     * -   paricles: array of structs                   *
+     * -   d       : intrinsic dimension of the dataset *
+     * -   points  : number of points in the dataset    *
+     ****************************************************/
+
+    struct timespec start_tot, finish_tot;
+    double elapsed_tot;
+
+    printf("Density and k* estimation:\n");
+    clock_gettime(CLOCK_MONOTONIC, &start_tot);
+
+    size_t kMAX = particles[0].ngbh.N;   
+
+    FLOAT_TYPE omega = 0.;  
+    if(sizeof(FLOAT_TYPE) == sizeof(float)){ omega = powf(PI_F,d/2)/tgammaf(d/2.0f + 1.0f);}  
+    else{omega = pow(M_PI,d/2.)/tgamma(d/2.0 + 1.0);}
+
+    //printf("Omega d %f\n", omega);
+
+    #pragma omp parallel for
+    for(size_t i = 0; i < points; ++i)
+    {
+
+        size_t j = 4;
+        size_t k;
+        FLOAT_TYPE dL = 0.0;
+        FLOAT_TYPE vvi, vvj, vp;
+        int cont = 0;
+        while(1)
+        {
+            while(j < kMAX && dL < DTHR)
+            {
+                size_t ksel = j - 1;
+                vvi = omega * pow(particles[i].ngbh.data[ksel].value,d/2.);
+                size_t jj = particles[i].ngbh.data[j].array_idx;
+                vvj = omega * pow(particles[jj].ngbh.data[ksel].value,d/2.);
+                vp = (vvi + vvj)*(vvi + vvj);
+                dL = -2.0 * ksel * log(4.*vvi*vvj/vp);
+                j = j + 1;
+            }
+            if(j == MAX_N_NGBH)
+            {
+                k = j - 1;
+                break;
+
+            }
+            else if(j == kMAX)
+            {
+                //reset ngbh and recalculate using a new size
+                freeHeap(&particles[i].ngbh);
+                size_t kMAX = 1.2*particles[i].ngbh.N;
+                particles[i].ngbh.N = kMAX > MAX_N_NGBH ? MAX_N_NGBH : kMAX;
+                allocateHeap(&particles[i].ngbh,particles[i].ngbh.N);
+                particles[i].ngbh.count = 0;
+                KNN_sub_tree_search(data + i*data_dims,root,&particles[i].ngbh);
+            }
+            else
+            {
+                k = j - 2;
+                break;
+            }
+        }
+
+        particles[i].kstar = k;
+        particles[i].log_rho = log((FLOAT_TYPE)(k)/vvi/((FLOAT_TYPE)(points)));
+        //particles[i].log_rho = log((FLOAT_TYPE)(k)) - log(vvi) -log((FLOAT_TYPE)(points));
+        particles[i].log_rho_err =   1.0/sqrt((FLOAT_TYPE)k); //(FLOAT_TYPE)(-Q_rsqrt((float)k));
+        particles[i].g = particles[i].log_rho - particles[i].log_rho_err;
+    }
+
+    clock_gettime(CLOCK_MONOTONIC, &finish_tot);
+    elapsed_tot = (finish_tot.tv_sec - start_tot.tv_sec);
+    elapsed_tot += (finish_tot.tv_nsec - start_tot.tv_nsec) / 1000000000.0;
+    printf("\tTotal time: %.3lfs\n\n", elapsed_tot);
+
+    return;
+
 
 }
 

@@ -123,7 +123,8 @@ int main(int argc, char** argv){
     /***********************
      * Density computation *
      ***********************/
-    computeRho(particles,id,n);
+    //computeRho(particles,id,n);
+    computeRhoOpt(particles,root,data,id,n);
     computeCorrection(particles,n,Z);
 
     /********************
@@ -166,7 +167,7 @@ int main(int argc, char** argv){
      *******************/
 
     for (size_t i = 0; i < n; ++i)
-    {
+    {        
         freeHeap(&particles[i].ngbh);
     }
 
