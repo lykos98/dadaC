@@ -123,8 +123,7 @@ int main(int argc, char** argv){
     /***********************
      * Density computation *
      ***********************/
-    //computeRho(particles,id,n);
-    computeRhoOpt(particles,root,data,id,n);
+    computeRho(particles,id,n);
     computeCorrection(particles,n,Z);
 
     /********************

@@ -1,5 +1,6 @@
 //#include "../include/read_fof_snapshot.h"
 #include "../include/clustering.h"
+#include <stdint.h>
 #include <time.h>
 
 #define MAX_N_NGBH 1000
@@ -523,6 +524,7 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
     #endif
 
     size_t * to_remove = (size_t*)malloc(allCenters.count*sizeof(size_t));
+    for(size_t c = 0; c < allCenters.count; ++c) {to_remove[c] = SIZE_MAX;}
 
     qsort(particles_ptrs, n, sizeof(Datapoint_info*), cmpPP);
     /*****************************************************************************************************
@@ -530,51 +532,112 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
      * /!\ It is actually faster when using only a few threads                                           *
      *****************************************************************************************************/
     //#pragma omp parallel for num_threads(4)
-    #pragma omp parallel for 
-    for(size_t p = 0; p < allCenters.count; ++p)
-    {   
-        /*
+    
+    //#pragma omp parallel for 
+    //for(size_t p = 0; p < allCenters.count; ++p)
+    //{   
+    //    /*
 
-        Check if the center spotted in the previous part belongs to the neighborhood
-        of a point of higher density. If this is true remove it from the actual centers
+    //    Check if the center spotted in the previous part belongs to the neighborhood
+    //    of a point of higher density. If this is true remove it from the actual centers
 
-        */
-        size_t i = allCenters.data[p];
-        int e = 0;
-        FLOAT_TYPE gi = particles[i].g;
-        size_t i_arrIdx = particles[i].array_idx;
-        size_t mr = SIZE_MAX;
-        FLOAT_TYPE max_g = -99999.0;
-        for(size_t j = 0; j < n; ++j)
-        {
-            //retrive the particle pointed by the pointer
-            Datapoint_info pp = *(particles_ptrs[j]);
-            size_t kMAXj = pp.kstar;
-            Heap j_ngbh = pp.ngbh;
-            FLOAT_TYPE gj = pp.g;
-            //e = 0;
-            //check if there is point in which the point i is a neighbor with grater g
-                //if gj > gi check the neighborhood
-            //preliminarity check, if i is more distant than k* neighbor break
-            FLOAT_TYPE dk = j_ngbh.data[kMAXj + 1].value;
-            FLOAT_TYPE di = euclidean_distance(data + (i*data_dims), data + (pp.array_idx*data_dims));
-            int stop = 0;
-            if(dk > di)
-            {
-                mr = pp.array_idx;
-                //found a neighborhood with higher g, break
-                stop = 1;
-                //max_g = gj;
-            } 
-            if(stop == 1|| i == pp.array_idx)
-            {
-                break;
-            }
+    //    */
+    //    size_t i = allCenters.data[p];
+    //    int e = 0;
+    //    FLOAT_TYPE gi = particles[i].g;
+    //    size_t i_arrIdx = particles[i].array_idx;
+    //    size_t mr = SIZE_MAX;
+    //    FLOAT_TYPE max_g = -99999.0;
+    //    for(size_t j = 0; j < n; ++j)
+    //    {
+    //        //retrive the particle pointed by the pointer
+    //        Datapoint_info pp = *(particles_ptrs[j]);
+    //        size_t kMAXj = pp.kstar;
+    //        Heap j_ngbh = pp.ngbh;
+    //        FLOAT_TYPE gj = pp.g;
+    //        //e = 0;
+    //        //check if there is point in which the point i is a neighbor with grater g
+    //            //if gj > gi check the neighborhood
+    //        //preliminarity check, if i is more distant than k* neighbor break
+    //        FLOAT_TYPE dk = j_ngbh.data[kMAXj + 1].value;
+    //        FLOAT_TYPE di = euclidean_distance(data + (i*data_dims), data + (pp.array_idx*data_dims));
+    //        int stop = 0;
+    //        if(dk > di)
+    //        {
+    //            mr = pp.array_idx;
+    //            //found a neighborhood with higher g, break
+    //            stop = 1;
+    //            //max_g = gj;
+    //        } 
+    //        if(stop == 1|| i == pp.array_idx)
+    //        {
+    //            break;
+    //        }
+    //        
+    //    }
+    //    to_remove[p] = mr;
+    //}
+    //
+    
+
+    #pragma omp parallel
+    {
             
+        size_t * to_remove_private = (size_t*)malloc(allCenters.count*sizeof(size_t));
+    	for(size_t c = 0; c < allCenters.count; ++c) {to_remove_private[c] = SIZE_MAX;}
+        #pragma omp for
+        for(size_t p = 0; p < n; ++p)
+        {
+        	Datapoint_info pp = *(particles_ptrs[p]);
+        	for(size_t j = 1; j < pp.kstar + 1; ++j)
+        	{
+        		size_t jidx = pp.ngbh.data[j].array_idx;
+        		if(particles[jidx].is_center && pp.g > particles[jidx].g)
+        		{
+        			//particles[jidx].is_center = 0;
+        			for(size_t c = 0; c < allCenters.count; ++c){
+        				if(allCenters.data[c] == jidx)
+					{
+
+						if(to_remove_private[c] != SIZE_MAX)
+						{
+							to_remove_private[c] = pp.g > 	particles[to_remove_private[c]].g  ? 
+											pp.array_idx : to_remove_private[c];
+						}
+						else
+						{
+							to_remove_private[c] = pp.array_idx;
+						}
+					}
+        			}
+        		}
+        	}
         }
-        to_remove[p] = mr;
+        #pragma omp critical
+        {
+        	for(size_t c = 0; c < allCenters.count; ++c)
+        	{
+        		if(to_remove_private[c] != SIZE_MAX)
+			{
+				if(to_remove[c] != SIZE_MAX)
+				{
+					to_remove[c] = particles[to_remove_private[c]].g > particles[to_remove[c]].g ?
+						       to_remove_private[c] : to_remove[c];
+				}
+				else
+				{
+					to_remove[c] = to_remove_private[c];
+				}
+			}
+        	}
+        }
+
+            free(to_remove_private);
     }
 
+	
+
+    int coooo = 0;
     for(size_t p = 0; p < allCenters.count; ++p)
     {
         size_t i = allCenters.data[p];
@@ -583,7 +646,9 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, size_t n)
         size_t mr = to_remove[p];
         if(mr != SIZE_MAX)
         {
-            if(particles[mr].g > gi) e = 1;
+            //if(particles[mr].g > gi) e = 1;
+	    e = 1;
+	    ++coooo;
         }
         switch (e)
         {
@@ -953,7 +1018,7 @@ void Heuristic3(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE Z, int 
 	      FLOAT_TYPE dens2           = particles[cluster->centers.data[j]].log_rho_c;
 	      FLOAT_TYPE dens2_err       = particles[cluster->centers.data[j]].log_rho_err;
 	      FLOAT_TYPE dens_border     = borders[i][j].density;
-          FLOAT_TYPE dens_border_err = borders[i][j].error;
+	      FLOAT_TYPE dens_border_err = borders[i][j].error;
 	      
 	    if ( is_a_merging( dens1, dens1_err, dens2, dens2_err, dens_border, dens_border_err, Z ) )
 		{
@@ -1140,33 +1205,36 @@ void Heuristic3(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE Z, int 
     switch (halo)
     {
     case 1:
-        FLOAT_TYPE* max_border_den_array = (FLOAT_TYPE*)malloc(final_cluster_count*sizeof(FLOAT_TYPE));
-        #pragma omp parallel
-        {
-            #pragma omp for
-            for(size_t c = 0; c < final_cluster_count; ++c)
-            {
-                FLOAT_TYPE max_border_den = -2.;
-                for(size_t d = 0; d < final_cluster_count; ++d)
-                {
-                    if(tmp_borders[c][d].density > max_border_den)
-                    {
-                        max_border_den = tmp_borders[c][d].density;
-                    }
-                }
-                max_border_den_array[c] = max_border_den;
-            }
+	{
+		FLOAT_TYPE* max_border_den_array = (FLOAT_TYPE*)malloc(final_cluster_count*sizeof(FLOAT_TYPE));
+		#pragma omp parallel
+		{
+		    #pragma omp for
+		    for(size_t c = 0; c < final_cluster_count; ++c)
+		    {
+			FLOAT_TYPE max_border_den = -2.;
+			for(size_t d = 0; d < final_cluster_count; ++d)
+			{
+			    if(tmp_borders[c][d].density > max_border_den)
+			    {
+				max_border_den = tmp_borders[c][d].density;
+			    }
+			}
+			max_border_den_array[c] = max_border_den;
+		    }
 
-            #pragma omp barrier
+		    #pragma omp barrier
 
-            #pragma omp for
-            for(size_t i = 0; i < cluster -> n; ++i)
-            {
-                int cidx = particles[i].cluster_idx;
-                int halo_flag = particles[i].log_rho_c < max_border_den_array[cidx]; 
-                particles[i].cluster_idx = halo_flag ? -1 : cidx;
-            }
-        }
+		    #pragma omp for
+		    for(size_t i = 0; i < cluster -> n; ++i)
+		    {
+			int cidx = particles[i].cluster_idx;
+			int halo_flag = particles[i].log_rho_c < max_border_den_array[cidx]; 
+			particles[i].cluster_idx = halo_flag ? -1 : cidx;
+		    }
+		}
+		free(max_border_den_array);
+	}
         break;
     
     default:
@@ -1175,6 +1243,7 @@ void Heuristic3(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE Z, int 
 
     /*free memory and put the correct arrays into place*/
     free(tmp_cluster_idx.data);
+    free(merging_table);
     //free(ipos.data);
     //free(jpos.data);
     free(surviving_clusters);
