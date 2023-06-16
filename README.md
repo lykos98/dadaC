@@ -10,6 +10,9 @@ In particular dadaC implements at the moment:
 - k*-NN density estimator
 - ADP Heuristics
 
+On the same input dadaC achieves a one to one match on the results, obtaining a factor 40 speedup on the whole procedure w.r.t. Python/Cython implementation. 
+NOTE: this is an experimental implementation, program may crash if a dataset requires a memory usage larger than the memory available on the machine. This issue will be fixed soon. 
+
 ## Usage
 
 dadaC comes with an example driver file `driver.c`. Data is expected to be a matrix of floats of type `FLOAT_TYPE` (defined at compile time) of dimensions `N x data_dims` with `data_dims` being a global variable defined at compile time.
@@ -33,4 +36,7 @@ dadaC comes with a make file which compiles the executable `driver` and the shar
 
 MUCH MORE
 
-- Complete porting of all density estimation methods in `dadaPy` 
+- Complete porting of all density estimation methods in `dadaPy` (i.e. pAK)
+- Integration of C compiled code into `dadaPy` library
+- Improvement of memory imprinting for big datasets 
+- Adaptive strategies on k-NN search and density estimation
