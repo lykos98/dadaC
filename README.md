@@ -2,7 +2,7 @@
 ## Description
 Code repository for the thesis project *Density-based clustering application to substructures identification in cosmological simulations*, Francesco Tomba, 2023 @ University of Trieste.
 
-`dadaC` is the porting and optimization of the implementation of ADP (Laio et al. 2021) which is present in the python package `dadaPy`.
+`dadaC` is the porting and optimization of the implementation of ADP (Laio et al. 2021) which is present in the python package [`dadaPy`](https://github.com/sissa-data-science/DADApy).
 In particular dadaC implements at the moment:
 
 - k-NN search using a kd-tree
@@ -28,3 +28,9 @@ Once parameters are setted `dadaC` can be launched using:
 ## Compiling
 
 dadaC comes with a make file which compiles the executable `driver` and the shared library `bin/libclustering.so` from which ADP methods can be linked to.
+
+## TODO
+
+MUCH MORE
+
+- Complete porting of all density estimation methods in `dadaPy` 
