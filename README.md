@@ -25,4 +25,6 @@ Once parameters are setted `dadaC` can be launched using:
 
 `./driver [input file] [output file] [z value] [halo (0 or 1)] [k]`
 
+## Compiling
 
+dadaC comes with a make file which compiles the executable `driver` and the shared library `bin/libclustering.so` from which ADP methods can be linked to.
