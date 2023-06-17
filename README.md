@@ -40,3 +40,6 @@ MUCH MORE
 - Integration of C compiled code into `dadaPy` library
 - Improvement of memory imprinting for big datasets 
 - Adaptive strategies on k-NN search and density estimation
+- Add compilation targets to makefile to have different float type compilation
+
+
