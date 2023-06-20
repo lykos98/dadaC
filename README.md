@@ -5,8 +5,8 @@ Code repository for the thesis project *Density-based clustering application to 
 `dadaC` is the porting and optimization of the implementation of ADP (Laio et al. 2021) which is present in the python package [`dadaPy`](https://github.com/sissa-data-science/DADApy).
 In particular dadaC implements at the moment:
 
-- k-NN search using a kd-tree
 - TWO-NN Intrinsic Dimension estimator
+- k-NN search using a kd-tree
 - k*-NN density estimator
 - ADP Heuristics
 

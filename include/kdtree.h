@@ -5,7 +5,13 @@
 #include <limits.h>
 #define T double
 #define DATA_DIMS 0 
-#define FLOAT_TYPE double 
+
+#ifdef USE_FLOAT32
+	#define FLOAT_TYPE float
+#else
+	#define FLOAT_TYPE double 
+#endif
+
 
 struct heap_node
 {

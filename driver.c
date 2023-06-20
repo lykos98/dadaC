@@ -26,7 +26,11 @@ void write_point_info(const char * fname, Datapoint_info * particles, size_t n)
     {
         fprintf(f,"%lu\t",particles[i].kstar);
         fprintf(f,"%d\t", particles[i].cluster_idx);
-        fprintf(f,"%.12lf\t",particles[i].log_rho);
+	#ifdef USE_FLOAT32
+        fprintf(f,"%.6f\t",particles[i].log_rho);
+	#else
+        fprintf(f,"%.11lf\t",particles[i].log_rho);
+	#endif
         //fprintf(f,"%.12lf\t",particles[i].log_rho_c);
         //fprintf(f,"%.12lf\t",particles[i].log_rho_err);
         //fprintf(f,"%.12lf\t",particles[i].g);
@@ -42,6 +46,12 @@ int main(int argc, char** argv){
     double Z;
     int halo;
     char aux_fname[80];
+    int k;
+
+    struct timespec start_tot, finish_tot;
+    double elapsed_tot;
+    //Start timer
+    clock_gettime(CLOCK_MONOTONIC, &start_tot);
 
     data_dims = 5;
 
@@ -50,7 +60,7 @@ int main(int argc, char** argv){
      ***********************************************************************/
     if(argc < 5 )
     {
-        printf("USAGE: ./driver [INPUT_FILE] [OUTPUT_FILE] [Z] [HALO]");
+        printf("USAGE: ./driver [INPUT_FILE] [OUTPUT_FILE] [Z] [HALO] [k]");
         printf("\nThe program gives as output the cluster assignment of each datapoint\n");
         return;
     }
@@ -58,11 +68,22 @@ int main(int argc, char** argv){
     {
         Z = atof(argv[3]);
         halo = atoi(argv[4]);
+	if(argc ==  6)
+	{
+		k = atoi(argv[5]);
+	}
+	else
+	{
+		k = 1001;
+	}
+
         if(halo != 0 && halo != 1){
             printf("Insert valid halo identifier: 0 do not assign halo, 1 assign particles to the halo\n");
             return;
         }
     }
+
+    printf("Using: \n\t Z    	   : %.2lf \n\t Halo      : %s \n\t Neighbors : %d \n\n", Z, halo ? "yes" : "no", k);
     
     FILE* f = fopen(argv[1],"r");
     if(!f)
@@ -104,7 +125,6 @@ int main(int argc, char** argv){
     printf("The root of the tree is\n");
     printKDnode(root);
 
-    int k = 300;
 
     Datapoint_info* particles = (Datapoint_info*)malloc(n*sizeof(Datapoint_info));
 
@@ -179,4 +199,10 @@ int main(int argc, char** argv){
     free(data);
     Clusters_free(&c);
 
+    clock_gettime(CLOCK_MONOTONIC, &finish_tot);
+    elapsed_tot = (finish_tot.tv_sec - start_tot.tv_sec);
+    elapsed_tot += (finish_tot.tv_nsec - start_tot.tv_nsec) / 1000000000.0;
+    printf("ELAPSED time (measured by driver): %.3lfs\n\n", elapsed_tot);
+
+    return 0;
 }
