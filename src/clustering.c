@@ -1059,8 +1059,8 @@ void Heuristic3(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE Z, int 
   qsort( (void*)merging_table, merge_count, sizeof(merge_t), compare_merging_density);
   #ifdef VERBOSE
 	clock_gettime(CLOCK_MONOTONIC, &finish); 
-	elapsed_tot = (finish.tv_sec - start.tv_sec);
-	elapsed_tot += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+	elapsed = (finish.tv_sec - start.tv_sec);
+	elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
 	printf("\tFinding merges:   %.3lfs\n", elapsed);
 	clock_gettime(CLOCK_MONOTONIC, &start); 
   #endif
@@ -1119,8 +1119,8 @@ void Heuristic3(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE Z, int 
 
   #ifdef VERBOSE
 	clock_gettime(CLOCK_MONOTONIC, &finish); 
-	elapsed_tot = (finish.tv_sec - start.tv_sec);
-	elapsed_tot += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+	elapsed = (finish.tv_sec - start.tv_sec);
+	elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
 	printf("\tCluster merging:  %.3lfs\n", elapsed);
 	clock_gettime(CLOCK_MONOTONIC, &start); 
   #endif
@@ -1268,8 +1268,8 @@ void Heuristic3(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE Z, int 
 
   #ifdef VERBOSE
 	clock_gettime(CLOCK_MONOTONIC, &finish); 
-	elapsed_tot = (finish.tv_sec - start.tv_sec);
-	elapsed_tot += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+	elapsed = (finish.tv_sec - start.tv_sec);
+	elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
 	printf("\tFinal operations: %.3lfs\n\n", elapsed);
   #endif
 
