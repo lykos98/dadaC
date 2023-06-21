@@ -988,9 +988,14 @@ void Heuristic3(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE Z, int 
   struct timespec start_tot, finish_tot;
   double elapsed_tot;
 
+  struct timespec start, finish;
+  double elapsed;
+
   printf("H3: Merging clusters\n");
   clock_gettime(CLOCK_MONOTONIC, &start_tot);
-  
+  #ifdef VERBOSE
+ 	 clock_gettime(CLOCK_MONOTONIC, &start); 
+  #endif
 
   size_t nclus              = cluster -> centers.count;  
   size_t *  surviving_clusters = (size_t*)malloc(nclus*sizeof(size_t));
@@ -1052,8 +1057,14 @@ void Heuristic3(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE Z, int 
       }
 
   qsort( (void*)merging_table, merge_count, sizeof(merge_t), compare_merging_density);
+  #ifdef VERBOSE
+	clock_gettime(CLOCK_MONOTONIC, &finish); 
+	elapsed_tot = (finish.tv_sec - start.tv_sec);
+	elapsed_tot += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+	printf("\tFinding merges:   %.3lfs\n", elapsed);
+	clock_gettime(CLOCK_MONOTONIC, &start); 
+  #endif
   
-    printf("\tFound %lu possible merges\n", merge_count);
   
     for( size_t m = 0; m < merge_count; m++ )
     {
@@ -1070,7 +1081,6 @@ void Heuristic3(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE Z, int 
 
                 FLOAT_TYPE dens1           = particles[cluster->centers.data[new_src]].log_rho_c;
                 FLOAT_TYPE dens1_err       = particles[cluster->centers.data[new_src]].log_rho_err;
-                
                 FLOAT_TYPE dens2           = particles[cluster->centers.data[new_trg]].log_rho_c;
                 FLOAT_TYPE dens2_err       = particles[cluster->centers.data[new_trg]].log_rho_err;
 
@@ -1107,6 +1117,13 @@ void Heuristic3(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE Z, int 
         #undef trg
     }
 
+  #ifdef VERBOSE
+	clock_gettime(CLOCK_MONOTONIC, &finish); 
+	elapsed_tot = (finish.tv_sec - start.tv_sec);
+	elapsed_tot += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+	printf("\tCluster merging:  %.3lfs\n", elapsed);
+	clock_gettime(CLOCK_MONOTONIC, &start); 
+  #endif
   
     /*Finalize clustering*/
     /*Acutally copying */
@@ -1249,9 +1266,17 @@ void Heuristic3(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE Z, int 
     free(surviving_clusters);
     free(old_to_new);
 
+  #ifdef VERBOSE
+	clock_gettime(CLOCK_MONOTONIC, &finish); 
+	elapsed_tot = (finish.tv_sec - start.tv_sec);
+	elapsed_tot += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+	printf("\tFinal operations: %.3lfs\n\n", elapsed);
+  #endif
+
     clock_gettime(CLOCK_MONOTONIC, &finish_tot);
     elapsed_tot = (finish_tot.tv_sec - start_tot.tv_sec);
     elapsed_tot += (finish_tot.tv_nsec - start_tot.tv_nsec) / 1000000000.0;
+    printf("\tFound %lu possible merges\n", merge_count);
     printf("\tSurviving clusters %lu\n", final_cluster_count);
     printf("\tTotal time: %.3lfs\n\n", elapsed_tot);
 
