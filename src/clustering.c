@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <time.h>
 
+#define MAX_SERIAL_MERGING 20000
 #define MAX_N_NGBH 1000
 extern unsigned int data_dims;
 size_t Npart;
@@ -894,12 +895,16 @@ void Heuristic2(Clusters* cluster, Datapoint_info* particles)
 
 void Merge_A_into_B(size_t* who_amI, size_t cluster_A, size_t cluster_B, size_t n)
 {
-    size_t tmp;
-    for(size_t i = 0; i < n; ++i)
-    {   
-        //substitute occurencies of b with a 
-        tmp = who_amI[i] == cluster_A ? cluster_B : who_amI[i];
-        who_amI[i] = tmp;
+    #pragma omp parallel if(n > MAX_SERIAL_MERGING)
+    {
+	    size_t tmp;
+	    #pragma omp if
+	    for(size_t i = 0; i < n; ++i)
+	    {   
+		//substitute occurencies of b with a 
+		tmp = who_amI[i] == cluster_A ? cluster_B : who_amI[i];
+		who_amI[i] = tmp;
+	    }
     }
     return;
 }
@@ -959,6 +964,7 @@ inline int merging_roles( FLOAT_TYPE dens1, FLOAT_TYPE dens1_err,
 
 void fix_borders_A_into_B(size_t A, size_t B, border_t** borders, size_t n)
 {
+   #pragma omp parallel for if(n > MAX_SERIAL_MERGING)
    for(size_t i = 0; i < n; ++i) 
    {
         if(borders[A][i].idx != NOBORDER )
