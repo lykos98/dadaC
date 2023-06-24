@@ -38,6 +38,8 @@ void Clusters_allocate(Clusters * c)
     
     c -> __borders_data         = (border_t*)malloc(nclus*nclus*sizeof(border_t)); 
     c -> borders                = (border_t**)malloc(nclus*sizeof(border_t*));
+
+    #pragma omp parallel for
     for(size_t i = 0; i < nclus; ++i)
     {
         c -> borders[i]         = c -> __borders_data + i*nclus;
