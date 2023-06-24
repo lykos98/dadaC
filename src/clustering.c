@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <time.h>
 
-#define MAX_SERIAL_MERGING 20000
+#define MAX_SERIAL_MERGING 40000
 #define MAX_N_NGBH 1000
 extern unsigned int data_dims;
 size_t Npart;
