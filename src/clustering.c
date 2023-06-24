@@ -898,7 +898,7 @@ void Merge_A_into_B(size_t* who_amI, size_t cluster_A, size_t cluster_B, size_t 
     #pragma omp parallel if(n > MAX_SERIAL_MERGING)
     {
 	    size_t tmp;
-	    #pragma omp if
+	    #pragma omp for
 	    for(size_t i = 0; i < n; ++i)
 	    {   
 		//substitute occurencies of b with a 
