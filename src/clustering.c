@@ -259,6 +259,7 @@ void KNN_search(Datapoint_info * particles, FLOAT_TYPE * data, kd_node* root, id
 
     idx_t progress_count = 0;
     idx_t step = n/100;
+    printf("Progress %lu/%lu\r",(uint64_t)progress_count, (uint64_t)n);
 
     #pragma omp parallel for
     for(int p = 0; p < n; ++p)
