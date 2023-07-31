@@ -1332,7 +1332,7 @@ void Heuristic3_sparse(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE 
 
                         //borders[new_src][new_trg] = border_null;
                         //borders[new_trg][new_src] = border_null;
-                        printf("Merging %lu into %lu\n",new_src,new_trg);
+                        //printf("Merging %lu into %lu\n",new_src,new_trg);
                         fix_SparseBorders_A_into_B(new_src,new_trg,cluster);
                         Merge_A_into_B ( surviving_clusters, new_src, new_trg, nclus );	  
                     }
@@ -1635,7 +1635,7 @@ void Heuristic3_dense(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE Z
 
                         borders[new_src][new_trg] = border_null;
                         borders[new_trg][new_src] = border_null;
-                        printf("Merging %lu into %lu\n",new_src,new_trg);
+                        //printf("Merging %lu into %lu\n",new_src,new_trg);
                         fix_borders_A_into_B(new_src,new_trg,borders,nclus);
                         Merge_A_into_B ( surviving_clusters, new_src, new_trg, nclus );	  
                     }
