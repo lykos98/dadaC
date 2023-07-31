@@ -182,8 +182,8 @@ int main(int argc, char** argv){
 
     Heuristic2(&c, particles);
 
-    sprintf(aux_fname, "%s_bord_int", argv[2]);
-    write_border_idx(aux_fname,&c);
+    //sprintf(aux_fname, "%s_bord_int", argv[2]);
+    //write_border_idx(aux_fname,&c);
 
     c.n = n;
     
