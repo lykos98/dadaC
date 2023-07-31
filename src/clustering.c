@@ -1,5 +1,6 @@
 //#include "../include/read_fof_snapshot.h"
 #include "../include/clustering.h"
+#include <omp.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <time.h>
@@ -256,13 +257,27 @@ void KNN_search(Datapoint_info * particles, FLOAT_TYPE * data, kd_node* root, id
     printf("KNN search:\n");
     clock_gettime(CLOCK_MONOTONIC, &start_tot);
 
+    idx_t progress_count = 0;
+    idx_t step = n/100;
 
     #pragma omp parallel for
     for(int p = 0; p < n; ++p)
     {
-        particles[p].ngbh = KNN(data + data_dims*p, root, k);
-        particles[p].array_idx = p;
+	particles[p].ngbh = KNN(data + data_dims*p, root, k);
+	particles[p].array_idx = p;
+
+	#pragma omp atomic update
+	progress_count++;
+
+	if(progress_count % step == 0 && omp_get_thread_num() == 0)
+	{
+		printf("Progress %lu/%lu\r",(uint64_t)progress_count, (uint64_t)n);
+		fflush(stdout);
+	}
     }
+	
+
+    printf("Progress %lu/%lu\n",(uint64_t)progress_count, (uint64_t)n);
 
     clock_gettime(CLOCK_MONOTONIC, &finish_tot);
     elapsed_tot = (finish_tot.tv_sec - start_tot.tv_sec);
