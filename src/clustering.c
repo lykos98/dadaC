@@ -260,21 +260,30 @@ void KNN_search(Datapoint_info * particles, FLOAT_TYPE * data, kd_node* root, id
     idx_t progress_count = 0;
     idx_t step = n/100;
     printf("Progress %lu/%lu\r",(uint64_t)progress_count, (uint64_t)n);
-
-    #pragma omp parallel for
-    for(int p = 0; p < n; ++p)
+    
+    int master_idx = -1;
+    #pragma omp parallel
     {
-	particles[p].ngbh = KNN(data + data_dims*p, root, k);
-	particles[p].array_idx = p;
+	    #pragma omp master
+	    {
+		master_idx = omp_get_thread_num();
+	    }
 
-	#pragma omp atomic update
-	progress_count++;
+	    #pragma omp for
+	    for(int p = 0; p < n; ++p)
+	    {
+		particles[p].ngbh = KNN(data + data_dims*p, root, k);
+		particles[p].array_idx = p;
 
-	if(progress_count % step == 0 && omp_get_thread_num() == 0)
-	{
-		printf("Progress %lu/%lu\r",(uint64_t)progress_count, (uint64_t)n);
-		fflush(stdout);
-	}
+		#pragma omp atomic update
+		progress_count++;
+
+		if(progress_count % step == 0 && omp_get_thread_num() == master_idx)
+		{
+			printf("Progress %lu/%lu\r",(uint64_t)progress_count, (uint64_t)n);
+			fflush(stdout);
+		}
+	    }
     }
 	
 
