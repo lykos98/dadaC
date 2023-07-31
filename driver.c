@@ -7,14 +7,32 @@ unsigned int data_dims;
 void write_border_idx(const char * fname, Clusters * c)
 {
     FILE * f = fopen(fname, "w");
-    for(int i = 0; i < c -> centers.count; ++i)
+
+    if(c -> UseSparseBorders)
     {
-        for(int j = 0; j < c -> centers.count; ++j)
-        {
-            int a = c -> borders[i][j].idx == NOBORDER ? -1 : c -> borders[i][j].idx;
-            fprintf(f,"%d ",a);
-        }
-        fprintf(f,"\n");
+	    for(int i = 0; i < c -> centers.count; ++i)
+	    {
+		for(int el = 0; el < c ->SparseBorders[i].count; ++el)
+		{
+		    int a = c -> SparseBorders[i].data[el].idx; 
+		    fprintf(f, "%d ",a);
+		}
+		fprintf(f,"\n");
+	    }
+    }
+    else
+    {
+	    for(int i = 0; i < c -> centers.count; ++i)
+	    {
+		for(int j = 0; j < c -> centers.count; ++j)
+		{
+		    //int a = c -> borders[i][j].idx == NOBORDER ? -1 : c -> borders[i][j].idx;
+		    //fprintf(f,"%d ",a);
+		    int a = c -> borders[i][j].idx; 
+		    if(c -> borders[i][j].idx != NOBORDER) fprintf(f, "%d ",a);
+		}
+		fprintf(f,"\n");
+	    }
     }
     fclose(f);
 }
@@ -156,22 +174,23 @@ int main(int argc, char** argv){
      * Allocate borders and other things to store clustering info                          *
      * Then Find borders between clusters and then merge clusters using peaks significance *
      ***************************************************************************************/
-    Clusters_allocate(&c);  
+   // Clusters_allocate(&c);  
+    dummy_Clusters_allocate(&c, argv[6][0] == 's');  
 
     // sprintf(aux_fname, "%s_int", argv[2]);
     // write_point_info(aux_fname,particles,n);
 
     Heuristic2(&c, particles);
 
-    //sprintf(aux_fname, "%s_bord_int", argv[2]);
-    //write_border_idx(aux_fname,&c);
+    sprintf(aux_fname, "%s_bord_int", argv[2]);
+    write_border_idx(aux_fname,&c);
 
     c.n = n;
     
     Heuristic3(&c, particles, Z, halo);
 
     sprintf(aux_fname, "%s_bord", argv[2]);
-    write_border_idx(aux_fname,&c);
+    //write_border_idx(aux_fname,&c);
 
     clock_gettime(CLOCK_MONOTONIC, &start);
     write_point_info(argv[2],particles,n);

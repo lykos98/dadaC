@@ -50,6 +50,20 @@ struct border_t {
   size_t idx;
 };
 
+struct SparseBorder_t {
+  size_t i;
+  size_t j;
+  size_t idx;
+  FLOAT_TYPE density;
+  FLOAT_TYPE error;
+};
+
+struct AdjList_t {
+  size_t count;
+  size_t size;
+  struct SparseBorder_t* data;
+};
+
 struct aClusters {
   struct lu_dynamicArray centers;
   FLOAT_TYPE **border_density;
@@ -62,6 +76,8 @@ struct aClusters {
 };
 
 struct Clusters {
+  int UseSparseBorders;
+  struct AdjList_t *SparseBorders;
   struct lu_dynamicArray centers;
   struct border_t **borders;
   struct border_t *__borders_data;
@@ -81,11 +97,14 @@ typedef struct Node Node;
 typedef struct LinkedList LinkedList;
 typedef struct merge_t merge_t;
 typedef struct border_t border_t;
+typedef struct SparseBorder_t SparseBorder_t;
+typedef struct AdjList_t AdjList_t; 
 
 void LinkedList_Insert(LinkedList *L, Node *n);
 void DynamicArray_allocate(lu_dynamicArray *a);
 void DynamicArray_pushBack(lu_dynamicArray *a, size_t p);
 void Clusters_allocate(Clusters *c);
+void dummy_Clusters_allocate(Clusters *c, int s);
 void Clusters_free(Clusters *c);
 
 int cmp(const void *a, const void *b);

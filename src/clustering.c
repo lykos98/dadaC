@@ -1,13 +1,16 @@
 //#include "../include/read_fof_snapshot.h"
 #include "../include/clustering.h"
 #include <stdint.h>
+#include <stdlib.h>
 #include <time.h>
-
 #define MAX_SERIAL_MERGING 40000
 #define MAX_N_NGBH 1000
+#define PREALLOC_BORDERS 10
+
 extern unsigned int data_dims;
 size_t Npart;
 const border_t border_null = {.density = -1.0, .error = 0, .idx = NOBORDER};
+const SparseBorder_t SparseBorder_null = {.density = -1.0, .error = 0, .idx = NOBORDER, .i = NOBORDER, .j = NOBORDER};
 
 
 void LinkedList_Insert(LinkedList* L, Node* n)
@@ -21,6 +24,51 @@ void LinkedList_Insert(LinkedList* L, Node* n)
  * Clusters object functions *
  *****************************/
 
+void dummy_Clusters_allocate(Clusters * c, int s)
+{
+    /*************************************
+     * allocate additional resources and *
+     * pointers for Clusters object      *
+     *************************************/
+    if(c -> centers.count == 0)
+    {
+        printf("Provide a valid cluster centers list\n");
+        return;
+    }
+
+    size_t nclus = c -> centers.count;
+    
+    if(s)
+    {
+	    //printf("Using sparse implementation\n");
+	    c -> UseSparseBorders = 1;
+	    c -> SparseBorders = (AdjList_t*)malloc(nclus*sizeof(AdjList_t));
+	    for(size_t i = 0; i < nclus; ++i)
+	    {
+		    c -> SparseBorders[i].count = 0;
+		    c -> SparseBorders[i].size  = PREALLOC_BORDERS;
+		    c -> SparseBorders[i].data  = (SparseBorder_t*)malloc(PREALLOC_BORDERS*sizeof(SparseBorder_t));
+	    }
+
+    }
+    else
+    {
+	    //printf("Using dense implementation\n");
+	    c -> UseSparseBorders = 0;
+	    c -> __borders_data         = (border_t*)malloc(nclus*nclus*sizeof(border_t)); 
+	    c -> borders                = (border_t**)malloc(nclus*sizeof(border_t*));
+
+	    #pragma omp parallel for
+	    for(size_t i = 0; i < nclus; ++i)
+	    {
+		c -> borders[i]         = c -> __borders_data + i*nclus;
+		for(size_t j = 0; j < nclus; ++j)
+		{
+		    c -> borders[i][j] = border_null;
+		}
+	    }
+    }
+}
 
 void Clusters_allocate(Clusters * c)
 {
@@ -36,31 +84,122 @@ void Clusters_allocate(Clusters * c)
 
     size_t nclus = c -> centers.count;
     
-    c -> __borders_data         = (border_t*)malloc(nclus*nclus*sizeof(border_t)); 
-    c -> borders                = (border_t**)malloc(nclus*sizeof(border_t*));
-
-    #pragma omp parallel for
-    for(size_t i = 0; i < nclus; ++i)
+    if(nclus > 10)
     {
-        c -> borders[i]         = c -> __borders_data + i*nclus;
-        for(size_t j = 0; j < nclus; ++j)
-        {
-            c -> borders[i][j] = border_null;
-        }
+	    c -> UseSparseBorders = 1;
+	    c -> SparseBorders = (AdjList_t*)malloc(nclus*sizeof(AdjList_t));
+	    for(size_t i = 0; i < nclus; ++i)
+	    {
+		    c -> SparseBorders[i].count = 0;
+		    c -> SparseBorders[i].size  = PREALLOC_BORDERS;
+		    c -> SparseBorders[i].data  = (SparseBorder_t*)malloc(PREALLOC_BORDERS*sizeof(SparseBorder_t));
+	    }
+
     }
+    else
+    {
+	    c -> UseSparseBorders = 0;
+	    c -> __borders_data         = (border_t*)malloc(nclus*nclus*sizeof(border_t)); 
+	    c -> borders                = (border_t**)malloc(nclus*sizeof(border_t*));
+
+	    #pragma omp parallel for
+	    for(size_t i = 0; i < nclus; ++i)
+	    {
+		c -> borders[i]         = c -> __borders_data + i*nclus;
+		for(size_t j = 0; j < nclus; ++j)
+		{
+		    c -> borders[i][j] = border_null;
+		}
+	    }
+    }
+}
+
+void AdjList_Insert(AdjList_t* l, SparseBorder_t b)
+{
+	if(l -> count < l -> size)
+	{
+		l -> data[l -> count] = b;
+		l -> count++;
+	}
+	else
+	{
+		l -> size += PREALLOC_BORDERS; 
+		l -> data = realloc( l -> data, sizeof(SparseBorder_t) * ( l -> size));
+		l -> data[l -> count] = b;
+		l -> count++;
+	}
+}
+
+void AdjList_reset(AdjList_t* l)
+{
+	free(l -> data);
+	l -> count = 0;
+	l -> size  = 0;
+	l -> data  = NULL;
 }
 
 void Clusters_Reset(Clusters * c)
 {
+	if(c -> UseSparseBorders)
+	{
+		for(size_t i = 0; i < c -> centers.count; ++i)
+		{
+			AdjList_reset((c -> SparseBorders) + i);
+		
+		}
+		free(c -> SparseBorders);
+		c -> SparseBorders = NULL;
+	}
+	else
+	{
+		free(c -> __borders_data);
+		free(c -> borders);
+	}
     free(c -> centers.data);
-    free(c -> __borders_data);
-    free(c -> borders);
 }
 
 void Clusters_free(Clusters * c)
 {
 
     Clusters_Reset(c);
+}
+
+
+void SparseBorder_Insert(Clusters *c, SparseBorder_t b)
+{
+	size_t i = b.i;
+	AdjList_t l = c -> SparseBorders[i];
+	int check = 1;
+	for(size_t k = 0; k < l.count; ++k)
+	{
+		SparseBorder_t p = l.data[k];
+		if(p.i == b.i && p.j == b.j)
+		{
+			if( b.density > p.density)
+			{
+				l.data[k] = b;
+			}
+			check = 0;
+		}
+	}
+	if(check) AdjList_Insert(c -> SparseBorders + i, b);
+	return;
+}
+
+SparseBorder_t SparseBorder_get(Clusters* c, size_t i, size_t j)
+{
+	SparseBorder_t b = SparseBorder_null;
+	AdjList_t l = c -> SparseBorders[i];
+	for(size_t el = 0; el < l.count; ++el)
+	{
+		SparseBorder_t candidate = l.data[el];
+		if(candidate.i == i && candidate.j == j)
+		{
+			b = candidate;
+		}
+	}
+
+	return b;
 }
 
 /*****************
@@ -848,40 +987,69 @@ void Heuristic2(Clusters* cluster, Datapoint_info* particles)
                             /*if it is the maximum one add it to the cluster*/
             if(pp != NOBORDER)
             {
-                int ppc = particles[pp].cluster_idx;
-                if(particles[i].g > borders[c][ppc].density)
-                {
-                    borders[c][ppc].density = particles[i].g;
-                    borders[ppc][c].density = particles[i].g;
-                    borders[c][ppc].idx = i;
-                    borders[ppc][c].idx = i;
-                }
+		int ppc = particles[pp].cluster_idx;
+		if(cluster -> UseSparseBorders)
+		{
+			//insert one and symmetric one
+			SparseBorder_t b = {.i = c, .j = ppc, .idx = i, .density = particles[i].g, .error = particles[i].log_rho_err}; 
+			SparseBorder_Insert(cluster, b);
+			//get symmetric border
+			SparseBorder_t bsym = {.i = ppc, .j = c, .idx = i, .density = particles[i].g, .error = particles[i].log_rho_err}; 
+			SparseBorder_Insert(cluster, bsym);
+
+		}
+		else
+		{
+			if(particles[i].g > borders[c][ppc].density)
+			{
+			    borders[c][ppc].density = particles[i].g;
+			    borders[ppc][c].density = particles[i].g;
+			    borders[c][ppc].idx = i;
+			    borders[ppc][c].idx = i;
+			}
+		}
             }
 
     }
 
 
-    for(size_t i = 0; i < nclus - 1; ++i)
+    if(cluster -> UseSparseBorders)
     {
-        for(size_t j = i + 1; j < nclus; ++j)
-        {
-            size_t p = borders[i][j].idx;
-            if(p != NOBORDER)
-            {   
+	    for(size_t c = 0; c < nclus; ++c)
+	    {
+		    for(size_t el = 0; el < cluster -> SparseBorders[c].count; ++el)
+		    {
+			    //fix border density, write log rho c
+			    size_t idx = cluster -> SparseBorders[c].data[el].idx; 
+			    cluster -> SparseBorders[c].data[el].density = particles[idx].log_rho_c;
+		    }
+	    }
 
-                borders[i][j].density = particles[p].log_rho_c;
-                borders[j][i].density = particles[p].log_rho_c;
-
-                borders[i][j].error = particles[p].log_rho_err;
-                borders[j][i].error = particles[p].log_rho_err;
-            }
-        }
     }
-
-    for(size_t i = 0; i < nclus; ++i)
+    else
     {
-        borders[i][i].density = -1.0;
-        borders[i][i].error = 0.0;
+	    for(size_t i = 0; i < nclus - 1; ++i)
+	    {
+		for(size_t j = i + 1; j < nclus; ++j)
+		{
+		    size_t p = borders[i][j].idx;
+		    if(p != NOBORDER)
+		    {   
+
+			borders[i][j].density = particles[p].log_rho_c;
+			borders[j][i].density = particles[p].log_rho_c;
+
+			borders[i][j].error = particles[p].log_rho_err;
+			borders[j][i].error = particles[p].log_rho_err;
+		    }
+		}
+	    }
+
+	    for(size_t i = 0; i < nclus; ++i)
+	    {
+		borders[i][i].density = -1.0;
+		borders[i][i].error = 0.0;
+	    }
     }
 
     clock_gettime(CLOCK_MONOTONIC, &finish_tot);
@@ -989,8 +1157,365 @@ void fix_borders_A_into_B(size_t A, size_t B, border_t** borders, size_t n)
    }
 }
 
-void Heuristic3(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE Z, int halo)
+void inline Delete_adjlist_element(Clusters * c, const size_t list_idx, const size_t el)
 {
+	//swap last element with 
+	size_t count = c -> SparseBorders[list_idx].count;
+	c -> SparseBorders[list_idx].data[el] = c -> SparseBorders[list_idx].data[count-1];
+	c -> SparseBorders[list_idx].data[count-1] = SparseBorder_null;
+	c -> SparseBorders[list_idx].count -= 1;
+}
+
+void fix_SparseBorders_A_into_B(size_t s,size_t t,Clusters* c)
+{
+	size_t nclus = c -> centers.count;	
+	//delete border trg -> src
+	for(size_t el = 0; el < c -> SparseBorders[t].count; ++el)
+	{
+		SparseBorder_t b = c -> SparseBorders[t].data[el];
+		if(b.i == t && b.j == s)
+		{
+			//delete the border src trg
+			Delete_adjlist_element(c, t, el);
+		}
+	}
+	//find the border and delete it, other insert them in correct place
+		
+	for(size_t el = 0; el < c -> SparseBorders[s].count; ++el)
+	{
+		SparseBorder_t b = c -> SparseBorders[s].data[el];
+		if(b.j != t)
+		{
+			//insert these borders as trg -> j and j -> trg
+			b.i = t;
+			SparseBorder_Insert(c, b);
+			SparseBorder_t bsym = b;
+			bsym.i = b.j;
+			bsym.j = b.i;
+			SparseBorder_Insert(c, bsym);
+		}
+	}
+
+	//clean up all borders
+	//delete the src list
+	AdjList_reset((c->SparseBorders) + s);
+	//delete all borders containing src
+	for(size_t i = 0; i < nclus; ++i)
+	{
+		for(size_t el = 0; el < c -> SparseBorders[i].count; ++el)
+		{
+			SparseBorder_t b = c -> SparseBorders[i].data[el];
+			if(b.j == s)
+			{
+				//delete the border src trg
+				Delete_adjlist_element(c, i, el);
+			}
+		}
+			
+	}
+
+
+}
+
+void Heuristic3_sparse(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE Z, int halo)
+{
+  printf("Using sparse implementation\n");
+  #define borders cluster->borders
+
+  struct timespec start_tot, finish_tot;
+  double elapsed_tot;
+
+  struct timespec start, finish;
+  double elapsed;
+
+  printf("H3: Merging clusters\n");
+  clock_gettime(CLOCK_MONOTONIC, &start_tot);
+  #ifdef VERBOSE
+ 	 clock_gettime(CLOCK_MONOTONIC, &start); 
+  #endif
+
+  size_t nclus                 = cluster -> centers.count;  
+  size_t *  surviving_clusters = (size_t*)malloc(nclus*sizeof(size_t));
+  for(size_t i = 0; i < nclus; ++i)
+    { 
+        surviving_clusters[i] = i; 
+    }
+
+  size_t   merge_count        = 0;
+  size_t   merging_table_size = 1000;
+  merge_t *merging_table      = (merge_t*)malloc(sizeof(merge_t)*merging_table_size);
+  
+  /*Find clusters to be merged*/
+  for(size_t i = 0; i < nclus - 1; ++i)   
+  {
+    size_t count = cluster -> SparseBorders[i].count;
+    for(size_t el = 0; el < count; ++el)   
+    {
+	      SparseBorder_t b = cluster -> SparseBorders[i].data[el];
+	      if( b.j > b.i)
+	      {
+		      FLOAT_TYPE dens1           = particles[cluster->centers.data[b.i]].log_rho_c;
+		      FLOAT_TYPE dens1_err       = particles[cluster->centers.data[b.i]].log_rho_err;
+		      FLOAT_TYPE dens2           = particles[cluster->centers.data[b.j]].log_rho_c;
+		      FLOAT_TYPE dens2_err       = particles[cluster->centers.data[b.j]].log_rho_err;
+		      FLOAT_TYPE dens_border     = b.density;
+		      FLOAT_TYPE dens_border_err = b.error;
+	      
+		      if ( is_a_merging( dens1, dens1_err, dens2, dens2_err, dens_border, dens_border_err, Z ) )
+			{
+			  
+			  if ( merge_count == merging_table_size ) {
+			    merging_table_size *= 1.1;
+			    merging_table = (merge_t*)realloc( merging_table, sizeof(merge_t) * merging_table_size ); }
+
+			  size_t src = b.j;
+			  size_t trg = b.i;
+
+			  merging_table[merge_count].source = src;
+			  merging_table[merge_count].target = trg;
+			  merging_table[merge_count].density = b.density;
+			  ++merge_count;
+			}
+	      }
+
+	}
+            
+  }
+
+  qsort( (void*)merging_table, merge_count, sizeof(merge_t), compare_merging_density);
+
+  #ifdef VERBOSE
+	clock_gettime(CLOCK_MONOTONIC, &finish); 
+	elapsed = (finish.tv_sec - start.tv_sec);
+	elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+	printf("\tFinding merges:   %.3lfs\n", elapsed);
+	clock_gettime(CLOCK_MONOTONIC, &start); 
+  #endif
+  
+  
+    for( size_t m = 0; m < merge_count; m++ )
+    {
+      
+        #define src surviving_clusters[merging_table[m].source]
+        #define trg surviving_clusters[merging_table[m].target]
+        //printf("Found: %lu, %lu which now is %lu, %lu\n",merging_table[m].source, merging_table[m].target, src,trg);
+
+        int re_check = ( (src != merging_table[m].source) || (trg != merging_table[m].target) );
+		size_t new_src = (src < trg) ? src : trg;
+		size_t new_trg = (src < trg) ? trg : src;
+
+                //pick who am I
+
+                FLOAT_TYPE dens1           = particles[cluster->centers.data[new_src]].log_rho_c;
+                FLOAT_TYPE dens1_err       = particles[cluster->centers.data[new_src]].log_rho_err;
+                FLOAT_TYPE dens2           = particles[cluster->centers.data[new_trg]].log_rho_c;
+                FLOAT_TYPE dens2_err       = particles[cluster->centers.data[new_trg]].log_rho_err;
+
+		//borders get
+		SparseBorder_t b 	   = SparseBorder_get(cluster, new_src, new_trg);
+                FLOAT_TYPE dens_border     = b.density;
+                FLOAT_TYPE dens_border_err = b.error;
+
+                int i_have_to_merge = is_a_merging(dens1,dens1_err,dens2,dens2_err,dens_border,dens_border_err,Z);            
+                switch (i_have_to_merge && src != trg)
+                {
+                case 1:
+                    {
+                        int side = merging_roles(dens1,dens1_err,dens2,dens2_err,dens_border,dens_border_err);
+                        if(!side)
+                        {
+                            size_t tmp;
+                            tmp = new_src;
+                            new_src = new_trg;
+                            new_trg = tmp;
+                        }
+
+                        //borders[new_src][new_trg] = border_null;
+                        //borders[new_trg][new_src] = border_null;
+                        printf("Merging %lu into %lu\n",new_src,new_trg);
+                        fix_SparseBorders_A_into_B(new_src,new_trg,cluster);
+                        Merge_A_into_B ( surviving_clusters, new_src, new_trg, nclus );	  
+                    }
+                    break;
+                
+                default:
+                    break;
+                }
+        
+        #undef src
+        #undef trg
+    }
+
+  #ifdef VERBOSE
+	clock_gettime(CLOCK_MONOTONIC, &finish); 
+	elapsed = (finish.tv_sec - start.tv_sec);
+	elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+	printf("\tCluster merging:  %.3lfs\n", elapsed);
+	clock_gettime(CLOCK_MONOTONIC, &start); 
+  #endif
+  
+    /*Finalize clustering*/
+    /*Acutally copying */
+    lu_dynamicArray tmp_centers;
+    lu_dynamicArray tmp_cluster_idx;
+
+
+    DynamicArray_Init(&tmp_centers);
+    DynamicArray_Init(&tmp_cluster_idx);
+
+    DynamicArray_Reserve(&tmp_centers, nclus);
+    DynamicArray_Reserve(&tmp_cluster_idx, nclus);
+
+    size_t final_cluster_count = 0;
+
+    size_t* old_to_new = (size_t*)malloc(nclus*sizeof(size_t));
+    size_t incremental_k = 0;
+    for(size_t i = 0; i < nclus; ++i)
+    {
+        
+        if(surviving_clusters[i] == i){
+            DynamicArray_pushBack(&tmp_centers, cluster->centers.data[i]);
+            DynamicArray_pushBack(&tmp_cluster_idx, i);
+            old_to_new[i] = incremental_k;
+            ++incremental_k;
+            ++final_cluster_count;
+        }
+    }
+
+    //fill the rest of old_to_new
+    for(size_t i = 0; i < nclus; ++i)
+    {
+        if(surviving_clusters[i] != i){
+            size_t cidx_to_copy_from = surviving_clusters[i];
+            old_to_new[i] = old_to_new[cidx_to_copy_from];
+        }
+    }
+
+    /*allocate auxiliary pointers to store results of the finalization of the procedure*/
+
+    AdjList_t* tmp_borders      = (AdjList_t*)malloc(final_cluster_count*sizeof(AdjList_t));
+
+    //initialize temporary borders
+    for(size_t i = 0; i < final_cluster_count; ++i)
+    {
+	    tmp_borders[i].count = 0;
+	    tmp_borders[i].size  = PREALLOC_BORDERS;
+	    tmp_borders[i].data  = (SparseBorder_t*)malloc(PREALLOC_BORDERS*sizeof(SparseBorder_t));
+    }
+
+    /*initialize all pointers*/
+
+    /*Fix cluster assignment*/
+    #pragma omp parallel for
+    for(size_t i = 0; i < cluster -> n; ++i)
+    {
+        particles[i].is_center = 0;
+        int old_cidx = particles[i].cluster_idx;
+        particles[i].cluster_idx = old_to_new[old_cidx];
+    }
+
+    
+    #pragma omp parallel for
+    for(size_t c = 0; c < final_cluster_count; ++c)
+    {
+        size_t c_idx = tmp_cluster_idx.data[c];
+	for(size_t el = 0; el < cluster -> SparseBorders[c_idx].count; ++el)
+	{
+		//retrieve border
+		SparseBorder_t b = cluster -> SparseBorders[c_idx].data[el];
+		//change idexes of clusters
+		b.i = old_to_new[b.i];
+		b.j = old_to_new[b.j];
+
+		AdjList_Insert(tmp_borders + c, b);
+	}
+    }
+
+    Clusters_Reset(cluster);
+    /*pay attention to the defined borders*/
+    /*copy into members*/
+    cluster -> SparseBorders = tmp_borders;
+
+
+    cluster -> centers = tmp_centers;
+    /**
+     * Fix center assignment
+    */
+    for(int i = 0; i < cluster -> centers.count; ++i)
+    {
+        int idx = cluster -> centers.data[i];
+        particles[idx].is_center = 1;
+    }
+    /*Halo*/
+    switch (halo)
+    {
+    case 1:
+	{
+		FLOAT_TYPE* max_border_den_array = (FLOAT_TYPE*)malloc(final_cluster_count*sizeof(FLOAT_TYPE));
+		#pragma omp parallel
+		{
+		    #pragma omp for
+		    for(size_t c = 0; c < final_cluster_count; ++c)
+		    {
+			FLOAT_TYPE max_border_den = -2.;
+			for(size_t el = 0; el < cluster -> SparseBorders[c].count; ++el)
+			{
+			    SparseBorder_t b = cluster -> SparseBorders[c].data[el];
+			    if(b.density > max_border_den)
+			    {
+				max_border_den = b.density;
+			    }
+			}
+			max_border_den_array[c] = max_border_den;
+		    }
+
+		    #pragma omp barrier
+
+		    #pragma omp for
+		    for(size_t i = 0; i < cluster -> n; ++i)
+		    {
+			int cidx = particles[i].cluster_idx;
+			int halo_flag = particles[i].log_rho_c < max_border_den_array[cidx]; 
+			particles[i].cluster_idx = halo_flag ? -1 : cidx;
+		    }
+		}
+		free(max_border_den_array);
+	}
+        break;
+    
+    default:
+        break;
+    }    
+
+    /*free memory and put the correct arrays into place*/
+    free(tmp_cluster_idx.data);
+    free(merging_table);
+    //free(ipos.data);
+    //free(jpos.data);
+    free(surviving_clusters);
+    free(old_to_new);
+
+  #ifdef VERBOSE
+	clock_gettime(CLOCK_MONOTONIC, &finish); 
+	elapsed = (finish.tv_sec - start.tv_sec);
+	elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+	printf("\tFinal operations: %.3lfs\n\n", elapsed);
+  #endif
+
+    clock_gettime(CLOCK_MONOTONIC, &finish_tot);
+    elapsed_tot = (finish_tot.tv_sec - start_tot.tv_sec);
+    elapsed_tot += (finish_tot.tv_nsec - start_tot.tv_nsec) / 1000000000.0;
+    printf("\tFound %lu possible merges\n", merge_count);
+    printf("\tSurviving clusters %lu\n", final_cluster_count);
+    printf("\tTotal time: %.3lfs\n\n", elapsed_tot);
+
+  #undef  borders  
+}
+
+
+void Heuristic3_dense(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE Z, int halo)
+{
+  printf("Using dense implementation\n");
   #define borders cluster->borders
 
   struct timespec start_tot, finish_tot;
@@ -1020,7 +1545,6 @@ void Heuristic3(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE Z, int 
   for(size_t i = 0; i < nclus - 1; ++i)   
     for(size_t j = i + 1; j < nclus; ++j)   
     {
-
 	switch(borders[i][j].idx != NOBORDER)
 	{
                     
@@ -1111,7 +1635,7 @@ void Heuristic3(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE Z, int 
 
                         borders[new_src][new_trg] = border_null;
                         borders[new_trg][new_src] = border_null;
-                        //printf("Merging %lu into %lu\n",new_src,new_trg);
+                        printf("Merging %lu into %lu\n",new_src,new_trg);
                         fix_borders_A_into_B(new_src,new_trg,borders,nclus);
                         Merge_A_into_B ( surviving_clusters, new_src, new_trg, nclus );	  
                     }
@@ -1292,3 +1816,14 @@ void Heuristic3(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE Z, int 
 }
 
 
+void Heuristic3(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE Z, int halo)
+{
+	if(cluster -> UseSparseBorders)
+	{
+		Heuristic3_sparse(cluster, particles,  Z,  halo);
+	}
+	else
+	{
+		Heuristic3_dense(cluster, particles,  Z,  halo);
+	}
+}
