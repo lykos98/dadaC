@@ -10,36 +10,36 @@
 #define DTHR 23.92812698
 #define PI_F 3.1415926f
 #define ARRAY_INCREMENT 500
-#define DA_DTYPE size_t
-#define NOBORDER SIZE_MAX
+#define DA_DTYPE idx_t
+#define NOBORDER MY_SIZE_MAX
 
 /**********************************
  * DATA STRUCTURES FOR CLUSTERING *
  **********************************/
 struct Node {
-  size_t data;
+  idx_t data;
   struct Node *next;
 };
 
 struct LinkedList {
-  size_t count;
+  idx_t count;
   struct Node *head;
 };
 
 struct lu_dynamicArray {
-  size_t *data;
-  size_t size;
-  size_t count;
+  idx_t *data;
+  idx_t size;
+  idx_t count;
 };
 
 struct Datapoint_info {
   FLOAT_TYPE g;
   Heap ngbh;
-  size_t array_idx;
+  idx_t array_idx;
   FLOAT_TYPE log_rho;
   FLOAT_TYPE log_rho_c;
   FLOAT_TYPE log_rho_err;
-  size_t kstar;
+  idx_t kstar;
   int is_center;
   int cluster_idx;
 };
@@ -47,20 +47,20 @@ struct Datapoint_info {
 struct border_t {
   FLOAT_TYPE density;
   FLOAT_TYPE error;
-  size_t idx;
+  idx_t idx;
 };
 
 struct SparseBorder_t {
-  size_t i;
-  size_t j;
-  size_t idx;
+  idx_t i;
+  idx_t j;
+  idx_t idx;
   FLOAT_TYPE density;
   FLOAT_TYPE error;
 };
 
 struct AdjList_t {
-  size_t count;
-  size_t size;
+  idx_t count;
+  idx_t size;
   struct SparseBorder_t* data;
 };
 
@@ -68,11 +68,11 @@ struct aClusters {
   struct lu_dynamicArray centers;
   FLOAT_TYPE **border_density;
   FLOAT_TYPE **border_err;
-  size_t **border_idx;
+  idx_t **border_idx;
   FLOAT_TYPE *__border_density_data;
   FLOAT_TYPE *__border_err_data;
-  size_t *__border_idx_data;
-  size_t n;
+  idx_t *__border_idx_data;
+  idx_t n;
 };
 
 struct Clusters {
@@ -81,12 +81,12 @@ struct Clusters {
   struct lu_dynamicArray centers;
   struct border_t **borders;
   struct border_t *__borders_data;
-  size_t n;
+  idx_t n;
 };
 
 struct merge_t {
-  size_t source;
-  size_t target;
+  idx_t source;
+  idx_t target;
   FLOAT_TYPE density;
 };
 
@@ -102,23 +102,23 @@ typedef struct AdjList_t AdjList_t;
 
 void LinkedList_Insert(LinkedList *L, Node *n);
 void DynamicArray_allocate(lu_dynamicArray *a);
-void DynamicArray_pushBack(lu_dynamicArray *a, size_t p);
+void DynamicArray_pushBack(lu_dynamicArray *a, idx_t p);
 void Clusters_allocate(Clusters *c);
 void dummy_Clusters_allocate(Clusters *c, int s);
 void Clusters_free(Clusters *c);
 
 int cmp(const void *a, const void *b);
-FLOAT_TYPE avg(const FLOAT_TYPE *x, const size_t n);
-FLOAT_TYPE mEst2(FLOAT_TYPE *x, FLOAT_TYPE *y, size_t n);
-FLOAT_TYPE mEst(FLOAT_TYPE *x, FLOAT_TYPE *y, size_t n);
-FLOAT_TYPE idEstimate(Datapoint_info *particles, size_t n);
+FLOAT_TYPE avg(const FLOAT_TYPE *x, const idx_t n);
+FLOAT_TYPE mEst2(FLOAT_TYPE *x, FLOAT_TYPE *y, idx_t n);
+FLOAT_TYPE mEst(FLOAT_TYPE *x, FLOAT_TYPE *y, idx_t n);
+FLOAT_TYPE idEstimate(Datapoint_info *particles, idx_t n);
 void computeRho(Datapoint_info *particles, const FLOAT_TYPE d,
-                const size_t points);
+                const idx_t points);
 int cmpPP(const void *p1, const void *p2);
-void computeCorrection(Datapoint_info *particles, size_t n, FLOAT_TYPE Z);
+void computeCorrection(Datapoint_info *particles, idx_t n, FLOAT_TYPE Z);
 void KNN_search(Datapoint_info *particles, FLOAT_TYPE *data, kd_node *root,
-                size_t n, size_t k);
+                idx_t n, idx_t k);
 
-Clusters Heuristic1(Datapoint_info *particles, FLOAT_TYPE *data, size_t n);
+Clusters Heuristic1(Datapoint_info *particles, FLOAT_TYPE *data, idx_t n);
 void Heuristic2(Clusters *cluster, Datapoint_info *particles);
 void Heuristic3(Clusters *cluster, Datapoint_info *particles, FLOAT_TYPE Z,int halo);

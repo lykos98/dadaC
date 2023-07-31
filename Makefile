@@ -1,5 +1,5 @@
 LIBRARIES=-lm -fopenmp 
-OPTIM=-O4 -march=native 
+OPTIM=-O4 -march=native -DUSE_INT32 
 DEBUG=-g 
 SRC="src"
 VERBOSE=-DVERBOSE

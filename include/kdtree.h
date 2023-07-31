@@ -3,6 +3,7 @@
 #include <string.h>
 #include <math.h>
 #include <limits.h>
+#include <stdint.h>
 #define T double
 #define DATA_DIMS 0 
 
@@ -12,24 +13,32 @@
 	#define FLOAT_TYPE double 
 #endif
 
+#ifdef USE_INT32
+	#define MY_SIZE_MAX UINT32_MAX
+	#define idx_t uint32_t
+#else
+	#define MY_SIZE_MAX UINT64_MAX
+	#define idx_t uint64_t
+#endif
+
 
 struct heap_node
 {
    FLOAT_TYPE value;
-   size_t array_idx;
+   idx_t array_idx;
 } ;
 
 struct Heap
 {
-   size_t N; 
-   size_t count;
+   idx_t N; 
+   idx_t count;
    struct heap_node* data;
    
 } ;
 
 struct SimpleHeap
 {
-   size_t N; 
+   idx_t N; 
    T * data;
 } ;
 
@@ -38,7 +47,7 @@ struct kd_node
    int level;
    int split_var;
    FLOAT_TYPE * data;
-   size_t array_idx;
+   idx_t array_idx;
    struct kd_node* parent;
    struct kd_node* lch;
    struct kd_node* rch;
@@ -57,9 +66,9 @@ void swapHeapNode(heap_node* a, heap_node* b);
 
 void swap_kd_node_ptrs(kd_node **x, kd_node **y);
 
-void allocateSimpleHeap(SimpleHeap* H, size_t n);
+void allocateSimpleHeap(SimpleHeap* H, idx_t n);
 
-void allocateHeap(Heap* H, size_t n);
+void allocateHeap(Heap* H, idx_t n);
 
 void initSimpleHeap(SimpleHeap* H);
 
@@ -69,16 +78,16 @@ void freeSimpleHeap(SimpleHeap * H);
 
 void freeHeap(Heap * H);
 
-void heapifyMaxSimpleHeap(SimpleHeap* H, size_t node);
+void heapifyMaxSimpleHeap(SimpleHeap* H, idx_t node);
 
-void heapifyMaxHeap(Heap* H, size_t node);
+void heapifyMaxHeap(Heap* H, idx_t node);
 
 
 void setRootMaxSimpleHeap(SimpleHeap * H, T val);
 
-void setRootMaxHeap(Heap * H, FLOAT_TYPE val, size_t array_idx);
+void setRootMaxHeap(Heap * H, FLOAT_TYPE val, idx_t array_idx);
 
-void insertMaxHeap(Heap * H, FLOAT_TYPE val, size_t array_idx);
+void insertMaxHeap(Heap * H, FLOAT_TYPE val, idx_t array_idx);
 
 /**
  * 
@@ -87,9 +96,9 @@ void insertMaxHeap(Heap * H, FLOAT_TYPE val, size_t array_idx);
  * 
 */
 
-void initializeKDnodes(kd_node * node_array, FLOAT_TYPE* d, size_t n );
+void initializeKDnodes(kd_node * node_array, FLOAT_TYPE* d, idx_t n );
 
-void initializePTRS(kd_node** node_ptr_array, kd_node* node_array, size_t n );
+void initializePTRS(kd_node** node_ptr_array, kd_node* node_array, idx_t n );
 
 int cmpKDnodes(kd_node* a, kd_node* b, int var);
 
@@ -114,4 +123,4 @@ void HeapSort(Heap* H);
 
 Heap KNN(FLOAT_TYPE* point, kd_node* kdtree_root, int maxk);
 
-kd_node * build_tree(kd_node** kd_ptrs, size_t n);
+kd_node * build_tree(kd_node** kd_ptrs, idx_t n);

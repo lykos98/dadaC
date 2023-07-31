@@ -1,4 +1,5 @@
 #include "../include/kdtree.h"
+#include <stdint.h>
 #include <time.h>
 
 #define HEAP_LCH(x) (2*x + 1)
@@ -46,13 +47,13 @@ void swap_kd_node_ptrs(kd_node **x, kd_node **y) {
     //memcpy(y, &tmp,  sizeof(tmp));
 }
 
-void allocateSimpleHeap(SimpleHeap* H, size_t n){
+void allocateSimpleHeap(SimpleHeap* H, idx_t n){
     H -> data = (T*)malloc(n*sizeof(T));
     H -> N = n;
     return;
 }
 
-void allocateHeap(Heap* H, size_t n){
+void allocateHeap(Heap* H, idx_t n){
     H -> data = (heap_node*)malloc(n*sizeof(heap_node));
     H -> N = n;
     H -> count = 0;
@@ -60,7 +61,7 @@ void allocateHeap(Heap* H, size_t n){
 }
 
 void initSimpleHeap(SimpleHeap* H){
-    for(size_t i = 0; i < H -> N; ++i)
+    for(idx_t i = 0; i < H -> N; ++i)
     {
         H -> data[i] = 1e12;
     }
@@ -68,10 +69,10 @@ void initSimpleHeap(SimpleHeap* H){
 }
 
 void initHeap(Heap* H){
-    for(size_t i = 0; i < H -> N; ++i)
+    for(idx_t i = 0; i < H -> N; ++i)
     {
         H -> data[i].value = 0.;
-        H -> data[i].array_idx = ULONG_MAX; 
+        H -> data[i].array_idx = MY_SIZE_MAX; 
     }
     return;
 }
@@ -79,8 +80,8 @@ void initHeap(Heap* H){
 void freeSimpleHeap(SimpleHeap * H){ free(H -> data);}
 void freeHeap(Heap * H){ free(H -> data);}
 
-void heapifyMaxSimpleHeap(SimpleHeap* H, size_t node){
-    size_t largest = node; 
+void heapifyMaxSimpleHeap(SimpleHeap* H, idx_t node){
+    idx_t largest = node; 
     /*
     Found gratest between children of node and boundcheck if the node is a leaf 
     */
@@ -99,8 +100,8 @@ void heapifyMaxSimpleHeap(SimpleHeap* H, size_t node){
     }
 }
 
-void heapifyMaxHeap(Heap* H, size_t node){
-    size_t largest = node; 
+void heapifyMaxHeap(Heap* H, idx_t node){
+    idx_t largest = node; 
     /*
     Found gratest between children of node and boundcheck if the node is a leaf 
     */
@@ -125,14 +126,14 @@ void setRootMaxSimpleHeap(SimpleHeap * H, T val){
     return;
 }
 
-void setRootMaxHeap(Heap * H, FLOAT_TYPE val, size_t array_idx){
+void setRootMaxHeap(Heap * H, FLOAT_TYPE val, idx_t array_idx){
     H -> data[0].value = val;
     H -> data[0].array_idx = array_idx;
     heapifyMaxHeap(H,0);
     return;
 }
 
-void insertMaxHeap(Heap * H, FLOAT_TYPE val, size_t array_idx){
+void insertMaxHeap(Heap * H, FLOAT_TYPE val, idx_t array_idx){
     if (H -> count == 0)
     {
         ++(H -> count);
@@ -140,7 +141,7 @@ void insertMaxHeap(Heap * H, FLOAT_TYPE val, size_t array_idx){
         H -> data[0].array_idx = array_idx;
     }
     else if(H -> count < H -> N){
-        size_t node = H->count;
+        idx_t node = H->count;
         ++(H -> count);
         H -> data[node].value = val;
         H -> data[node].array_idx = array_idx;
@@ -174,9 +175,9 @@ void insertMaxHeap(Heap * H, FLOAT_TYPE val, size_t array_idx){
  * 
 */
 
-void initializeKDnodes(kd_node * node_array, FLOAT_TYPE* d, size_t n )
+void initializeKDnodes(kd_node * node_array, FLOAT_TYPE* d, idx_t n )
 {
-    for(size_t i = 0; i < n; ++i)
+    for(idx_t i = 0; i < n; ++i)
     {
         node_array[i].data = d + (i*data_dims);
         node_array[i].array_idx = i;
@@ -188,9 +189,9 @@ void initializeKDnodes(kd_node * node_array, FLOAT_TYPE* d, size_t n )
     }
 }
 
-void initializePTRS(kd_node** node_ptr_array, kd_node* node_array, size_t n )
+void initializePTRS(kd_node** node_ptr_array, kd_node* node_array, idx_t n )
 {
-    for(size_t i = 0; i < n; ++i)
+    for(idx_t i = 0; i < n; ++i)
     {
         node_ptr_array[i] = node_array + i;
     }
@@ -205,7 +206,7 @@ int cmpKDnodes(kd_node* a, kd_node* b, int var){
 void printKDnode(kd_node* node)
 {
     printf("Node %p:\n",node);
-    printf("\t array_idx: %ld\n", node -> array_idx);
+    printf("\t array_idx: %lu\n", (uint64_t)(node -> array_idx));
     printf("\t data: ");
     for(int i=0; i<data_dims; ++i) printf(" %f ",node->data[i]);
     printf("\n");
@@ -371,8 +372,8 @@ void KNN_sub_tree_search(FLOAT_TYPE* point, kd_node* kdtree_root, Heap * H)
 
 
 void HeapSort(Heap* H){
-    size_t n = H -> N;
-    for(size_t i= (H -> N) - 1; i > 0; --i)
+    idx_t n = H -> N;
+    for(idx_t i= (H -> N) - 1; i > 0; --i)
     {
         swapHeapNode(H -> data, H -> data + i);
         H -> N = i;
@@ -392,7 +393,7 @@ Heap KNN(FLOAT_TYPE* point, kd_node* kdtree_root, int maxk)
     return H;
 }
 
-kd_node * build_tree(kd_node** kd_ptrs, size_t n)
+kd_node * build_tree(kd_node** kd_ptrs, idx_t n)
 {
     
 

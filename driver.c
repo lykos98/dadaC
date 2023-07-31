@@ -37,12 +37,12 @@ void write_border_idx(const char * fname, Clusters * c)
     fclose(f);
 }
 
-void write_point_info(const char * fname, Datapoint_info * particles, size_t n)
+void write_point_info(const char * fname, Datapoint_info * particles, idx_t n)
 {
     FILE * f = fopen(fname,"w");
-    for(size_t i = 0; i < n; ++i)
+    for(idx_t i = 0; i < n; ++i)
     {
-        fprintf(f,"%lu\t",particles[i].kstar);
+        fprintf(f,"%lu\t",(uint64_t)particles[i].kstar);
         fprintf(f,"%d\t", particles[i].cluster_idx);
 	#ifdef USE_FLOAT32
         fprintf(f,"%.6f\t",particles[i].log_rho);
@@ -110,11 +110,11 @@ int main(int argc, char** argv){
         exit(1);
     }
     fseek(f,0,SEEK_END);
-    size_t n = ftell(f);
+    idx_t n = ftell(f);
     rewind(f);
 
     n = n/(sizeof(float)*data_dims);
-    printf("Reading %lu particles\n",n);
+    printf("Reading %lu particles\n",(uint64_t)n);
 
 
     FLOAT_TYPE* data = (FLOAT_TYPE*)malloc(data_dims*n*sizeof(FLOAT_TYPE));
@@ -122,7 +122,7 @@ int main(int argc, char** argv){
     fread(df,sizeof(float),data_dims*n,f);
     fclose(f);
 
-    for(size_t i = 0; i < n*data_dims; ++i) data[i] = (FLOAT_TYPE)(df[i]);
+    for(idx_t i = 0; i < n*data_dims; ++i) data[i] = (FLOAT_TYPE)(df[i]);
 
     free(df);
 
@@ -204,7 +204,7 @@ int main(int argc, char** argv){
      * Free all memory *
      *******************/
 
-    for (size_t i = 0; i < n; ++i)
+    for (idx_t i = 0; i < n; ++i)
     {        
         freeHeap(&particles[i].ngbh);
     }
