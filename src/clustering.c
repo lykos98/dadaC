@@ -286,7 +286,7 @@ void KNN_search(Datapoint_info * particles, FLOAT_TYPE * data, kd_node* root, id
     }
 	
 
-    printf("Progress 0/%lu -> 100%%\n",(uint64_t)n);
+    printf("Progress %lu/%lu -> 100%%\n",(uint64_t)n, (uint64_t)n);
     //printf("Progress %lu/%lu\n",(uint64_t)progress_count, (uint64_t)n);
 
     clock_gettime(CLOCK_MONOTONIC, &finish_tot);
