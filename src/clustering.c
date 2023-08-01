@@ -1324,8 +1324,8 @@ void Heuristic3_sparse(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE 
         #define trg surviving_clusters[merging_table[m].target]
         //printf("Found: %lu, %lu which now is %lu, %lu\n",merging_table[m].source, merging_table[m].target, src,trg);
 
-        int re_check = ( (src != merging_table[m].source) || (trg != merging_table[m].target) );
-	if(re_check)
+        //int re_check = ( (src != merging_table[m].source) || (trg != merging_table[m].target) );
+	//if(re_check)
 	{
 		idx_t new_src = (src < trg) ? src : trg;
 		idx_t new_trg = (src < trg) ? trg : src;
@@ -1632,8 +1632,9 @@ void Heuristic3_dense(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE Z
         #define trg surviving_clusters[merging_table[m].target]
         //printf("Found: %lu, %lu which now is %lu, %lu\n",merging_table[m].source, merging_table[m].target, src,trg);
 
-        int re_check = ( (src != merging_table[m].source) || (trg != merging_table[m].target) );
-	if(re_check){
+        //int re_check = ( (src != merging_table[m].source) || (trg != merging_table[m].target) );
+	//if(re_check)
+	{
 		idx_t new_src = (src < trg) ? src : trg;
 		idx_t new_trg = (src < trg) ? trg : src;
 
