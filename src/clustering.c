@@ -1192,50 +1192,71 @@ inline void Delete_adjlist_element(Clusters * c, const idx_t list_idx, const idx
 
 void fix_SparseBorders_A_into_B(idx_t s,idx_t t,Clusters* c)
 {
-	idx_t nclus = c -> centers.count;	
 	//delete border trg -> src
-	for(idx_t el = 0; el < c -> SparseBorders[t].count; ++el)
+	
+	#pragma omp parallel
 	{
-		SparseBorder_t b = c -> SparseBorders[t].data[el];
-		if(b.i == t && b.j == s)
+		#pragma omp single 
 		{
-			//delete the border src trg
-			Delete_adjlist_element(c, t, el);
-		}
-	}
-	//find the border and delete it, other insert them in correct place
-		
-	for(idx_t el = 0; el < c -> SparseBorders[s].count; ++el)
-	{
-		SparseBorder_t b = c -> SparseBorders[s].data[el];
-		if(b.j != t)
-		{
-			//insert these borders as trg -> j and j -> trg
-			b.i = t;
-			SparseBorder_Insert(c, b);
-			SparseBorder_t bsym = b;
-			bsym.i = b.j;
-			bsym.j = b.i;
-			SparseBorder_Insert(c, bsym);
-		}
-	}
-
-	//clean up all borders
-	//delete the src list
-	AdjList_reset((c->SparseBorders) + s);
-	//delete all borders containing src
-	for(idx_t i = 0; i < nclus; ++i)
-	{
-		for(idx_t el = 0; el < c -> SparseBorders[i].count; ++el)
-		{
-			SparseBorder_t b = c -> SparseBorders[i].data[el];
-			if(b.j == s)
+			for(idx_t el = 0; el < c -> SparseBorders[t].count; ++el)
 			{
-				//delete the border src trg
-				Delete_adjlist_element(c, i, el);
+				SparseBorder_t b = c -> SparseBorders[t].data[el];
+				if(b.i == t && b.j == s)
+				{
+					//delete the border src trg
+					Delete_adjlist_element(c, t, el);
+				}
 			}
 		}
+		//find the border and delete it, other insert them in correct place
 			
+		#pragma omp for
+		for(idx_t el = 0; el < c -> SparseBorders[s].count; ++el)
+		{
+			SparseBorder_t b = c -> SparseBorders[s].data[el];
+		//	idx_t ii = b.i;
+			if(b.j != t)
+			{
+				//insert these borders as trg -> j and j -> trg
+				b.i = t;
+				SparseBorder_Insert(c, b);
+				SparseBorder_t bsym = b;
+				bsym.i = b.j;
+				bsym.j = b.i;
+				SparseBorder_Insert(c, bsym);
+				for(idx_t dl = 0; dl < c -> SparseBorders[b.j].count; ++dl)
+				{
+					SparseBorder_t b_del = c -> SparseBorders[b.j].data[dl];
+					if(b_del.j == s)
+					{
+						//delete the border src trg
+						Delete_adjlist_element(c, b.j, dl);
+					}
+				}
+						
+			}
+		}
+
+		//clean up all borders
+		//delete the src list
+		#pragma omp single 
+		{
+			AdjList_reset((c->SparseBorders) + s);
+		}
+		//delete all borders containing src
+		//for(idx_t i = 0; i < nclus; ++i)
+		//{
+		//	for(idx_t el = 0; el < c -> SparseBorders[i].count; ++el)
+		//	{
+		//		SparseBorder_t b = c -> SparseBorders[i].data[el];
+		//		if(b.j == s)
+		//		{
+		//			//delete the border src trg
+		//			Delete_adjlist_element(c, i, el);
+		//		}
+		//	}
+		//		
+		//}
 	}
 
 
