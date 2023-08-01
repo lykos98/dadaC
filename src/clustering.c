@@ -330,7 +330,7 @@ FLOAT_TYPE mEst2(FLOAT_TYPE * x, FLOAT_TYPE *y, idx_t n)
      ********************************************/
      
 
-    FLOAT_TYPE x_avg, y_avg;
+    //FLOAT_TYPE x_avg, y_avg;
     FLOAT_TYPE num = 0;
     FLOAT_TYPE den = 0;
     FLOAT_TYPE dd;
@@ -394,7 +394,7 @@ FLOAT_TYPE idEstimate(Datapoint_info* particles, idx_t n)
     FLOAT_TYPE* r = (FLOAT_TYPE*)malloc(n*sizeof(FLOAT_TYPE));
     FLOAT_TYPE* Pemp = (FLOAT_TYPE*)malloc(n*sizeof(FLOAT_TYPE));
 
-    for(int i = 0; i < n; ++i)
+    for(idx_t i = 0; i < n; ++i)
     {
         r[i] = 0.5 * log(particles[i].ngbh.data[2].value/particles[i].ngbh.data[1].value);
         Pemp[i] = -log(1 - (FLOAT_TYPE)(i + 1)/(FLOAT_TYPE)n);
@@ -532,8 +532,10 @@ void computeRho(Datapoint_info* particles, const FLOAT_TYPE d, const idx_t point
 
         idx_t j = 4;
         idx_t k;
-        FLOAT_TYPE dL = 0.0;
-        FLOAT_TYPE vvi, vvj, vp;
+        FLOAT_TYPE dL  = 0.;
+        FLOAT_TYPE vvi = 0.;
+	FLOAT_TYPE vvj = 0.;
+	FLOAT_TYPE vp  = 0.;
         while(j < kMAX && dL < DTHR)
         {
             idx_t ksel = j - 1;
@@ -631,8 +633,8 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, idx_t n)
     printf("H1: Preliminary cluster assignment\n");
     clock_gettime(CLOCK_MONOTONIC, &start_tot);
 
-    idx_t ncenters = 0;
-    idx_t putativeCenters = n;
+    //idx_t ncenters = 0;
+    //idx_t putativeCenters = n;
     lu_dynamicArray allCenters, removedCenters, actualCenters, max_rho;
     DynamicArray_allocate(&allCenters);
     DynamicArray_allocate(&removedCenters);
@@ -807,7 +809,7 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, idx_t n)
     {
         idx_t i = allCenters.data[p];
         int e = 0;
-        FLOAT_TYPE gi = particles[i].g;
+        //FLOAT_TYPE gi = particles[i].g;
         idx_t mr = to_remove[p];
         if(mr != MY_SIZE_MAX)
         {
@@ -853,7 +855,7 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, idx_t n)
 
     free(to_remove);
 
-    idx_t nclusters = 0;
+    //idx_t nclusters = 0;
 
 
     /*****************************************************************************
@@ -868,7 +870,7 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, idx_t n)
     for(idx_t i = 0; i < n; ++i)
     {   
         Datapoint_info* p = particles_ptrs[i];
-        idx_t ele = p -> array_idx;
+        //idx_t ele = p -> array_idx;
         //fprintf(f,"%lu\n",ele);
         if(!(p -> is_center))
         {
@@ -888,7 +890,7 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, idx_t n)
             if(cluster == -1)
             {
                 FLOAT_TYPE gmax = -99999.;               
-                idx_t gm_index;
+                idx_t gm_index = 0;
                 for(idx_t k = 0; k < max_k; ++k)
                 {
                     idx_t ngbh_index = p -> ngbh.data[k].array_idx;
@@ -1179,7 +1181,7 @@ void fix_borders_A_into_B(idx_t A, idx_t B, border_t** borders, idx_t n)
    }
 }
 
-void inline Delete_adjlist_element(Clusters * c, const idx_t list_idx, const idx_t el)
+inline void Delete_adjlist_element(Clusters * c, const idx_t list_idx, const idx_t el)
 {
 	//swap last element with 
 	idx_t count = c -> SparseBorders[list_idx].count;
@@ -1323,6 +1325,8 @@ void Heuristic3_sparse(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE 
         //printf("Found: %lu, %lu which now is %lu, %lu\n",merging_table[m].source, merging_table[m].target, src,trg);
 
         int re_check = ( (src != merging_table[m].source) || (trg != merging_table[m].target) );
+	if(re_check)
+	{
 		idx_t new_src = (src < trg) ? src : trg;
 		idx_t new_trg = (src < trg) ? trg : src;
 
@@ -1363,6 +1367,7 @@ void Heuristic3_sparse(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE 
                 default:
                     break;
                 }
+	}
         
         #undef src
         #undef trg
@@ -1463,7 +1468,7 @@ void Heuristic3_sparse(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE 
     /**
      * Fix center assignment
     */
-    for(int i = 0; i < cluster -> centers.count; ++i)
+    for(idx_t i = 0; i < cluster -> centers.count; ++i)
     {
         int idx = cluster -> centers.data[i];
         particles[idx].is_center = 1;
@@ -1628,6 +1633,7 @@ void Heuristic3_dense(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE Z
         //printf("Found: %lu, %lu which now is %lu, %lu\n",merging_table[m].source, merging_table[m].target, src,trg);
 
         int re_check = ( (src != merging_table[m].source) || (trg != merging_table[m].target) );
+	if(re_check){
 		idx_t new_src = (src < trg) ? src : trg;
 		idx_t new_trg = (src < trg) ? trg : src;
 
@@ -1666,6 +1672,7 @@ void Heuristic3_dense(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE Z
                 default:
                     break;
                 }
+	}
         
         #undef src
         #undef trg
@@ -1767,7 +1774,7 @@ void Heuristic3_dense(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE Z
     /**
      * Fix center assignment
     */
-    for(int i = 0; i < cluster -> centers.count; ++i)
+    for(idx_t i = 0; i < cluster -> centers.count; ++i)
     {
         int idx = cluster -> centers.data[i];
         particles[idx].is_center = 1;

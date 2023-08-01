@@ -22,7 +22,7 @@ void swap(T* a, T* b){
 
 FLOAT_TYPE euclidean_distance(FLOAT_TYPE* p1, FLOAT_TYPE* p2){
     FLOAT_TYPE d = 0;
-    for(int i = 0; i<data_dims; ++i){
+    for(unsigned int i = 0; i<data_dims; ++i){
         FLOAT_TYPE dd = (p1[i] - p2[i]);
         d += dd*dd;
     }
@@ -208,7 +208,7 @@ void printKDnode(kd_node* node)
     printf("Node %p:\n",node);
     printf("\t array_idx: %lu\n", (uint64_t)(node -> array_idx));
     printf("\t data: ");
-    for(int i=0; i<data_dims; ++i) printf(" %f ",node->data[i]);
+    for(unsigned int i=0; i<data_dims; ++i) printf(" %f ",node->data[i]);
     printf("\n");
     printf("\t parent: %p\n",node -> parent);
     printf("\t lch: %p\n",node -> lch);
@@ -240,7 +240,8 @@ int medianOfNodes(kd_node** a, int left, int right, int split_var)
 {
     //printf("----------\n");
     int k = left + ((right - left + 1)/2); 
-    int c = right - left + 1;
+    //:w
+    //int c = right - left + 1;
     //if(c < 20){
     //    v = split_var;
     //    qsort(a + left, c, sizeof(kd_node*),cmpKDN);
@@ -325,7 +326,7 @@ inline int hyper_plane_side(FLOAT_TYPE* p1, FLOAT_TYPE* p2, int var)
 
 void KNN_sub_tree_search(FLOAT_TYPE* point, kd_node* kdtree_root, Heap * H)
 {
-    int split_var = kdtree_root -> split_var;
+    //int split_var = kdtree_root -> split_var;
     FLOAT_TYPE current_distance = euclidean_distance(point, kdtree_root -> data);
     FLOAT_TYPE hp_distance = hyper_plane_dist(point, kdtree_root -> data, kdtree_root -> split_var);
     insertMaxHeap(H, current_distance, kdtree_root -> array_idx);

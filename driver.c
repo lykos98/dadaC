@@ -10,9 +10,9 @@ void write_border_idx(const char * fname, Clusters * c)
 
     if(c -> UseSparseBorders)
     {
-	    for(int i = 0; i < c -> centers.count; ++i)
+	    for(idx_t i = 0; i < c -> centers.count; ++i)
 	    {
-		for(int el = 0; el < c ->SparseBorders[i].count; ++el)
+		for(idx_t el = 0; el < c ->SparseBorders[i].count; ++el)
 		{
 		    int a = c -> SparseBorders[i].data[el].idx; 
 		    fprintf(f, "%d ",a);
@@ -22,9 +22,9 @@ void write_border_idx(const char * fname, Clusters * c)
     }
     else
     {
-	    for(int i = 0; i < c -> centers.count; ++i)
+	    for(idx_t i = 0; i < c -> centers.count; ++i)
 	    {
-		for(int j = 0; j < c -> centers.count; ++j)
+		for(idx_t j = 0; j < c -> centers.count; ++j)
 		{
 		    //int a = c -> borders[i][j].idx == NOBORDER ? -1 : c -> borders[i][j].idx;
 		    //fprintf(f,"%d ",a);
@@ -60,7 +60,6 @@ void write_point_info(const char * fname, Datapoint_info * particles, idx_t n)
 
 int main(int argc, char** argv){
 
-    int print_results = 0;
     double Z;
     int halo;
     char aux_fname[80];
@@ -80,7 +79,7 @@ int main(int argc, char** argv){
     {
         printf("USAGE: ./driver [INPUT_FILE] [OUTPUT_FILE] [Z] [HALO] [k]");
         printf("\nThe program gives as output the cluster assignment of each datapoint\n");
-        return;
+        return 0;
     }
     else
     {
@@ -97,7 +96,7 @@ int main(int argc, char** argv){
 
         if(halo != 0 && halo != 1){
             printf("Insert valid halo identifier: 0 do not assign halo, 1 assign particles to the halo\n");
-            return;
+            return 0;
         }
     }
 
@@ -119,7 +118,8 @@ int main(int argc, char** argv){
 
     FLOAT_TYPE* data = (FLOAT_TYPE*)malloc(data_dims*n*sizeof(FLOAT_TYPE));
     float* df = (float*)malloc(data_dims*n*sizeof(float));
-    fread(df,sizeof(float),data_dims*n,f);
+    size_t fff = fread(df,sizeof(float),data_dims*n,f);
+    printf("Read %luB\n",fff);
     fclose(f);
 
     for(idx_t i = 0; i < n*data_dims; ++i) data[i] = (FLOAT_TYPE)(df[i]);
