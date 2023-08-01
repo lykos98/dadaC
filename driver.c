@@ -110,7 +110,7 @@ int main(int argc, char** argv){
         exit(1);
     }
     fseek(f,0,SEEK_END);
-    idx_t n = ftell(f);
+    size_t n = ftell(f);
     rewind(f);
 
     n = n/(sizeof(float)*data_dims);
