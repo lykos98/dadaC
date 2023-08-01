@@ -1209,7 +1209,7 @@ void fix_SparseBorders_A_into_B(idx_t s,idx_t t,Clusters* c)
 			}
 		}
 		//find the border and delete it, other insert them in correct place
-			
+		#pragma omp barrier	
 		#pragma omp for
 		for(idx_t el = 0; el < c -> SparseBorders[s].count; ++el)
 		{
@@ -1236,7 +1236,7 @@ void fix_SparseBorders_A_into_B(idx_t s,idx_t t,Clusters* c)
 						
 			}
 		}
-
+		#pragma omp barrier
 		//clean up all borders
 		//delete the src list
 		#pragma omp single 
