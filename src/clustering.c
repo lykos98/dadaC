@@ -2,6 +2,7 @@
 #include "../include/clustering.h"
 #include <omp.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 #define MAX_SERIAL_MERGING 40000
@@ -259,15 +260,11 @@ void KNN_search(Datapoint_info * particles, FLOAT_TYPE * data, kd_node* root, id
 
     idx_t progress_count = 0;
     idx_t step = n/100;
-    printf("Progress %lu/%lu\r",(uint64_t)progress_count, (uint64_t)n);
+    printf("Progress 0/%lu -> 0%%\r",(uint64_t)n);
+    fflush(stdout);
     
-    int master_idx = -1;
     #pragma omp parallel
     {
-	    #pragma omp master
-	    {
-		master_idx = omp_get_thread_num();
-	    }
 
 	    #pragma omp for
 	    for(int p = 0; p < n; ++p)
@@ -275,19 +272,22 @@ void KNN_search(Datapoint_info * particles, FLOAT_TYPE * data, kd_node* root, id
 		particles[p].ngbh = KNN(data + data_dims*p, root, k);
 		particles[p].array_idx = p;
 
-		#pragma omp atomic update
-		progress_count++;
+		idx_t aa;
 
-		if(progress_count % step == 0 && omp_get_thread_num() == master_idx)
+		#pragma omp atomic capture
+		aa = ++progress_count;
+
+		if(aa % step == 0 )
 		{
-			printf("Progress %lu/%lu\r",(uint64_t)progress_count, (uint64_t)n);
+			printf("Progress %lu/%lu -> %u%%\r",(uint64_t)aa, (uint64_t)n, (uint32_t)((100*aa)/n) );
 			fflush(stdout);
 		}
 	    }
     }
 	
 
-    printf("Progress %lu/%lu\n",(uint64_t)progress_count, (uint64_t)n);
+    printf("Progress 0/%lu -> 100%%\n",(uint64_t)n);
+    //printf("Progress %lu/%lu\n",(uint64_t)progress_count, (uint64_t)n);
 
     clock_gettime(CLOCK_MONOTONIC, &finish_tot);
     elapsed_tot = (finish_tot.tv_sec - start_tot.tv_sec);
