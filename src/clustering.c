@@ -266,7 +266,7 @@ void KNN_search(Datapoint_info * particles, FLOAT_TYPE * data, kd_node* root, id
     #pragma omp parallel
     {
 
-	    #pragma omp for
+	    #pragma omp for schedule(dynamic)
 	    for(int p = 0; p < n; ++p)
 	    {
 		particles[p].ngbh = KNN(data + data_dims*p, root, k);
