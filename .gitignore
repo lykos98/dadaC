@@ -1,4 +1,7 @@
 *.ipynb
+d
+dummy.dat
+__pycache__
 aa
 bb
 sd.sh

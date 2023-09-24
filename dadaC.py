@@ -1,6 +1,6 @@
 import ctypes as ct
 import numpy as np  
-
+import os
 
 ctFloatType = ct.c_double
 ctIdxType = ct.c_uint64
@@ -10,6 +10,7 @@ class HeapNode(ct.Structure):
         ("value", ctFloatType),
         ("array_idx", ctIdxType)
     ]
+
 
 class Heap(ct.Structure):
     _fields_ = [
@@ -21,7 +22,7 @@ class Heap(ct.Structure):
 class luDynamicArray(ct.Structure):
     _fields_ = [
         ("data", ct.POINTER(ctIdxType)),
-        ("N", ctIdxType),
+        ("size", ctIdxType),
         ("count", ctIdxType)
     ]
 
@@ -31,8 +32,8 @@ class DatapointInfo(ct.Structure):
         ("ngbh", Heap),
         ("array_idx", ctIdxType),
         ("log_rho", ctFloatType),
-        ("log_rho_err", ctFloatType),
         ("log_rho_c", ctFloatType),
+        ("log_rho_err", ctFloatType),
         ("kstar", ctIdxType),
         ("is_center", ct.c_int),
         ("cluster_idx", ct.c_int)
@@ -84,7 +85,8 @@ class Data():
         Raises:
             TypeError: Raises TypeError if a type different from a matrix is passed 
         """
-        self.lib = ct.CDLL("./bin/libclustering.so")
+        path = os.path.join(os.path.dirname(__file__), "bin/libclustering.so")
+        self.lib = ct.CDLL(path)
 
         global ctFloatType, ctIdxType
         s = self.lib.FloatAndUintSize()
@@ -126,7 +128,7 @@ class Data():
         self.__computeRho.argtypes = [ct.POINTER(DatapointInfo), ct.c_double, ct.c_uint64]
 
         self.__computeCorrection = self.lib.computeCorrection
-        self.__computeCorrection.argtypes = [ct.POINTER(DatapointInfo), ct.c_double, ct.c_double]
+        self.__computeCorrection.argtypes = [ct.POINTER(DatapointInfo), ctIdxType, ct.c_double]
 
         self.__H1 = self.lib.Heuristic1
         self.__H1.argtypes = [ct.POINTER(DatapointInfo), np.ctypeslib.ndpointer(ctFloatType), ct.c_uint64]
@@ -177,20 +179,47 @@ class Data():
         self.k = k
         self.__datapoints = self.__NgbhSearch(self.data, self.n, self.dims, self.k)
         self.state["ngbh"] = True
+        self.neighbors = None
 
     def computeIDtwoNN(self):
+
+        """ Compute the intrinsic dimension of the dataset via the TWO Nearest Neighbors method.
+            Ref. paper 
+
+        Raises:
+            ValueError: Raises value error if neighbors are not computed yet, use `Data.computeNeighbors()` 
+        """
+
         if not self.state["ngbh"]:
             raise ValueError("Please compute Neighbors before calling this function")
         self.id = self.__idEstimate(self.__datapoints,self.n)
         self.state["id"] = True
 
     def computeDensity(self):
+
+        """Compute density value for each point
+
+        Raises:
+            ValueError: Raises value error if ID is not computed, use `Data.computeIDtwoNN` method
+        """
         if not self.state["id"]:
             raise ValueError("Please compute ID before calling this function")
         self.__computeRho(self.__datapoints, self.id, self.n)
         self.state["density"] = True
+        self.density = None
+        self.densityError = None
 
     def computeClusteringADP(self,Z : float,useSparse = "auto"):
+
+        """Compute clustering via the Advanced Density Peak method
+
+        Args:
+            Z (float): Z value for the method 
+            useSparse (str): optional [``auto``,`yes`,`no`], use sparse implementation of border storage between clusters. Memory usage for big datsets is significant. 
+
+        Raises:
+            ValueError: Raises value error if density is not computed, use `Data.computeDensity()` method
+        """
         if not self.state["density"]:
             raise ValueError("Please compute density before calling this function")
         if useSparse == "auto":
@@ -205,17 +234,30 @@ class Data():
 
             
         self.Z = Z
-        self.__computeCorrection(self.__datapoints, self.id, self.Z)
+        self.__computeCorrection(self.__datapoints, self.n, self.Z)
         self.__clusters = self.__H1(self.__datapoints,self.data, self.n)
-        self.__ClustersAllocate(ct.pointer(self.__clusters), self.useSparse)
+        self.__ClustersAllocate(ct.pointer(self.__clusters), 1 if self.state["useSparse"] else 0)
         self.__H2(ct.pointer(self.__clusters), self.__datapoints)
         self.__H3(ct.pointer(self.__clusters), self.__datapoints, self.Z, 1 if self.state["useSparse"] else 0 )
         self.state["clustering"] = True
+        self.clusterAssignment = None
 
-    def getClusterAssignment(self):
+    def getClusterAssignment(self) -> list(int):
+
+
+        """Retrieve cluster assignment
+
+        Raises:
+            ValueError: Raises error if clustering is not computed, use `Data.computeClusteringADP(Z)` 
+
+        Returns:
+            List of cluster labels
+            
+        """
         if self.clusterAssignment is None:
             if self.state["clustering"]:
-                return [p.cluster_assignment for p in self.__datapoints]
+                self.clusterAssignment = [self.__datapoints[j].cluster_idx for j in range(self.n)]
+                return self.clusterAssignment
             else:
                 raise ValueError("Clustering is not computed yet")
         else:
@@ -224,36 +266,66 @@ class Data():
     def getBorders(self):
         raise NotImplemented("It's difficult I have to think about it")
 
-    def getDensity(self):
+    def getDensity(self) -> list(float):
+
+        """Retrieve list of density values
+
+        Raises:
+            ValueError: Raise error if density is not computed, use `Data.computeDensity()` 
+
+        Returns:
+            List of density values
+            
+        """
         if self.density is None:
             if self.state["density"]:
-                return [self.__datapoints[j].log_rho for j in range(self.n)]
+                self.density = [self.__datapoints[j].log_rho for j in range(self.n)]
+                return self.density
             else:
                 raise ValueError("Density is not computed yet")
         else:
             return self.density
 
     def getDensityError(self):
+        """Retrieve list of density error values
+
+        Raises:
+            ValueError: Raise error if density is not computed, use `Data.computeDensity()` 
+
+        Returns:
+            List of density error values
+            
+        """
         if self.densityError is None:
             if self.state["density"]:
-                return [p.log_rho_err for p in self.__datapoints]
+                self.densityError = [self.__datapoints[j].log_rho_err for j in range(self.n)]
+                return self.densityError
             else:
                 raise ValueError("Density Error is not computed yet")
         else:
             return self.densityError
     
-    def getNeighbors(self):
+    def getNeighbors(self) -> [list, list]:
+        """Retrieve k Nearest Neighbors of each point and their associated distance
+
+        Raises:
+            ValueError: Raise error if neighbors are not computed, use `Data.computeNeighbors(k)` 
+
+        Returns:
+            Returns lists of neighbors and distances            
+        """
         if self.neighbors is None:
             if self.state["ngbh"]:
-                #unpack neighbors
-                pass
+                self.neighbors = (
+                        [[self.__datapoints[j].ngbh.data[kk].array_idx for kk in range(self.k)] for j in range(self.n)],
+                        [[self.__datapoints[j].ngbh.data[kk].value**(0.5) for kk in range(self.k)] for j in range(self.n)]
+                        )
+                return self.neighbors
             else:
                 raise ValueError("Density is not computed yet")
         else:
             return self.neighbors
 
-    def __readIntAndFloatSize():
-        pass
     def __del__(self):
         if not self.__datapoints is None:
             self.__freeDatapoints(self.__datapoints, self.n)

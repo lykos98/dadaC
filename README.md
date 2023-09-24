@@ -26,11 +26,26 @@ It returns a text file where for each point are reported:
 
 Once parameters are setted `dadaC` can be launched using:
 
-`./driver [input file] [output file] [z value] [halo (0 or 1)] [k]`
+`./driver [input file] [output file] [z value] [halo (0 or 1)] [k] [sparse impl. flag (s or d)]`
+
+- `input/output file`: file paths to import and export data
+- `z`: Z value to use during the clustering procedure 
+- `halo [0 or 1]`: compute clustering accounting for halo points
+- `k`: number of neighbors to compute for each point
+- `sparse impl. flag [s or d]`: use `s` to leverage sparse implementation of cluster borders (suggested for big datasets) `d` for dense implementation (to use for small dataset when cluster topology is an objective)
+
 
 ## Compiling
 
 dadaC comes with a make file which compiles the executable `driver` and the shared library `bin/libclustering.so` from which ADP methods can be linked to.
+dadaC supports compilation to use `float` or `double` to store data and kNN distances, and `uint32` or `uint64` to store indexes. 
+Add `-DUSE_FLOAT32` or `-DUSE_INT32` to compile with support to 32bit types. By default 64bit ones are used. This feature is important for the application on big datasets, allowing of course some sort of rounding error to happen when processing data. 
+Implementation with 64bit types results are binary equal w.r.t. `dadaPy`.
+
+
+## Python interface
+
+dadaC comes also with a python interface build with `ctypes` which leverages the capabilities of the C-compiled library. In order to use it, build the package and then import `dadaC` module from python
 
 ## TODO
 

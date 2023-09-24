@@ -73,7 +73,7 @@ int main(int argc, char** argv){
     //Start timer
     clock_gettime(CLOCK_MONOTONIC, &start_tot);
 
-    data_dims = 5;
+    data_dims = 2;
 
     /***********************************************************************
      * TODO: Make a function to perform KNN search, fix verbose and timing *
