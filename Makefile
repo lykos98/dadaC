@@ -1,5 +1,5 @@
 LIBRARIES=-lm -fopenmp 
-OPTIM=-O4 -march=native -DUSE_INT32  -Wall -Wextra 
+OPTIM=-O4 -march=native -DUSE_INT32 -DUSE_FLOAT32 -Wall -Wextra 
 DEBUG=-g 
 SRC="src"
 VERBOSE=-DVERBOSE
@@ -7,13 +7,13 @@ VERBOSE=-DVERBOSE
 DADAC=bin/clustering.o bin/kdtree.o 
 
 driver: driver.o libclustering.so
-	gcc driver.o -L./bin -lclustering  ${LIBRARIES} ${DEBUG} -o driver
+	gcc driver.o -L./bin -lclustering ${LIBRARIES} ${DEBUG} -o driver
 
 driver.o: driver.c
 	gcc -c driver.c -o driver.o ${OPTIM} -fopenmp ${DEBUG}
 
 libclustering.so: clustering.o kdtree.o 
-	gcc -shared bin/clustering.o bin/kdtree.o ${DEBUG} -o bin/libclustering.so 
+	gcc -shared bin/clustering.o bin/kdtree.o ${DEBUG} ${OPTIM} ${LIBRARIES} -o bin/libclustering.so 
 
 clustering.o: src/clustering.c
 	gcc -c src/clustering.c -o bin/clustering.o ${OPTIM} -fopenmp ${DEBUG} -fpic ${VERBOSE}

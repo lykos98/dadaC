@@ -103,8 +103,8 @@ typedef struct AdjList_t AdjList_t;
 void LinkedList_Insert(LinkedList *L, Node *n);
 void DynamicArray_allocate(lu_dynamicArray *a);
 void DynamicArray_pushBack(lu_dynamicArray *a, idx_t p);
-void Clusters_allocate(Clusters *c);
-void dummy_Clusters_allocate(Clusters *c, int s);
+//void Clusters_allocate(Clusters *c);
+void Clusters_allocate(Clusters *c, int s);
 void Clusters_free(Clusters *c);
 
 int cmp(const void *a, const void *b);
@@ -112,6 +112,7 @@ FLOAT_TYPE avg(const FLOAT_TYPE *x, const idx_t n);
 FLOAT_TYPE mEst2(FLOAT_TYPE *x, FLOAT_TYPE *y, idx_t n);
 FLOAT_TYPE mEst(FLOAT_TYPE *x, FLOAT_TYPE *y, idx_t n);
 FLOAT_TYPE idEstimate(Datapoint_info *particles, idx_t n);
+Datapoint_info* NgbhSearch(FLOAT_TYPE* data, size_t n, size_t ndims, size_t k);
 void computeRho(Datapoint_info *particles, const FLOAT_TYPE d,
                 const idx_t points);
 int cmpPP(const void *p1, const void *p2);
@@ -122,3 +123,4 @@ void KNN_search(Datapoint_info *particles, FLOAT_TYPE *data, kd_node *root,
 Clusters Heuristic1(Datapoint_info *particles, FLOAT_TYPE *data, idx_t n);
 void Heuristic2(Clusters *cluster, Datapoint_info *particles);
 void Heuristic3(Clusters *cluster, Datapoint_info *particles, FLOAT_TYPE Z,int halo);
+void freeDatapointArray(Datapoint_info* d, size_t n);

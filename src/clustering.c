@@ -9,7 +9,7 @@
 #define MAX_N_NGBH 1000
 #define PREALLOC_BORDERS 10
 
-extern unsigned int data_dims;
+unsigned int data_dims;
 idx_t Npart;
 const border_t border_null = {.density = -1.0, .error = 0, .idx = NOBORDER};
 const SparseBorder_t SparseBorder_null = {.density = -1.0, .error = 0, .idx = NOBORDER, .i = NOBORDER, .j = NOBORDER};
@@ -25,7 +25,7 @@ void LinkedList_Insert(LinkedList* L, Node* n)
  * Clusters object functions *
  *****************************/
 
-void dummy_Clusters_allocate(Clusters * c, int s)
+void Clusters_allocate(Clusters * c, int s)
 {
     /*************************************
      * allocate additional resources and *
@@ -71,7 +71,7 @@ void dummy_Clusters_allocate(Clusters * c, int s)
     }
 }
 
-void Clusters_allocate(Clusters * c)
+void old_Clusters_allocate(Clusters * c)
 {
     /*************************************
      * allocate additional resources and *
@@ -1873,4 +1873,58 @@ void Heuristic3(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE Z, int 
 	{
 		Heuristic3_dense(cluster, particles,  Z,  halo);
 	}
+}
+
+
+Datapoint_info* NgbhSearch(FLOAT_TYPE* data, size_t n, size_t ndims, size_t k)
+{
+    struct timespec start, finish;
+    double elapsed;
+
+	data_dims = (unsigned int)ndims;
+	
+    kd_node* kd_node_array = (kd_node*)malloc(n*sizeof(kd_node));
+    kd_node** kd_ptrs = (kd_node**)malloc(n*sizeof(kd_node*));
+
+    initializeKDnodes(kd_node_array,data,n);
+    initializePTRS(kd_ptrs, kd_node_array,n);
+
+    kd_node* root = build_tree(kd_ptrs, n, ndims);
+
+    clock_gettime(CLOCK_MONOTONIC, &finish);
+
+    printf("The root of the tree is\n");
+    printKDnode(root);
+
+
+    Datapoint_info* points = (Datapoint_info*)malloc(n*sizeof(Datapoint_info));
+
+    /**************
+     * KNN search *
+     **************/
+
+    KNN_search(points,data, root, n, k);
+
+    free(kd_ptrs);
+    free(kd_node_array);
+
+	return points;
+}
+
+void freeDatapointArray(Datapoint_info* d, size_t n)
+{
+    for (idx_t i = 0; i < n; ++i)
+    {        
+        freeHeap(&d[i].ngbh);
+    }
+    free(d);
+}
+
+int FloatAndUintSize()
+{
+	int v = 0;
+	int vf = sizeof(FLOAT_TYPE) == 8 ? 1 : 0; 
+	int vi = sizeof(idx_t) == 8 ? 1 : 0; 
+	v = vf + vi*2;
+	return v;
 }

@@ -45,9 +45,9 @@ void write_point_info(const char * fname, Datapoint_info * particles, idx_t n)
         fprintf(f,"%lu\t",(uint64_t)particles[i].kstar);
         fprintf(f,"%d\t", particles[i].cluster_idx);
 	#ifdef USE_FLOAT32
-        fprintf(f,"%.6f\t",particles[i].log_rho);
+		fprintf(f,"%.6f\t",particles[i].log_rho);
 	#else
-        fprintf(f,"%.11lf\t",particles[i].log_rho);
+		fprintf(f,"%.11lf\t",particles[i].log_rho);
 	#endif
         //fprintf(f,"%.12lf\t",particles[i].log_rho_c);
         //fprintf(f,"%.12lf\t",particles[i].log_rho_err);
@@ -64,7 +64,10 @@ int main(int argc, char** argv){
     int halo;
     char aux_fname[80];
     int k;
+    int UseSparseBorders;
 
+    struct timespec start, finish;
+    double elapsed;
     struct timespec start_tot, finish_tot;
     double elapsed_tot;
     //Start timer
@@ -75,11 +78,28 @@ int main(int argc, char** argv){
     /***********************************************************************
      * TODO: Make a function to perform KNN search, fix verbose and timing *
      ***********************************************************************/
-    if(argc < 5 )
+
+    /* default args */
+    Z		     = 2;
+    halo	     = 1;
+    k		     = 1001;
+    UseSparseBorders = 1;
+
+
+    /* parsing */
+
+
+    if(argc < 6 )
     {
-        printf("USAGE: ./driver [INPUT_FILE] [OUTPUT_FILE] [Z] [HALO] [k]");
-        printf("\nThe program gives as output the cluster assignment of each datapoint\n");
-        return 0;
+		printf("USAGE: ./driver [INPUT_FILE] [OUTPUT_FILE] [Z] [HALO] [k] [s]\n");
+		printf("\tINPUT_FILE : input file, file path\n");
+		printf("\tOUTPUT_FILE: output file, file path\n");
+		printf("\tZ	     : Z value, float\n");
+		printf("\tHALO	     : Assign halo, bool 0/1 \n");
+		printf("\tk	     : Number of neighbors to use, int (>0) \n");
+		printf("\ts	     : Use sparse borders implementation, s/d [sparse/dense]\n");
+		printf("\nThe program gives as output the cluster assignment of each datapoint\n");
+		return 0;
     }
     else
     {
@@ -126,32 +146,9 @@ int main(int argc, char** argv){
 
     free(df);
 
-    kd_node* kd_node_array = (kd_node*)malloc(n*sizeof(kd_node));
-    kd_node** kd_ptrs = (kd_node**)malloc(n*sizeof(kd_node*));
-
-    initializeKDnodes(kd_node_array,data,n);
-    initializePTRS(kd_ptrs, kd_node_array,n);
-
-    struct timespec start, finish;
-    double elapsed;
 
 
-    kd_node* root = build_tree(kd_ptrs, n);
-
-    clock_gettime(CLOCK_MONOTONIC, &finish);
-
-    printf("The root of the tree is\n");
-    printKDnode(root);
-
-
-    Datapoint_info* particles = (Datapoint_info*)malloc(n*sizeof(Datapoint_info));
-
-    /**************
-     * KNN search *
-     **************/
-
-    KNN_search(particles,data, root, n, k);
-
+	Datapoint_info* particles = NgbhSearch(data, n, data_dims, k); 
     /********************************
      * Intrinsic Dimension estimate *
      ********************************/
@@ -175,7 +172,7 @@ int main(int argc, char** argv){
      * Then Find borders between clusters and then merge clusters using peaks significance *
      ***************************************************************************************/
    // Clusters_allocate(&c);  
-    dummy_Clusters_allocate(&c, argv[6][0] == 's');  
+    Clusters_allocate(&c, argv[6][0] == 's');  
 
     // sprintf(aux_fname, "%s_int", argv[2]);
     // write_point_info(aux_fname,particles,n);
@@ -189,7 +186,7 @@ int main(int argc, char** argv){
     
     Heuristic3(&c, particles, Z, halo);
 
-    sprintf(aux_fname, "%s_bord", argv[2]);
+    //sprintf(aux_fname, "%s_bord", argv[2]);
     //write_border_idx(aux_fname,&c);
 
     clock_gettime(CLOCK_MONOTONIC, &start);
@@ -204,17 +201,7 @@ int main(int argc, char** argv){
      * Free all memory *
      *******************/
 
-    for (idx_t i = 0; i < n; ++i)
-    {        
-        freeHeap(&particles[i].ngbh);
-    }
-
-
-
-
-    free(particles);
-    free(kd_ptrs);
-    free(kd_node_array);
+	freeDatapointArray(particles,n);
     free(data);
     Clusters_free(&c);
 

@@ -123,4 +123,4 @@ void HeapSort(Heap* H);
 
 Heap KNN(FLOAT_TYPE* point, kd_node* kdtree_root, int maxk);
 
-kd_node * build_tree(kd_node** kd_ptrs, idx_t n);
+kd_node * build_tree(kd_node** kd_ptrs, size_t n, size_t dimensions);

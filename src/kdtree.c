@@ -394,8 +394,9 @@ Heap KNN(FLOAT_TYPE* point, kd_node* kdtree_root, int maxk)
     return H;
 }
 
-kd_node * build_tree(kd_node** kd_ptrs, idx_t n)
+kd_node * build_tree(kd_node** kd_ptrs, size_t n, size_t dimensions )
 {
+	
     
 
     /*************************************************
@@ -403,7 +404,7 @@ kd_node * build_tree(kd_node** kd_ptrs, idx_t n)
      * Simplifies interfaces and takes time measures *
      *************************************************/
     
-    
+   	data_dims = dimensions; 
     struct timespec start_tot, finish_tot;
     double elapsed_tot;
     printf("Building the KDtree:\n");
