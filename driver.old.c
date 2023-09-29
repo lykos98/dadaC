@@ -2,18 +2,7 @@
 #include <stdio.h>
 #include <time.h>
 
-struct Options 
-{
-	char* inputFile;
-	char* outputFile;
-    double Z;
-    int halo;
-    int k;
-    int UseSparseBorders;
-    int FileInFloat32;
-    unsigned int data_dims;
-
-};
+unsigned int data_dims;
 
 void write_border_idx(const char * fname, Clusters * c)
 {
@@ -69,91 +58,13 @@ void write_point_info(const char * fname, Datapoint_info * particles, idx_t n)
     fclose(f);
 }
 
-void printHelp()
-{
-	printf("USAGE: ./driver i=[INPUT_FILE] o=[OUTPUT_FILE] d=[d] t=[t] z=[Z] h=[HALO] k=[k] s=[s] t=[t]\n");
-	printf("\tINPUT_FILE : input file, file path\n");
-	printf("\tOUTPUT_FILE: output file, file path\n");
-	printf("\tZ	     : Z value, float\n");
-	printf("\tHALO	     : Assign halo, bool 0/1 \n");
-	printf("\tk	     : Number of neighbors to use, int (>0) \n");
-	printf("\ts	     : Use sparse borders implementation, y/n [sparse/dense]\n");
-	printf("\tt	     : Input binary is in Float32, y/n [float/double]\n");
-	printf("\nThe program gives as output the cluster assignment of each datapoint\n");
-	return;
-}
-
-void checkEq(char c)
-{
-	if(c != '='){
-		printf("Wrongly formatted input\n");
-		printHelp();
-		exit(1);
-	};
-	return;
-}
-
-struct Options Parser(int argc, char** argv)
-{
-	struct Options opt = {.inputFile=NULL, .outputFile=NULL,.FileInFloat32 = 1,.k=1001, .halo = 1, .Z = 2, .data_dims = 0, .UseSparseBorders = 0 };
-	if(argc < 2)
-	{
-		printHelp();
-		exit(1);
-	}
-	for(int i = 1; i < argc; ++i)	
-	{
-		checkEq(argv[i][1]);
-		switch(argv[i][0])
-		{
-			case 'i':
-				opt.inputFile = argv[i] + 2;
-				break;
-			case 'o':
-				opt.outputFile = argv[i] + 2;
-				break;
-			case 't':
-				opt.FileInFloat32 = argv[i][2] == 'y' ? 1 : 0;
-				break;
-			case 'd':
-				opt.data_dims = atoi(argv[i] + 2);
-				break;
-			case 'k':
-				opt.k = atoi(argv[i] + 2);
-				break;
-			case 'h':
-				opt.halo = argv[i][2] == 'y' ? 1 : 0;
-				break;
-			case 's':
-				opt.UseSparseBorders = argv[i][2] == 'y' ? 1 : 0;
-				break;
-			case 'z':
-				opt.Z = atof(argv[i] + 2);
-				break;
-			default:
-				printHelp();
-				exit(1);
-				break;
-		}
-	}
-	if(!(opt.inputFile) || !(opt.outputFile)){
-		printf("Please provide input and output file paths\n");
-		printHelp();
-		exit(1);
-	}
-	if(opt.data_dims == 0)
-	{
-		printf("Please specify the lenght of each vector\n");
-		printHelp();
-		exit(1);
-	}
-	return opt;
-}
-
-
 int main(int argc, char** argv){
 
+    double Z;
+    int halo;
     char aux_fname[80];
+    int k;
+    int UseSparseBorders;
 
     struct timespec start, finish;
     double elapsed;
@@ -162,18 +73,56 @@ int main(int argc, char** argv){
     //Start timer
     clock_gettime(CLOCK_MONOTONIC, &start_tot);
 
-	struct Options opt = Parser(argc, argv);
+    data_dims = 2;
+
+    /***********************************************************************
+     * TODO: Make a function to perform KNN search, fix verbose and timing *
+     ***********************************************************************/
+
+    /* default args */
+    Z		     = 2;
+    halo	     = 1;
+    k		     = 1001;
+    UseSparseBorders = 1;
 
 
-    printf("Using: \n\t Z    	   : %.2lf \n\t Halo      : %s \n\t Neighbors : %d \n\t Sparse Borders      : %s \n\t Input in Float32    : %s\n\n", 
-			opt.Z, 
-			opt.halo ? "yes" : "no", 
-			opt.k,
-			opt.UseSparseBorders ? "yes" : "no", 
-			opt.FileInFloat32 ? "yes" : "no" 
-			);
+    /* parsing */
+
+
+    if(argc < 6 )
+    {
+		printf("USAGE: ./driver [INPUT_FILE] [OUTPUT_FILE] [Z] [HALO] [k] [s]\n");
+		printf("\tINPUT_FILE : input file, file path\n");
+		printf("\tOUTPUT_FILE: output file, file path\n");
+		printf("\tZ	     : Z value, float\n");
+		printf("\tHALO	     : Assign halo, bool 0/1 \n");
+		printf("\tk	     : Number of neighbors to use, int (>0) \n");
+		printf("\ts	     : Use sparse borders implementation, s/d [sparse/dense]\n");
+		printf("\nThe program gives as output the cluster assignment of each datapoint\n");
+		return 0;
+    }
+    else
+    {
+        Z = atof(argv[3]);
+        halo = atoi(argv[4]);
+	if(argc ==  6)
+	{
+		k = atoi(argv[5]);
+	}
+	else
+	{
+		k = 1001;
+	}
+
+        if(halo != 0 && halo != 1){
+            printf("Insert valid halo identifier: 0 do not assign halo, 1 assign particles to the halo\n");
+            return 0;
+        }
+    }
+
+    printf("Using: \n\t Z    	   : %.2lf \n\t Halo      : %s \n\t Neighbors : %d \n\n", Z, halo ? "yes" : "no", k);
     
-    FILE* f = fopen(opt.inputFile,"r");
+    FILE* f = fopen(argv[1],"r");
     if(!f)
     {
         printf("Nope\n");
@@ -183,38 +132,23 @@ int main(int argc, char** argv){
     size_t n = ftell(f);
     rewind(f);
 
-	int InputFloatSize = opt.FileInFloat32 ? 4 : 8;
-
-    n = n/(sizeof(float)*opt.data_dims);
+    n = n/(sizeof(float)*data_dims);
     printf("Reading %lu particles\n",(uint64_t)n);
 
 
-    FLOAT_TYPE* data = (FLOAT_TYPE*)malloc(opt.data_dims*n*sizeof(FLOAT_TYPE));
+    FLOAT_TYPE* data = (FLOAT_TYPE*)malloc(data_dims*n*sizeof(FLOAT_TYPE));
+    float* df = (float*)malloc(data_dims*n*sizeof(float));
+    size_t fff = fread(df,sizeof(float),data_dims*n,f);
+    printf("Read %luB\n",fff);
+    fclose(f);
 
-	if(opt.FileInFloat32)
-	{
-		float* df = (float*)malloc(opt.data_dims*n*sizeof(float));
-		size_t fff = fread(df,sizeof(float),opt.data_dims*n,f);
-		printf("Read %luB\n",fff);
-		fclose(f);
+    for(idx_t i = 0; i < n*data_dims; ++i) data[i] = (FLOAT_TYPE)(df[i]);
 
-		for(idx_t i = 0; i < n*opt.data_dims; ++i) data[i] = (FLOAT_TYPE)(df[i]);
+    free(df);
 
-		free(df);
-	}
-	else
-	{
-		double* df = (double*)malloc(opt.data_dims*n*sizeof(double));
-		size_t fff = fread(df,sizeof(double),opt.data_dims*n,f);
-		printf("Read %luB\n",fff);
-		fclose(f);
 
-		for(idx_t i = 0; i < n*opt.data_dims; ++i) data[i] = (FLOAT_TYPE)(df[i]);
 
-		free(df);
-	}
-
-	Datapoint_info* particles = NgbhSearch(data, n, opt.data_dims, opt.k); 
+	Datapoint_info* particles = NgbhSearch(data, n, data_dims, k); 
     /********************************
      * Intrinsic Dimension estimate *
      ********************************/
@@ -225,7 +159,7 @@ int main(int argc, char** argv){
      * Density computation *
      ***********************/
     computeRho(particles,id,n);
-    computeCorrection(particles,n,opt.Z);
+    computeCorrection(particles,n,Z);
 
     /********************
      * First clustering *
@@ -238,7 +172,7 @@ int main(int argc, char** argv){
      * Then Find borders between clusters and then merge clusters using peaks significance *
      ***************************************************************************************/
    // Clusters_allocate(&c);  
-    Clusters_allocate(&c, opt.UseSparseBorders);  
+    Clusters_allocate(&c, argv[6][0] == 's');  
 
     // sprintf(aux_fname, "%s_int", argv[2]);
     // write_point_info(aux_fname,particles,n);
@@ -250,13 +184,13 @@ int main(int argc, char** argv){
 
     c.n = n;
     
-    Heuristic3(&c, particles, opt.Z, opt.halo);
+    Heuristic3(&c, particles, Z, halo);
 
     //sprintf(aux_fname, "%s_bord", argv[2]);
     //write_border_idx(aux_fname,&c);
 
     clock_gettime(CLOCK_MONOTONIC, &start);
-    write_point_info(opt.outputFile,particles,n);
+    write_point_info(argv[2],particles,n);
     clock_gettime(CLOCK_MONOTONIC, &finish);
 
     elapsed = (finish.tv_sec - start.tv_sec);

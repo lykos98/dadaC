@@ -22,7 +22,7 @@ class Heap(ct.Structure):
 class luDynamicArray(ct.Structure):
     _fields_ = [
         ("data", ct.POINTER(ctIdxType)),
-        ("size", ctIdxType),
+        ("size", ctIdxType),s
         ("count", ctIdxType)
     ]
 

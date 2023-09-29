@@ -120,7 +120,7 @@ void computeCorrection(Datapoint_info *particles, idx_t n, FLOAT_TYPE Z);
 void KNN_search(Datapoint_info *particles, FLOAT_TYPE *data, kd_node *root,
                 idx_t n, idx_t k);
 
-Clusters Heuristic1(Datapoint_info *particles, FLOAT_TYPE *data, idx_t n);
+Clusters Heuristic1(Datapoint_info *dp, FLOAT_TYPE *data, idx_t n);
 void Heuristic2(Clusters *cluster, Datapoint_info *particles);
 void Heuristic3(Clusters *cluster, Datapoint_info *particles, FLOAT_TYPE Z,int halo);
 void freeDatapointArray(Datapoint_info* d, size_t n);

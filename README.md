@@ -25,14 +25,16 @@ It returns a text file where for each point are reported:
 - `is_center`: flag for identifying cluster centers
 
 Once parameters are setted `dadaC` can be launched using:
+`./driver i=[INPUT_FILE] o=[OUTPUT_FILE] d=[d] t=[t] z=[Z] h=[HALO] k=[k] s=[s] t=[t]\n")`
 
-`./driver [input file] [output file] [z value] [halo (0 or 1)] [k] [sparse impl. flag (s or d)]`
+- `INPUT_FILE `: input file, file path
+- `OUTPUT_FILE`: output file, file path
+- `Z`	     : Z value, float\n
+- `HALO`     : Assign halo, bool 0/1 \n
+- `k`	     : Number of neighbors to use, int (>0)
+- `s`	     : Use sparse borders implementation, y [sparse/dense]
+- `t`	     : Input binary is in Float32, y/n [float/double]
 
-- `input/output file`: file paths to import and export data
-- `z`: Z value to use during the clustering procedure 
-- `halo [0 or 1]`: compute clustering accounting for halo points
-- `k`: number of neighbors to compute for each point
-- `sparse impl. flag [s or d]`: use `s` to leverage sparse implementation of cluster borders (suggested for big datasets) `d` for dense implementation (to use for small dataset when cluster topology is an objective)
 
 
 ## Compiling

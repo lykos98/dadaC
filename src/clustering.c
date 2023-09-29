@@ -27,6 +27,7 @@ void LinkedList_Insert(LinkedList* L, Node* n)
 
 void Clusters_allocate(Clusters * c, int s)
 {
+
     /*************************************
      * allocate additional resources and *
      * pointers for Clusters object      *
@@ -251,7 +252,7 @@ void DynamicArray_Init(lu_dynamicArray * a)
  * Clustering part *
  *******************/
 
-void KNN_search(Datapoint_info * particles, FLOAT_TYPE * data, kd_node* root, idx_t n, idx_t k)
+void KNN_search(Datapoint_info * dpInfo, FLOAT_TYPE * data, kd_node* root, idx_t n, idx_t k)
 {
     struct timespec start_tot, finish_tot;
     double elapsed_tot;
@@ -269,8 +270,8 @@ void KNN_search(Datapoint_info * particles, FLOAT_TYPE * data, kd_node* root, id
 	    #pragma omp for schedule(dynamic)
 	    for(int p = 0; p < n; ++p)
 	    {
-		particles[p].ngbh = KNN(data + data_dims*p, root, k);
-		particles[p].array_idx = p;
+		dpInfo[p].ngbh = KNN(data + data_dims*p, root, k);
+		dpInfo[p].array_idx = p;
 
 		idx_t aa;
 
@@ -369,14 +370,14 @@ FLOAT_TYPE mEst(FLOAT_TYPE * x, FLOAT_TYPE *y, idx_t n)
     return num/den;
 }
 
-FLOAT_TYPE idEstimate(Datapoint_info* particles, idx_t n)
+FLOAT_TYPE idEstimate(Datapoint_info* dpInfo, idx_t n)
 {
 
     /*********************************************************************************************
      * Estimation of the intrinsic dimension of a dataset                                        *
      * args:                                                                                     *
-     * - particles: array of structs                                                             *
-     * - n: number of particles                                                                  *
+     * - dpInfo: array of structs                                                             *
+     * - n: number of dpInfo                                                                  *
      * Estimates the id via 2NN method. Computation of the log ratio of the                      *
      * distances of the first 2 neighbors of each point. Then compute the empirical distribution *
      * of these log ratii                                                                        *
@@ -396,7 +397,7 @@ FLOAT_TYPE idEstimate(Datapoint_info* particles, idx_t n)
 
     for(idx_t i = 0; i < n; ++i)
     {
-        r[i] = 0.5 * log(particles[i].ngbh.data[2].value/particles[i].ngbh.data[1].value);
+        r[i] = 0.5 * log(dpInfo[i].ngbh.data[2].value/dpInfo[i].ngbh.data[1].value);
         Pemp[i] = -log(1 - (FLOAT_TYPE)(i + 1)/(FLOAT_TYPE)n);
     }
     qsort(r,n,sizeof(FLOAT_TYPE),cmp);
@@ -417,92 +418,7 @@ FLOAT_TYPE idEstimate(Datapoint_info* particles, idx_t n)
 
 }
 
-//void computeRhoOpt(Datapoint_info* particles, kd_node* root, FLOAT_TYPE* data,  const FLOAT_TYPE d, const idx_t points){
-//
-//    /****************************************************
-//     * Point density computation:                       *
-//     * args:                                            *
-//     * -   paricles: array of structs                   *
-//     * -   d       : intrinsic dimension of the dataset *
-//     * -   points  : number of points in the dataset    *
-//     ****************************************************/
-//
-//    struct timespec start_tot, finish_tot;
-//    double elapsed_tot;
-//
-//    printf("Density and k* estimation:\n");
-//    clock_gettime(CLOCK_MONOTONIC, &start_tot);
-//
-//    idx_t kMAX = particles[0].ngbh.N;   
-//
-//    FLOAT_TYPE omega = 0.;  
-//    if(sizeof(FLOAT_TYPE) == sizeof(float)){ omega = powf(PI_F,d/2)/tgammaf(d/2.0f + 1.0f);}  
-//    else{omega = pow(M_PI,d/2.)/tgamma(d/2.0 + 1.0);}
-//
-//    //printf("Omega d %f\n", omega);
-//
-//    #pragma omp parallel for
-//    for(idx_t i = 0; i < points; ++i)
-//    {
-//
-//        idx_t j = 4;
-//        idx_t k;
-//        FLOAT_TYPE dL = 0.0;
-//        FLOAT_TYPE vvi, vvj, vp;
-//        int cont = 0;
-//        while(1)
-//        {
-//            idx_t kMAX = particles[i].ngbh.N;   
-//            while(j < kMAX && dL < DTHR)
-//            {
-//                idx_t ksel = j - 1;
-//                vvi = omega * pow(particles[i].ngbh.data[ksel].value,d/2.);
-//                idx_t jj = particles[i].ngbh.data[j].array_idx;
-//                vvj = omega * pow(particles[jj].ngbh.data[ksel].value,d/2.);
-//                vp = (vvi + vvj)*(vvi + vvj);
-//                dL = -2.0 * ksel * log(4.*vvi*vvj/vp);
-//                j = j + 1;
-//            }
-//            if(j == MAX_N_NGBH)
-//            {
-//                k = j - 1;
-//                break;
-//
-//            }
-//            else if(j == kMAX)
-//            {
-//                //reset ngbh and recalculate using a new size
-//                j = j - 1;
-//                freeHeap(&particles[i].ngbh);
-//                kMAX = 1.2*particles[i].ngbh.N;
-//                kMAX = kMAX > MAX_N_NGBH ? MAX_N_NGBH : kMAX;
-//                particles[i].ngbh = KNN(data + i*data_dims, root, kMAX );
-//            }
-//            else
-//            {
-//                k = j - 2;
-//                break;
-//            }
-//        }
-//
-//        particles[i].kstar = k;
-//        particles[i].log_rho = log((FLOAT_TYPE)(k)/vvi/((FLOAT_TYPE)(points)));
-//        //particles[i].log_rho = log((FLOAT_TYPE)(k)) - log(vvi) -log((FLOAT_TYPE)(points));
-//        particles[i].log_rho_err =   1.0/sqrt((FLOAT_TYPE)k); //(FLOAT_TYPE)(-Q_rsqrt((float)k));
-//        particles[i].g = particles[i].log_rho - particles[i].log_rho_err;
-//    }
-//
-//    clock_gettime(CLOCK_MONOTONIC, &finish_tot);
-//    elapsed_tot = (finish_tot.tv_sec - start_tot.tv_sec);
-//    elapsed_tot += (finish_tot.tv_nsec - start_tot.tv_nsec) / 1000000000.0;
-//    printf("\tTotal time: %.3lfs\n\n", elapsed_tot);
-//
-//    return;
-//
-//
-//}
-
-void computeRho(Datapoint_info* particles, const FLOAT_TYPE d, const idx_t points){
+void computeRho(Datapoint_info* dpInfo, const FLOAT_TYPE d, const idx_t points){
 
     /****************************************************
      * Point density computation:                       *
@@ -518,7 +434,7 @@ void computeRho(Datapoint_info* particles, const FLOAT_TYPE d, const idx_t point
     printf("Density and k* estimation:\n");
     clock_gettime(CLOCK_MONOTONIC, &start_tot);
 
-    idx_t kMAX = particles[0].ngbh.N;   
+    idx_t kMAX = dpInfo[0].ngbh.N;   
 
     FLOAT_TYPE omega = 0.;  
     if(sizeof(FLOAT_TYPE) == sizeof(float)){ omega = powf(PI_F,d/2)/tgammaf(d/2.0f + 1.0f);}  
@@ -539,9 +455,9 @@ void computeRho(Datapoint_info* particles, const FLOAT_TYPE d, const idx_t point
         while(j < kMAX && dL < DTHR)
         {
             idx_t ksel = j - 1;
-            vvi = omega * pow(particles[i].ngbh.data[ksel].value,d/2.);
-            idx_t jj = particles[i].ngbh.data[j].array_idx;
-            vvj = omega * pow(particles[jj].ngbh.data[ksel].value,d/2.);
+            vvi = omega * pow(dpInfo[i].ngbh.data[ksel].value,d/2.);
+            idx_t jj = dpInfo[i].ngbh.data[j].array_idx;
+            vvj = omega * pow(dpInfo[jj].ngbh.data[ksel].value,d/2.);
             vp = (vvi + vvj)*(vvi + vvj);
             dL = -2.0 * ksel * log(4.*vvi*vvj/vp);
             j = j + 1;
@@ -554,11 +470,11 @@ void computeRho(Datapoint_info* particles, const FLOAT_TYPE d, const idx_t point
         {
             k = j - 2;
         }
-        particles[i].kstar = k;
-        particles[i].log_rho = log((FLOAT_TYPE)(k)/vvi/((FLOAT_TYPE)(points)));
-        //particles[i].log_rho = log((FLOAT_TYPE)(k)) - log(vvi) -log((FLOAT_TYPE)(points));
-        particles[i].log_rho_err =   1.0/sqrt((FLOAT_TYPE)k); //(FLOAT_TYPE)(-Q_rsqrt((float)k));
-        particles[i].g = particles[i].log_rho - particles[i].log_rho_err;
+        dpInfo[i].kstar = k;
+        dpInfo[i].log_rho = log((FLOAT_TYPE)(k)/vvi/((FLOAT_TYPE)(points)));
+        //dpInfo[i].log_rho = log((FLOAT_TYPE)(k)) - log(vvi) -log((FLOAT_TYPE)(points));
+        dpInfo[i].log_rho_err =   1.0/sqrt((FLOAT_TYPE)k); //(FLOAT_TYPE)(-Q_rsqrt((float)k));
+        dpInfo[i].g = dpInfo[i].log_rho - dpInfo[i].log_rho_err;
     }
 
     clock_gettime(CLOCK_MONOTONIC, &finish_tot);
@@ -581,7 +497,8 @@ int cmpPP(const void* p1, const void *p2)
     Datapoint_info* pp2 = *(Datapoint_info**)p2;
     return 2*(pp1 -> g < pp2 -> g) - 1;
 }
-void computeCorrection(Datapoint_info* particles, idx_t n, FLOAT_TYPE Z)
+
+void computeCorrection(Datapoint_info* dpInfo, idx_t n, FLOAT_TYPE Z)
 {
     /*****************************************************************************
      * Utility function, find the minimum value of the density of the datapoints *
@@ -596,7 +513,7 @@ void computeCorrection(Datapoint_info* particles, idx_t n, FLOAT_TYPE Z)
         #pragma omp for
         for(idx_t i = 0; i < n; ++i)
         {
-            FLOAT_TYPE tmp = particles[i].log_rho - Z*particles[i].log_rho_err;
+            FLOAT_TYPE tmp = dpInfo[i].log_rho - Z*dpInfo[i].log_rho_err;
             if(tmp < thread_min_log_rho){
                 thread_min_log_rho = tmp;
             }
@@ -608,21 +525,21 @@ void computeCorrection(Datapoint_info* particles, idx_t n, FLOAT_TYPE Z)
         #pragma omp for
         for(idx_t i = 0; i < n; ++i)
         {
-            particles[i].log_rho_c = particles[i].log_rho - min_log_rho + 1;
-            particles[i].g = particles[i].log_rho_c - particles[i].log_rho_err;
+            dpInfo[i].log_rho_c = dpInfo[i].log_rho - min_log_rho + 1;
+            dpInfo[i].g = dpInfo[i].log_rho_c - dpInfo[i].log_rho_err;
         }
     }
     //printf("%lf\n",min_log_rho);
 }
 
-Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, idx_t n)
+Clusters Heuristic1(Datapoint_info* dpInfo, FLOAT_TYPE* data, idx_t n)
 {
     /**************************************************************
      * Heurisitc 1, from paper of Errico, Facco, Laio & Rodriguez *
      * ( https://doi.org/10.1016/j.ins.2021.01.010 )              *
      *                                                            *
      * args:                                                      *
-     * - particles: array of Datapoint structures                 *
+     * - dpInfo: array of Datapoint structures                 *
      * - data: pointer to the dataset                             *
      * - n: number of Datapoints                                  *
      **************************************************************/
@@ -641,7 +558,7 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, idx_t n)
     DynamicArray_allocate(&actualCenters);
     DynamicArray_allocate(&max_rho);
 
-    Datapoint_info** particles_ptrs = (Datapoint_info**)malloc(n*sizeof(Datapoint_info*));
+    Datapoint_info** dpInfo_ptrs = (Datapoint_info**)malloc(n*sizeof(Datapoint_info*));
 
     struct timespec start, finish;
     double elapsed;
@@ -660,23 +577,23 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, idx_t n)
         
         */
 
-        particles_ptrs[i] = particles + i;
-        idx_t maxk = particles[i].kstar + 1;
-        FLOAT_TYPE gi = particles[i].g;
-        particles[i].is_center = 1;
-        particles[i].cluster_idx = -1;
+        dpInfo_ptrs[i] = dpInfo + i;
+        idx_t maxk = dpInfo[i].kstar + 1;
+        FLOAT_TYPE gi = dpInfo[i].g;
+        dpInfo[i].is_center = 1;
+        dpInfo[i].cluster_idx = -1;
         //printf("%lf\n",p -> g);
-        Heap i_ngbh = particles[i].ngbh;
+        Heap i_ngbh = dpInfo[i].ngbh;
         for(idx_t k = 1; k < maxk; ++k)
         {
             idx_t ngbh_index = i_ngbh.data[k].array_idx;
-            FLOAT_TYPE gj = particles[ngbh_index].g;
+            FLOAT_TYPE gj = dpInfo[ngbh_index].g;
             if(gj > gi){
-                particles[i].is_center = 0;
+                dpInfo[i].is_center = 0;
                 break;
             }
         }
-        if(particles[i].is_center){
+        if(dpInfo[i].is_center){
                 DynamicArray_pushBack(&allCenters, i);
         }
 
@@ -694,7 +611,7 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, idx_t n)
     idx_t * to_remove = (idx_t*)malloc(allCenters.count*sizeof(idx_t));
     for(idx_t c = 0; c < allCenters.count; ++c) {to_remove[c] = MY_SIZE_MAX;}
 
-    qsort(particles_ptrs, n, sizeof(Datapoint_info*), cmpPP);
+    qsort(dpInfo_ptrs, n, sizeof(Datapoint_info*), cmpPP);
     /*****************************************************************************************************
      * /!\ This part is VERY time consuming, complexity depends on the number of center previously found *
      * /!\ It is actually faster when using only a few threads                                           *
@@ -712,14 +629,14 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, idx_t n)
     //    */
     //    idx_t i = allCenters.data[p];
     //    int e = 0;
-    //    FLOAT_TYPE gi = particles[i].g;
-    //    idx_t i_arrIdx = particles[i].array_idx;
+    //    FLOAT_TYPE gi = dpInfo[i].g;
+    //    idx_t i_arrIdx = dpInfo[i].array_idx;
     //    idx_t mr = MY_SIZE_MAX;
     //    FLOAT_TYPE max_g = -99999.0;
     //    for(idx_t j = 0; j < n; ++j)
     //    {
     //        //retrive the particle pointed by the pointer
-    //        Datapoint_info pp = *(particles_ptrs[j]);
+    //        Datapoint_info pp = *(dpInfo_ptrs[j]);
     //        idx_t kMAXj = pp.kstar;
     //        Heap j_ngbh = pp.ngbh;
     //        FLOAT_TYPE gj = pp.g;
@@ -756,20 +673,20 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, idx_t n)
         #pragma omp for
         for(idx_t p = 0; p < n; ++p)
         {
-        	Datapoint_info pp = *(particles_ptrs[p]);
+        	Datapoint_info pp = *(dpInfo_ptrs[p]);
         	for(idx_t j = 1; j < pp.kstar + 1; ++j)
         	{
         		idx_t jidx = pp.ngbh.data[j].array_idx;
-        		if(particles[jidx].is_center && pp.g > particles[jidx].g)
+        		if(dpInfo[jidx].is_center && pp.g > dpInfo[jidx].g)
         		{
-        			//particles[jidx].is_center = 0;
+        			//dpInfo[jidx].is_center = 0;
         			for(idx_t c = 0; c < allCenters.count; ++c){
         				if(allCenters.data[c] == jidx)
 					{
 
 						if(to_remove_private[c] != MY_SIZE_MAX)
 						{
-							to_remove_private[c] = pp.g > 	particles[to_remove_private[c]].g  ? 
+							to_remove_private[c] = pp.g > 	dpInfo[to_remove_private[c]].g  ? 
 											pp.array_idx : to_remove_private[c];
 						}
 						else
@@ -789,7 +706,7 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, idx_t n)
 			{
 				if(to_remove[c] != MY_SIZE_MAX)
 				{
-					to_remove[c] = particles[to_remove_private[c]].g > particles[to_remove[c]].g ?
+					to_remove[c] = dpInfo[to_remove_private[c]].g > dpInfo[to_remove[c]].g ?
 						       to_remove_private[c] : to_remove[c];
 				}
 				else
@@ -809,11 +726,11 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, idx_t n)
     {
         idx_t i = allCenters.data[p];
         int e = 0;
-        //FLOAT_TYPE gi = particles[i].g;
+        //FLOAT_TYPE gi = dpInfo[i].g;
         idx_t mr = to_remove[p];
         if(mr != MY_SIZE_MAX)
         {
-            //if(particles[mr].g > gi) e = 1;
+            //if(dpInfo[mr].g > gi) e = 1;
 	    e = 1;
         }
         switch (e)
@@ -821,7 +738,7 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, idx_t n)
             case 1:
                 {
                     DynamicArray_pushBack(&removedCenters,i);
-                    particles[i].is_center = 0;
+                    dpInfo[i].is_center = 0;
                     //for(idx_t c = 0; c < removedCenters.count - 1; ++c)
                     //{
                     //    if(mr == removedCenters.data[c])
@@ -836,7 +753,7 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, idx_t n)
             case 0:
                 {
                     DynamicArray_pushBack(&actualCenters,i);
-                    particles[i].cluster_idx = actualCenters.count - 1;
+                    dpInfo[i].cluster_idx = actualCenters.count - 1;
                 }
                 break;
             default:
@@ -859,17 +776,17 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, idx_t n)
 
 
     /*****************************************************************************
-     * Sort all the particles based on g and then perform the cluster assignment *
+     * Sort all the dpInfo based on g and then perform the cluster assignment *
      * in asceding order                                                         *
-     * UPDATE: particles already sorted                                          *
+     * UPDATE: dpInfo already sorted                                          *
      *****************************************************************************/
                                                                                 
 
-    //qsort(particles_ptrs, n, sizeof(Datapoint_info*), cmpPP);
+    //qsort(dpInfo_ptrs, n, sizeof(Datapoint_info*), cmpPP);
 
     for(idx_t i = 0; i < n; ++i)
     {   
-        Datapoint_info* p = particles_ptrs[i];
+        Datapoint_info* p = dpInfo_ptrs[i];
         //idx_t ele = p -> array_idx;
         //fprintf(f,"%lu\n",ele);
         if(!(p -> is_center))
@@ -883,7 +800,7 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, idx_t n)
             {
                 ++k;
                 p_idx = p -> ngbh.data[k].array_idx;
-                cluster = particles[p_idx].cluster_idx; 
+                cluster = dpInfo[p_idx].cluster_idx; 
             }
 
             //
@@ -896,7 +813,7 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, idx_t n)
                     idx_t ngbh_index = p -> ngbh.data[k].array_idx;
                     for(idx_t m = 0; m < removedCenters.count; ++m)
                     {
-                        FLOAT_TYPE gcand = particles[max_rho.data[m]].g;
+                        FLOAT_TYPE gcand = dpInfo[max_rho.data[m]].g;
                         if(ngbh_index == removedCenters.data[m] && gcand > gmax)
                         {   
                             //printf("%lu -- %lu\n", ele, m);
@@ -906,7 +823,7 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, idx_t n)
                     }
                 }
 
-                cluster = particles[gm_index].cluster_idx;
+                cluster = dpInfo[gm_index].cluster_idx;
 
             }
             p -> cluster_idx = cluster;
@@ -923,7 +840,7 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, idx_t n)
         clock_gettime(CLOCK_MONOTONIC, &start);
     #endif
 
-    free(particles_ptrs);
+    free(dpInfo_ptrs);
     free(max_rho.data);
     free(removedCenters.data);
     free(allCenters.data);
@@ -953,7 +870,7 @@ Clusters Heuristic1(Datapoint_info* particles, FLOAT_TYPE* data, idx_t n)
     return c_all;
 }
 
-void Heuristic2(Clusters* cluster, Datapoint_info* particles)
+void Heuristic2(Clusters* cluster, Datapoint_info* dpInfo)
 {
 
     #define borders cluster->borders
@@ -967,23 +884,23 @@ void Heuristic2(Clusters* cluster, Datapoint_info* particles)
 
 
     idx_t nclus = cluster->centers.count; 
-    idx_t max_k = particles[0].ngbh.N;
+    idx_t max_k = dpInfo[0].ngbh.N;
 
     for(idx_t i = 0; i < n; ++i)
     {
             idx_t pp = NOBORDER;
             /*loop over n neighbors*/
-            int c = particles[i].cluster_idx;
-            if(!particles[i].is_center)
+            int c = dpInfo[i].cluster_idx;
+            if(!dpInfo[i].is_center)
             {
-                for(idx_t k = 1; k < particles[i].kstar + 1; ++k)
+                for(idx_t k = 1; k < dpInfo[i].kstar + 1; ++k)
                 {
                     /*index of the kth ngbh of n*/
-                    idx_t j = particles[i].ngbh.data[k].array_idx;
+                    idx_t j = dpInfo[i].ngbh.data[k].array_idx;
                     pp = NOBORDER;
                     /*Loop over kn neigbhours to find if n is the nearest*/
                     /*if cluster of the particle in nbhg is c then check is neighborhood*/                                                
-                    if(particles[j].cluster_idx != c)
+                    if(dpInfo[j].cluster_idx != c)
                     {
                         pp = j;
                         break;
@@ -996,12 +913,12 @@ void Heuristic2(Clusters* cluster, Datapoint_info* particles)
             {
                 for(idx_t k = 1; k < max_k; ++k)
                 {
-                    idx_t pp_ngbh_idx = particles[pp].ngbh.data[k].array_idx;
+                    idx_t pp_ngbh_idx = dpInfo[pp].ngbh.data[k].array_idx;
                     if(pp_ngbh_idx == i)
                     {
                         break;
                     }
-                    if(particles[pp_ngbh_idx].cluster_idx == c)
+                    if(dpInfo[pp_ngbh_idx].cluster_idx == c)
                     {
                         pp = NOBORDER;
                         break;
@@ -1011,23 +928,23 @@ void Heuristic2(Clusters* cluster, Datapoint_info* particles)
                             /*if it is the maximum one add it to the cluster*/
             if(pp != NOBORDER)
             {
-		int ppc = particles[pp].cluster_idx;
+		int ppc = dpInfo[pp].cluster_idx;
 		if(cluster -> UseSparseBorders)
 		{
 			//insert one and symmetric one
-			SparseBorder_t b = {.i = c, .j = ppc, .idx = i, .density = particles[i].g, .error = particles[i].log_rho_err}; 
+			SparseBorder_t b = {.i = c, .j = ppc, .idx = i, .density = dpInfo[i].g, .error = dpInfo[i].log_rho_err}; 
 			SparseBorder_Insert(cluster, b);
 			//get symmetric border
-			SparseBorder_t bsym = {.i = ppc, .j = c, .idx = i, .density = particles[i].g, .error = particles[i].log_rho_err}; 
+			SparseBorder_t bsym = {.i = ppc, .j = c, .idx = i, .density = dpInfo[i].g, .error = dpInfo[i].log_rho_err}; 
 			SparseBorder_Insert(cluster, bsym);
 
 		}
 		else
 		{
-			if(particles[i].g > borders[c][ppc].density)
+			if(dpInfo[i].g > borders[c][ppc].density)
 			{
-			    borders[c][ppc].density = particles[i].g;
-			    borders[ppc][c].density = particles[i].g;
+			    borders[c][ppc].density = dpInfo[i].g;
+			    borders[ppc][c].density = dpInfo[i].g;
 			    borders[c][ppc].idx = i;
 			    borders[ppc][c].idx = i;
 			}
@@ -1045,7 +962,7 @@ void Heuristic2(Clusters* cluster, Datapoint_info* particles)
 		    {
 			    //fix border density, write log rho c
 			    idx_t idx = cluster -> SparseBorders[c].data[el].idx; 
-			    cluster -> SparseBorders[c].data[el].density = particles[idx].log_rho_c;
+			    cluster -> SparseBorders[c].data[el].density = dpInfo[idx].log_rho_c;
 		    }
 	    }
 
@@ -1060,11 +977,11 @@ void Heuristic2(Clusters* cluster, Datapoint_info* particles)
 		    if(p != NOBORDER)
 		    {   
 
-			borders[i][j].density = particles[p].log_rho_c;
-			borders[j][i].density = particles[p].log_rho_c;
+			borders[i][j].density = dpInfo[p].log_rho_c;
+			borders[j][i].density = dpInfo[p].log_rho_c;
 
-			borders[i][j].error = particles[p].log_rho_err;
-			borders[j][i].error = particles[p].log_rho_err;
+			borders[i][j].error = dpInfo[p].log_rho_err;
+			borders[j][i].error = dpInfo[p].log_rho_err;
 		    }
 		}
 	    }
@@ -1127,11 +1044,11 @@ inline int is_a_merging( FLOAT_TYPE dens1, FLOAT_TYPE dens1_err,
 {
   /* in the original code it was:
    *
-  FLOAT_TYPE a1 = particles[cluster->centers.data[i]].log_rho_c - border_density[i][j];
-  FLOAT_TYPE a2 = particles[cluster->centers.data[j]].log_rho_c - border_density[i][j];
+  FLOAT_TYPE a1 = dpInfo[cluster->centers.data[i]].log_rho_c - border_density[i][j];
+  FLOAT_TYPE a2 = dpInfo[cluster->centers.data[j]].log_rho_c - border_density[i][j];
   
-  FLOAT_TYPE e1 = Z*(particles[cluster->centers.data[i]].log_rho_err + border_err[i][j]);
-  FLOAT_TYPE e2 = Z*(particles[cluster->centers.data[j]].log_rho_err + border_err[i][j]);
+  FLOAT_TYPE e1 = Z*(dpInfo[cluster->centers.data[i]].log_rho_err + border_err[i][j]);
+  FLOAT_TYPE e2 = Z*(dpInfo[cluster->centers.data[j]].log_rho_err + border_err[i][j]);
   */
 
   FLOAT_TYPE a1 = dens1 - dens_border;
@@ -1258,7 +1175,7 @@ void fix_SparseBorders_A_into_B(idx_t s,idx_t t,Clusters* c)
 
 }
 
-void Heuristic3_sparse(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE Z, int halo)
+void Heuristic3_sparse(Clusters* cluster, Datapoint_info* dpInfo, FLOAT_TYPE Z, int halo)
 {
   printf("Using sparse implementation\n");
   #define borders cluster->borders
@@ -1295,10 +1212,10 @@ void Heuristic3_sparse(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE 
 	      SparseBorder_t b = cluster -> SparseBorders[i].data[el];
 	      if( b.j > b.i)
 	      {
-		      FLOAT_TYPE dens1           = particles[cluster->centers.data[b.i]].log_rho_c;
-		      FLOAT_TYPE dens1_err       = particles[cluster->centers.data[b.i]].log_rho_err;
-		      FLOAT_TYPE dens2           = particles[cluster->centers.data[b.j]].log_rho_c;
-		      FLOAT_TYPE dens2_err       = particles[cluster->centers.data[b.j]].log_rho_err;
+		      FLOAT_TYPE dens1           = dpInfo[cluster->centers.data[b.i]].log_rho_c;
+		      FLOAT_TYPE dens1_err       = dpInfo[cluster->centers.data[b.i]].log_rho_err;
+		      FLOAT_TYPE dens2           = dpInfo[cluster->centers.data[b.j]].log_rho_c;
+		      FLOAT_TYPE dens2_err       = dpInfo[cluster->centers.data[b.j]].log_rho_err;
 		      FLOAT_TYPE dens_border     = b.density;
 		      FLOAT_TYPE dens_border_err = b.error;
 	      
@@ -1349,10 +1266,10 @@ void Heuristic3_sparse(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE 
 
                 //pick who am I
 
-                FLOAT_TYPE dens1           = particles[cluster->centers.data[new_src]].log_rho_c;
-                FLOAT_TYPE dens1_err       = particles[cluster->centers.data[new_src]].log_rho_err;
-                FLOAT_TYPE dens2           = particles[cluster->centers.data[new_trg]].log_rho_c;
-                FLOAT_TYPE dens2_err       = particles[cluster->centers.data[new_trg]].log_rho_err;
+                FLOAT_TYPE dens1           = dpInfo[cluster->centers.data[new_src]].log_rho_c;
+                FLOAT_TYPE dens1_err       = dpInfo[cluster->centers.data[new_src]].log_rho_err;
+                FLOAT_TYPE dens2           = dpInfo[cluster->centers.data[new_trg]].log_rho_c;
+                FLOAT_TYPE dens2_err       = dpInfo[cluster->centers.data[new_trg]].log_rho_err;
 
 		//borders get
 		SparseBorder_t b 	   = SparseBorder_get(cluster, new_src, new_trg);
@@ -1453,9 +1370,9 @@ void Heuristic3_sparse(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE 
     #pragma omp parallel for
     for(idx_t i = 0; i < cluster -> n; ++i)
     {
-        particles[i].is_center = 0;
-        int old_cidx = particles[i].cluster_idx;
-        particles[i].cluster_idx = old_to_new[old_cidx];
+        dpInfo[i].is_center = 0;
+        int old_cidx = dpInfo[i].cluster_idx;
+        dpInfo[i].cluster_idx = old_to_new[old_cidx];
     }
 
     
@@ -1488,7 +1405,7 @@ void Heuristic3_sparse(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE 
     for(idx_t i = 0; i < cluster -> centers.count; ++i)
     {
         int idx = cluster -> centers.data[i];
-        particles[idx].is_center = 1;
+        dpInfo[idx].is_center = 1;
     }
     /*Halo*/
     switch (halo)
@@ -1518,9 +1435,9 @@ void Heuristic3_sparse(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE 
 		    #pragma omp for
 		    for(idx_t i = 0; i < cluster -> n; ++i)
 		    {
-			int cidx = particles[i].cluster_idx;
-			int halo_flag = particles[i].log_rho_c < max_border_den_array[cidx]; 
-			particles[i].cluster_idx = halo_flag ? -1 : cidx;
+			int cidx = dpInfo[i].cluster_idx;
+			int halo_flag = dpInfo[i].log_rho_c < max_border_den_array[cidx]; 
+			dpInfo[i].cluster_idx = halo_flag ? -1 : cidx;
 		    }
 		}
 		free(max_border_den_array);
@@ -1557,7 +1474,7 @@ void Heuristic3_sparse(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE 
 }
 
 
-void Heuristic3_dense(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE Z, int halo)
+void Heuristic3_dense(Clusters* cluster, Datapoint_info* dpInfo, FLOAT_TYPE Z, int halo)
 {
   printf("Using dense implementation\n");
   #define borders cluster->borders
@@ -1594,10 +1511,10 @@ void Heuristic3_dense(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE Z
                     
 	  case 1:		
 	    {
-	      FLOAT_TYPE dens1           = particles[cluster->centers.data[i]].log_rho_c;
-	      FLOAT_TYPE dens1_err       = particles[cluster->centers.data[i]].log_rho_err;
-	      FLOAT_TYPE dens2           = particles[cluster->centers.data[j]].log_rho_c;
-	      FLOAT_TYPE dens2_err       = particles[cluster->centers.data[j]].log_rho_err;
+	      FLOAT_TYPE dens1           = dpInfo[cluster->centers.data[i]].log_rho_c;
+	      FLOAT_TYPE dens1_err       = dpInfo[cluster->centers.data[i]].log_rho_err;
+	      FLOAT_TYPE dens2           = dpInfo[cluster->centers.data[j]].log_rho_c;
+	      FLOAT_TYPE dens2_err       = dpInfo[cluster->centers.data[j]].log_rho_err;
 	      FLOAT_TYPE dens_border     = borders[i][j].density;
 	      FLOAT_TYPE dens_border_err = borders[i][j].error;
 	      
@@ -1657,10 +1574,10 @@ void Heuristic3_dense(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE Z
 
                 //pick who am I
 
-                FLOAT_TYPE dens1           = particles[cluster->centers.data[new_src]].log_rho_c;
-                FLOAT_TYPE dens1_err       = particles[cluster->centers.data[new_src]].log_rho_err;
-                FLOAT_TYPE dens2           = particles[cluster->centers.data[new_trg]].log_rho_c;
-                FLOAT_TYPE dens2_err       = particles[cluster->centers.data[new_trg]].log_rho_err;
+                FLOAT_TYPE dens1           = dpInfo[cluster->centers.data[new_src]].log_rho_c;
+                FLOAT_TYPE dens1_err       = dpInfo[cluster->centers.data[new_src]].log_rho_err;
+                FLOAT_TYPE dens2           = dpInfo[cluster->centers.data[new_trg]].log_rho_c;
+                FLOAT_TYPE dens2_err       = dpInfo[cluster->centers.data[new_trg]].log_rho_err;
 
                 FLOAT_TYPE dens_border     = borders[new_src][new_trg].density;
                 FLOAT_TYPE dens_border_err = borders[new_src][new_trg].error;
@@ -1756,9 +1673,9 @@ void Heuristic3_dense(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE Z
     #pragma omp parallel for
     for(idx_t i = 0; i < cluster -> n; ++i)
     {
-        particles[i].is_center = 0;
-        int old_cidx = particles[i].cluster_idx;
-        particles[i].cluster_idx = old_to_new[old_cidx];
+        dpInfo[i].is_center = 0;
+        int old_cidx = dpInfo[i].cluster_idx;
+        dpInfo[i].cluster_idx = old_to_new[old_cidx];
     }
 
     
@@ -1795,7 +1712,7 @@ void Heuristic3_dense(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE Z
     for(idx_t i = 0; i < cluster -> centers.count; ++i)
     {
         int idx = cluster -> centers.data[i];
-        particles[idx].is_center = 1;
+        dpInfo[idx].is_center = 1;
     }
     /*Halo*/
     switch (halo)
@@ -1824,9 +1741,9 @@ void Heuristic3_dense(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE Z
 		    #pragma omp for
 		    for(idx_t i = 0; i < cluster -> n; ++i)
 		    {
-			int cidx = particles[i].cluster_idx;
-			int halo_flag = particles[i].log_rho_c < max_border_den_array[cidx]; 
-			particles[i].cluster_idx = halo_flag ? -1 : cidx;
+			int cidx = dpInfo[i].cluster_idx;
+			int halo_flag = dpInfo[i].log_rho_c < max_border_den_array[cidx]; 
+			dpInfo[i].cluster_idx = halo_flag ? -1 : cidx;
 		    }
 		}
 		free(max_border_den_array);
@@ -1863,15 +1780,15 @@ void Heuristic3_dense(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE Z
 }
 
 
-void Heuristic3(Clusters* cluster, Datapoint_info* particles, FLOAT_TYPE Z, int halo)
+void Heuristic3(Clusters* cluster, Datapoint_info* dpInfo, FLOAT_TYPE Z, int halo)
 {
 	if(cluster -> UseSparseBorders)
 	{
-		Heuristic3_sparse(cluster, particles,  Z,  halo);
+		Heuristic3_sparse(cluster, dpInfo,  Z,  halo);
 	}
 	else
 	{
-		Heuristic3_dense(cluster, particles,  Z,  halo);
+		Heuristic3_dense(cluster, dpInfo,  Z,  halo);
 	}
 }
 
