@@ -74,6 +74,7 @@ void printHelp()
 	printf("USAGE: ./driver i=[INPUT_FILE] o=[OUTPUT_FILE] d=[d] t=[t] z=[Z] h=[HALO] k=[k] s=[s] t=[t]\n");
 	printf("\tINPUT_FILE : input file, file path\n");
 	printf("\tOUTPUT_FILE: output file, file path\n");
+	printf("\td	     : Lenght of the data vectors (int) \n");
 	printf("\tZ	     : Z value, float\n");
 	printf("\tHALO	     : Assign halo, bool 0/1 \n");
 	printf("\tk	     : Number of neighbors to use, int (>0) \n");

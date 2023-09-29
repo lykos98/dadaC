@@ -15,7 +15,7 @@ NOTE: this is an experimental implementation, program may crash if a dataset req
 
 ## Usage
 
-dadaC comes with an example driver file `driver.c`. Data is expected to be a matrix of floats of type `FLOAT_TYPE` (defined at compile time) of dimensions `N x data_dims` with `data_dims` being a global variable defined at compile time.
+dadaC comes with an example driver file `driver.c`. Data is expected to be a matrix of floats of type `FLOAT_TYPE` (defined at compile time) of dimensions `N x d`.
 
 It returns a text file where for each point are reported:
 
@@ -29,8 +29,9 @@ Once parameters are setted `dadaC` can be launched using:
 
 - `INPUT_FILE `: input file, file path
 - `OUTPUT_FILE`: output file, file path
-- `Z`	     : Z value, float\n
-- `HALO`     : Assign halo, bool 0/1 \n
+- `d`        : Lenght of the data vectors (number of columns of the data matrix)
+- `Z`	     : Z value, float
+- `HALO`     : Assign halo, bool 0/1 
 - `k`	     : Number of neighbors to use, int (>0)
 - `s`	     : Use sparse borders implementation, y [sparse/dense]
 - `t`	     : Input binary is in Float32, y/n [float/double]
