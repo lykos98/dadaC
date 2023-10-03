@@ -1,4 +1,5 @@
 *.ipynb
+*.old.c
 d
 dummy.dat
 __pycache__

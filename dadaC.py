@@ -22,7 +22,7 @@ class Heap(ct.Structure):
 class luDynamicArray(ct.Structure):
     _fields_ = [
         ("data", ct.POINTER(ctIdxType)),
-        ("size", ctIdxType),s
+        ("size", ctIdxType),
         ("count", ctIdxType)
     ]
 
@@ -85,7 +85,7 @@ class Data():
         Raises:
             TypeError: Raises TypeError if a type different from a matrix is passed 
         """
-        path = os.path.join(os.path.dirname(__file__), "bin/libclustering.so")
+        path = os.path.join(os.path.dirname(__file__), "bin/libdadac.so")
         self.lib = ct.CDLL(path)
 
         global ctFloatType, ctIdxType
@@ -242,7 +242,7 @@ class Data():
         self.state["clustering"] = True
         self.clusterAssignment = None
 
-    def getClusterAssignment(self) -> list(int):
+    def getClusterAssignment(self) -> list:
 
 
         """Retrieve cluster assignment
@@ -266,7 +266,7 @@ class Data():
     def getBorders(self):
         raise NotImplemented("It's difficult I have to think about it")
 
-    def getDensity(self) -> list(float):
+    def getDensity(self) -> list:
 
         """Retrieve list of density values
 
@@ -305,7 +305,7 @@ class Data():
         else:
             return self.densityError
     
-    def getNeighbors(self) -> [list, list]:
+    def getNeighbors(self) -> list:
         """Retrieve k Nearest Neighbors of each point and their associated distance
 
         Raises:

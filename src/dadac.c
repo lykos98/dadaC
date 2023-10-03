@@ -1,5 +1,5 @@
 //#include "../include/read_fof_snapshot.h"
-#include "../include/clustering.h"
+#include "../include/dadac.h"
 #include <omp.h>
 #include <stdint.h>
 #include <stdio.h>
