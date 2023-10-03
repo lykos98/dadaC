@@ -31,9 +31,9 @@ Once parameters are set `dadaC` can be launched using:
 - `OUTPUT_FILE`: output file, file path
 - `d`        : Lenght of the data vectors (number of columns of the data matrix)
 - `Z`	     : Z value, float
-- `HALO`     : Assign halo, bool 0/1 
+- `HALO`     : Assign halo, y/n [yes/no] 
 - `k`	     : Number of neighbors to use, int (>0)
-- `s`	     : Use sparse borders implementation, y [sparse/dense]
+- `s`	     : Use sparse borders implementation, y/n [sparse/dense]
 - `t`	     : Input binary is in Float32, y/n [float/double]
 
 

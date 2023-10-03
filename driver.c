@@ -76,7 +76,7 @@ void printHelp()
 	printf("\tOUTPUT_FILE: output file, file path\n");
 	printf("\td	     : Lenght of the data vectors (int) \n");
 	printf("\tZ	     : Z value, float\n");
-	printf("\tHALO	     : Assign halo, bool 0/1 \n");
+	printf("\tHALO	     : Assign halo, y/n [yes/no]\n");
 	printf("\tk	     : Number of neighbors to use, int (>0) \n");
 	printf("\ts	     : Use sparse borders implementation, y/n [sparse/dense]\n");
 	printf("\tt	     : Input binary is in Float32, y/n [float/double]\n");
