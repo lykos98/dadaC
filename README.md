@@ -24,7 +24,7 @@ It returns a text file where for each point are reported:
 - `rho`: value of the density
 - `is_center`: flag for identifying cluster centers
 
-Once parameters are setted `dadaC` can be launched using:
+Once parameters are set `dadaC` can be launched using:
 `./driver i=[INPUT_FILE] o=[OUTPUT_FILE] d=[d] t=[t] z=[Z] h=[HALO] k=[k] s=[s] t=[t]`
 
 - `INPUT_FILE `: input file, file path
