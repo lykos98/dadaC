@@ -40,7 +40,7 @@ Once parameters are setted `dadaC` can be launched using:
 
 ## Compiling
 
-dadaC comes with a make file which compiles the executable `driver` and the shared library `bin/libclustering.so` from which ADP methods can be linked to.
+dadaC comes with a make file which compiles the executable `driver` and the shared library `bin/libdadac.so` from which ADP methods can be linked to.
 dadaC supports compilation to use `float` or `double` to store data and kNN distances, and `uint32` or `uint64` to store indexes. 
 Add `-DUSE_FLOAT32` or `-DUSE_INT32` to compile with support to 32bit types. By default 64bit ones are used. This feature is important for the application on big datasets, allowing of course some sort of rounding error to happen when processing data. 
 Implementation with 64bit types results are binary equal w.r.t. `dadaPy`.
