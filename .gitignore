@@ -1,5 +1,5 @@
 *.ipynb
-*.old.c
+*Old.c
 d
 dummy.dat
 __pycache__
