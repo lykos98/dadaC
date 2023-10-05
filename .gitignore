@@ -1,4 +1,4 @@
-*.ipynb
+#*.ipynb
 *Old.c
 d
 dummy.dat

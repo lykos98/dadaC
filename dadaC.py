@@ -102,7 +102,8 @@ class Data():
                     "clustering" : False,
                     "useFloat32": self.__useFloat32,
                     "useInt32": self.__useInt32,
-                    "useSparse": None
+                    "useSparse": None,
+                    "computeHalo": None 
                     }
         if self.__useFloat32:
             self.data = data.astype(np.float32)
@@ -209,7 +210,7 @@ class Data():
         self.density = None
         self.densityError = None
 
-    def computeClusteringADP(self,Z : float,useSparse = "auto"):
+    def computeClusteringADP(self,Z : float, halo = True, useSparse = "auto"):
 
         """Compute clustering via the Advanced Density Peak method
 
@@ -232,13 +233,13 @@ class Data():
         else:
             self.state["useSparse"] = False
 
-            
+        self.state["computeHalo"] = halo 
         self.Z = Z
         self.__computeCorrection(self.__datapoints, self.n, self.Z)
         self.__clusters = self.__H1(self.__datapoints,self.data, self.n)
         self.__ClustersAllocate(ct.pointer(self.__clusters), 1 if self.state["useSparse"] else 0)
         self.__H2(ct.pointer(self.__clusters), self.__datapoints)
-        self.__H3(ct.pointer(self.__clusters), self.__datapoints, self.Z, 1 if self.state["useSparse"] else 0 )
+        self.__H3(ct.pointer(self.__clusters), self.__datapoints, self.Z, 1 if halo else 0 )
         self.state["clustering"] = True
         self.clusterAssignment = None
 
@@ -256,7 +257,7 @@ class Data():
         """
         if self.clusterAssignment is None:
             if self.state["clustering"]:
-                self.clusterAssignment = [self.__datapoints[j].cluster_idx for j in range(self.n)]
+                self.clusterAssignment = np.array([int(self.__datapoints[j].cluster_idx) for j in range(self.n)])
                 return self.clusterAssignment
             else:
                 raise ValueError("Clustering is not computed yet")
@@ -279,7 +280,7 @@ class Data():
         """
         if self.density is None:
             if self.state["density"]:
-                self.density = [self.__datapoints[j].log_rho for j in range(self.n)]
+                self.density = np.array([float(self.__datapoints[j].log_rho) for j in range(self.n)])
                 return self.density
             else:
                 raise ValueError("Density is not computed yet")
@@ -298,7 +299,7 @@ class Data():
         """
         if self.densityError is None:
             if self.state["density"]:
-                self.densityError = [self.__datapoints[j].log_rho_err for j in range(self.n)]
+                self.densityError = np.array([float(self.__datapoints[j].log_rho_err) for j in range(self.n)])
                 return self.densityError
             else:
                 raise ValueError("Density Error is not computed yet")
@@ -317,8 +318,8 @@ class Data():
         if self.neighbors is None:
             if self.state["ngbh"]:
                 self.neighbors = (
-                        [[self.__datapoints[j].ngbh.data[kk].array_idx for kk in range(self.k)] for j in range(self.n)],
-                        [[self.__datapoints[j].ngbh.data[kk].value**(0.5) for kk in range(self.k)] for j in range(self.n)]
+                            np.array([[int(self.__datapoints[j].ngbh.data[kk].array_idx) for kk in range(self.k)] for j in range(self.n)]),
+                            np.array([[float(self.__datapoints[j].ngbh.data[kk].value)**(0.5) for kk in range(self.k)] for j in range(self.n)])
                         )
                 return self.neighbors
             else:

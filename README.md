@@ -50,6 +50,8 @@ Implementation with 64bit types results are binary equal w.r.t. `dadaPy`.
 
 dadaC comes also with a python interface build with `ctypes` which leverages the capabilities of the C-compiled library. In order to use it, build the package and then import `dadaC` module from python
 
+**REQUIRES** Numpy package to properly work
+
 ## TODO
 
 MUCH MORE

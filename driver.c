@@ -186,7 +186,7 @@ int main(int argc, char** argv){
 
 	int InputFloatSize = opt.FileInFloat32 ? 4 : 8;
 
-    n = n/(sizeof(float)*opt.data_dims);
+    n = n/(InputFloatSize*opt.data_dims);
     printf("Reading %lu particles\n",(uint64_t)n);
 
 
