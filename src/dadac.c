@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include "./metrics.c"
 #define MAX_SERIAL_MERGING 40000
 #define MAX_N_NGBH 1000
 #define PREALLOC_BORDERS 10

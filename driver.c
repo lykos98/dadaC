@@ -152,6 +152,24 @@ struct Options Parser(int argc, char** argv)
 }
 
 
+uint32_t METRICS_DATADIMS;
+
+
+float_t eud(void* a, void* b)
+{
+	float_t* aa = (float_t*)a;
+	float_t* bb = (float_t*)b;
+	float_t acc = 0;
+	for(uint32_t i=0; i < METRICS_DATADIMS; ++i) 
+	{
+		float_t dd = (aa[i] - bb[i]);
+		acc += dd*dd;
+	}
+	return sqrt(acc); 
+	//return acc; 
+}
+
+
 int main(int argc, char** argv){
 
     char aux_fname[80];
@@ -253,6 +271,46 @@ int main(int argc, char** argv){
     
     Heuristic3(&c, particles, opt.Z, opt.halo);
 
+	freeDatapointArray(particles,n);
+	Clusters_free(&c);
+	METRICS_DATADIMS = opt.data_dims;
+	particles = NgbhSearch_vpTree(data, n,sizeof(FLOAT_TYPE), opt.data_dims, opt.k, eud); 
+    /********************************
+     * Intrinsic Dimension estimate *
+     ********************************/
+
+    id = idEstimate(particles, n);
+
+    /***********************
+     * Density computation *
+     ***********************/
+    computeRho(particles,id,n);
+    computeCorrection(particles,n,opt.Z);
+
+    /********************
+     * First clustering *
+     ********************/
+
+    c = Heuristic1(particles, data, n);
+
+    /***************************************************************************************
+     * Allocate borders and other things to store clustering info                          *
+     * Then Find borders between clusters and then merge clusters using peaks significance *
+     ***************************************************************************************/
+   // Clusters_allocate(&c);  
+    Clusters_allocate(&c, opt.UseSparseBorders);  
+
+    // sprintf(aux_fname, "%s_int", argv[2]);
+    // write_point_info(aux_fname,particles,n);
+
+    Heuristic2(&c, particles);
+
+    //sprintf(aux_fname, "%s_bord_int", argv[2]);
+    //write_border_idx(aux_fname,&c);
+
+    c.n = n;
+    
+    Heuristic3(&c, particles, opt.Z, opt.halo);
     //sprintf(aux_fname, "%s_bord", argv[2]);
     //write_border_idx(aux_fname,&c);
 

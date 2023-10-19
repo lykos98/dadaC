@@ -193,7 +193,7 @@ int main(int argc, char** argv){
 	n = 12000;
 	data_dims = 5;
 	METRICS_DATADIMS = data_dims;
-	k = 100;
+	k = 10;
 	data = generateRandomMatrix(n, data_dims);
 
 //	n = 2000;
