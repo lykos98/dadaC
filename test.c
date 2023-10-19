@@ -17,8 +17,6 @@ struct Options
 
 };
 
-uint32_t METRICS_DATADIMS;
-
 void write_border_idx(const char * fname, Clusters * c)
 {
     FILE * f = fopen(fname, "w");
@@ -155,20 +153,6 @@ struct Options Parser(int argc, char** argv)
 	return opt;
 }
 
-float_t eud(void* a, void* b)
-{
-	float_t* aa = (float_t*)a;
-	float_t* bb = (float_t*)b;
-	float_t acc = 0;
-	for(uint32_t i=0; i < METRICS_DATADIMS; ++i) 
-	{
-		float_t dd = (aa[i] - bb[i]);
-		acc += dd*dd;
-	}
-	return sqrt(acc); 
-	//return acc; 
-}
-
 float_t* generateRandomMatrix(idx_t ncols,idx_t nrows)
 {
 	float_t* mat = (float_t*)malloc(sizeof(float_t)*ncols*nrows);
@@ -192,7 +176,6 @@ int main(int argc, char** argv){
 
 	n = 12000;
 	data_dims = 5;
-	METRICS_DATADIMS = data_dims;
 	k = 10;
 	data = generateRandomMatrix(n, data_dims);
 

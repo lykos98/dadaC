@@ -1815,6 +1815,7 @@ Datapoint_info* NgbhSearch(FLOAT_TYPE* data, size_t n, size_t ndims, size_t k)
     struct timespec start, finish;
     double elapsed;
 
+
 	data_dims = (unsigned int)ndims;
 
 	#ifdef VERBOSE
@@ -1877,6 +1878,7 @@ Datapoint_info* NgbhSearch_vpTree(void* data, size_t n, size_t byteSize, size_t 
 
     struct timespec start, finish;
     double elapsed;
+	METRICS_DATADIMS = dims;
 	
 	#ifdef VERBOSE
 		clock_gettime(CLOCK_MONOTONIC, &start);

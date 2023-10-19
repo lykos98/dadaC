@@ -130,3 +130,4 @@ void Heuristic3(Clusters *cluster, Datapoint_info *particles, FLOAT_TYPE Z,int h
 void freeDatapointArray(Datapoint_info* d, size_t n);
 
 float_t* eucMetricPx3(void*, void*);
+float_t eud(void*, void*);

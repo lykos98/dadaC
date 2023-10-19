@@ -152,22 +152,6 @@ struct Options Parser(int argc, char** argv)
 }
 
 
-uint32_t METRICS_DATADIMS;
-
-
-float_t eud(void* a, void* b)
-{
-	float_t* aa = (float_t*)a;
-	float_t* bb = (float_t*)b;
-	float_t acc = 0;
-	for(uint32_t i=0; i < METRICS_DATADIMS; ++i) 
-	{
-		float_t dd = (aa[i] - bb[i]);
-		acc += dd*dd;
-	}
-	return sqrt(acc); 
-	//return acc; 
-}
 
 
 int main(int argc, char** argv){
@@ -234,7 +218,6 @@ int main(int argc, char** argv){
 	}
 
 	//Datapoint_info* particles = NgbhSearch(data, n, opt.data_dims, opt.k); 
-	METRICS_DATADIMS = opt.data_dims;
 	Datapoint_info* particles = NgbhSearch_vpTree(data, n,sizeof(FLOAT_TYPE), opt.data_dims, opt.k, eud); 
     /********************************
      * Intrinsic Dimension estimate *
