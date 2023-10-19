@@ -397,7 +397,12 @@ FLOAT_TYPE idEstimate(Datapoint_info* dpInfo, idx_t n)
 
     for(idx_t i = 0; i < n; ++i)
     {
-        r[i] = 0.5 * log(dpInfo[i].ngbh.data[2].value/dpInfo[i].ngbh.data[1].value);
+		#ifdef USE_NORM
+        	r[i] = log(dpInfo[i].ngbh.data[2].value/dpInfo[i].ngbh.data[1].value);
+		#else
+        	r[i] = 0.5 * log(dpInfo[i].ngbh.data[2].value/dpInfo[i].ngbh.data[1].value);
+		#endif
+
         Pemp[i] = -log(1 - (FLOAT_TYPE)(i + 1)/(FLOAT_TYPE)n);
     }
     qsort(r,n,sizeof(FLOAT_TYPE),cmp);
@@ -455,9 +460,20 @@ void computeRho(Datapoint_info* dpInfo, const FLOAT_TYPE d, const idx_t points){
         while(j < kMAX && dL < DTHR)
         {
             idx_t ksel = j - 1;
-            vvi = omega * pow(dpInfo[i].ngbh.data[ksel].value,d/2.);
+			#ifdef USE_NORM
+            	vvi = omega * pow(dpInfo[i].ngbh.data[ksel].value,d);
+			#else
+            	vvi = omega * pow(dpInfo[i].ngbh.data[ksel].value,d/2.);
+			#endif
+
             idx_t jj = dpInfo[i].ngbh.data[j].array_idx;
-            vvj = omega * pow(dpInfo[jj].ngbh.data[ksel].value,d/2.);
+
+			#ifdef USE_NORM
+            	vvj = omega * pow(dpInfo[jj].ngbh.data[ksel].value,d);
+			#else
+            	vvj = omega * pow(dpInfo[jj].ngbh.data[ksel].value,d/2.);
+			#endif
+
             vp = (vvi + vvj)*(vvi + vvj);
             dL = -2.0 * ksel * log(4.*vvi*vvj/vp);
             j = j + 1;
@@ -1799,7 +1815,12 @@ Datapoint_info* NgbhSearch(FLOAT_TYPE* data, size_t n, size_t ndims, size_t k)
     double elapsed;
 
 	data_dims = (unsigned int)ndims;
-	
+
+	#ifdef VERBOSE
+		printf("Building the KDtree:\n");
+		clock_gettime(CLOCK_MONOTONIC, &start);
+	#endif
+
     kd_node* kd_node_array = (kd_node*)malloc(n*sizeof(kd_node));
     kd_node** kd_ptrs = (kd_node**)malloc(n*sizeof(kd_node*));
 
@@ -1808,10 +1829,14 @@ Datapoint_info* NgbhSearch(FLOAT_TYPE* data, size_t n, size_t ndims, size_t k)
 
     kd_node* root = build_tree(kd_ptrs, n, ndims);
 
-    clock_gettime(CLOCK_MONOTONIC, &finish);
-
-    printf("The root of the tree is\n");
-    printKDnode(root);
+    //printf("The root of the tree is\n");
+    //printKDnode(root);
+	#ifdef VERBOSE
+		clock_gettime(CLOCK_MONOTONIC, &finish);
+		elapsed = (finish.tv_sec - start.tv_sec);
+		elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+		printf("\tTotal time: %.3lfs\n\n", elapsed);
+	#endif
 
 
     Datapoint_info* points = (Datapoint_info*)malloc(n*sizeof(Datapoint_info));
@@ -1844,4 +1869,57 @@ int FloatAndUintSize()
 	int vi = sizeof(idx_t) == 8 ? 1 : 0; 
 	v = vf + vi*2;
 	return v;
+}
+
+Datapoint_info* NgbhSearch_vpTree(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *))
+{
+
+    struct timespec start, finish;
+    double elapsed;
+	
+	#ifdef VERBOSE
+		clock_gettime(CLOCK_MONOTONIC, &start);
+		printf("Building the vp tree\n");
+	#endif
+
+	vpTreeNode* vpNodeArray = (vpTreeNode*)malloc(n*sizeof(vpTreeNode));
+	vpTreeNode** vpPtrArray = (vpTreeNode**)malloc(n*sizeof(vpTreeNode*));
+	initialize_vpTreeNode_array(vpNodeArray, data, n, byteSize*dims);
+	initialize_vpTreeNodes_pointers(vpPtrArray, vpNodeArray, n);
+
+	vpTreeNode* root = build_vpTree(vpPtrArray, 0, n-1, NULL, metric);
+	#ifdef VERBOSE
+		clock_gettime(CLOCK_MONOTONIC, &finish);
+		elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+		elapsed = (finish.tv_sec - start.tv_sec);
+    	printf("\tTotal time: %.3lfs\n\n", elapsed);
+	#endif
+
+    Datapoint_info* points = (Datapoint_info*)malloc(n*sizeof(Datapoint_info));
+
+    /**************
+     * KNN search *
+     **************/
+	#ifdef VERBOSE
+		clock_gettime(CLOCK_MONOTONIC, &start);
+		printf("KNN search\n");
+	#endif
+	
+	#pragma omp parallel for schedule(dynamic)
+	for(size_t i = 0; i < n; ++i) 
+	{
+		points[i].ngbh = KNN_vpTree(vpNodeArray[i].data, root, k, metric);
+		
+	}
+	#ifdef VERBOSE
+		clock_gettime(CLOCK_MONOTONIC, &finish);
+		elapsed = (finish.tv_sec - start.tv_sec);
+		elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+		printf("\tTotal time: %.3lfs\n\n", elapsed);
+	#endif
+
+	//printf("NODE STRAMBO: %lf %p %lu\n", vpNodeArray[1516].mu, vpNodeArray[1516].inside, vpNodeArray[1516].parent -> array_idx);
+    free(vpPtrArray);
+    free(vpNodeArray);
+	return points;
 }

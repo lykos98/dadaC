@@ -255,14 +255,16 @@ class Data():
             List of cluster labels
             
         """
-        if self.clusterAssignment is None:
-            if self.state["clustering"]:
-                self.clusterAssignment = np.array([int(self.__datapoints[j].cluster_idx) for j in range(self.n)])
-                return self.clusterAssignment
-            else:
-                raise ValueError("Clustering is not computed yet")
-        else:
-            return self.clusterAssignment
+        #if self.clusterAssignment is None:
+        #    if self.state["clustering"]:
+        #        self.clusterAssignment = np.array([int(self.__datapoints[j].cluster_idx) for j in range(self.n)])
+        #        return self.clusterAssignment
+        #    else:
+        #        raise ValueError("Clustering is not computed yet")
+        #else:
+        #    return self.clusterAssignment
+        self.clusterAssignment = np.array([int(self.__datapoints[j].cluster_idx) for j in range(self.n)])
+        return self.clusterAssignment
 
     def getBorders(self):
         raise NotImplemented("It's difficult I have to think about it")

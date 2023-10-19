@@ -1,3 +1,5 @@
+#pragma once
+#include "heap.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -22,25 +24,6 @@
 #endif
 
 
-struct heap_node
-{
-   FLOAT_TYPE value;
-   idx_t array_idx;
-} ;
-
-struct Heap
-{
-   idx_t N; 
-   idx_t count;
-   struct heap_node* data;
-   
-} ;
-
-struct SimpleHeap
-{
-   idx_t N; 
-   T * data;
-} ;
 
 struct kd_node
 {   
@@ -66,28 +49,6 @@ void swapHeapNode(heap_node* a, heap_node* b);
 
 void swap_kd_node_ptrs(kd_node **x, kd_node **y);
 
-void allocateSimpleHeap(SimpleHeap* H, idx_t n);
-
-void allocateHeap(Heap* H, idx_t n);
-
-void initSimpleHeap(SimpleHeap* H);
-
-void initHeap(Heap* H);
-
-void freeSimpleHeap(SimpleHeap * H);
-
-void freeHeap(Heap * H);
-
-void heapifyMaxSimpleHeap(SimpleHeap* H, idx_t node);
-
-void heapifyMaxHeap(Heap* H, idx_t node);
-
-
-void setRootMaxSimpleHeap(SimpleHeap * H, T val);
-
-void setRootMaxHeap(Heap * H, FLOAT_TYPE val, idx_t array_idx);
-
-void insertMaxHeap(Heap * H, FLOAT_TYPE val, idx_t array_idx);
 
 /**
  * 
@@ -119,7 +80,6 @@ kd_node* make_tree(kd_node** t, int start, int end, kd_node* parent, int level);
 
 void KNN_sub_tree_search(FLOAT_TYPE* point, kd_node* kdtree_root, Heap * H);
 
-void HeapSort(Heap* H);
 
 Heap KNN(FLOAT_TYPE* point, kd_node* kdtree_root, int maxk);
 

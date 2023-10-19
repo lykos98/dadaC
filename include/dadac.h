@@ -1,4 +1,7 @@
+#pragma once
+#include "heap.h"
 #include "kdtree.h"
+#include "vptree.h"
 #include <math.h>
 #include <omp.h>
 #include <stdint.h>
@@ -112,6 +115,7 @@ FLOAT_TYPE avg(const FLOAT_TYPE *x, const idx_t n);
 FLOAT_TYPE mEst2(FLOAT_TYPE *x, FLOAT_TYPE *y, idx_t n);
 FLOAT_TYPE mEst(FLOAT_TYPE *x, FLOAT_TYPE *y, idx_t n);
 FLOAT_TYPE idEstimate(Datapoint_info *particles, idx_t n);
+Datapoint_info* NgbhSearch_vpTree(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *));
 Datapoint_info* NgbhSearch(FLOAT_TYPE* data, size_t n, size_t ndims, size_t k);
 void computeRho(Datapoint_info *particles, const FLOAT_TYPE d,
                 const idx_t points);
@@ -124,3 +128,5 @@ Clusters Heuristic1(Datapoint_info *dp, FLOAT_TYPE *data, idx_t n);
 void Heuristic2(Clusters *cluster, Datapoint_info *particles);
 void Heuristic3(Clusters *cluster, Datapoint_info *particles, FLOAT_TYPE Z,int halo);
 void freeDatapointArray(Datapoint_info* d, size_t n);
+
+
