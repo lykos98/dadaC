@@ -233,7 +233,9 @@ int main(int argc, char** argv){
 		free(df);
 	}
 
-	Datapoint_info* particles = NgbhSearch(data, n, opt.data_dims, opt.k); 
+	//Datapoint_info* particles = NgbhSearch(data, n, opt.data_dims, opt.k); 
+	METRICS_DATADIMS = opt.data_dims;
+	Datapoint_info* particles = NgbhSearch_vpTree(data, n,sizeof(FLOAT_TYPE), opt.data_dims, opt.k, eud); 
     /********************************
      * Intrinsic Dimension estimate *
      ********************************/
@@ -273,62 +275,7 @@ int main(int argc, char** argv){
 
 	freeDatapointArray(particles,n);
 	Clusters_free(&c);
-	METRICS_DATADIMS = opt.data_dims;
-	particles = NgbhSearch_vpTree(data, n,sizeof(FLOAT_TYPE), opt.data_dims, opt.k, eud); 
-    /********************************
-     * Intrinsic Dimension estimate *
-     ********************************/
 
-    id = idEstimate(particles, n);
-
-    /***********************
-     * Density computation *
-     ***********************/
-    computeRho(particles,id,n);
-    computeCorrection(particles,n,opt.Z);
-
-    /********************
-     * First clustering *
-     ********************/
-
-    c = Heuristic1(particles, data, n);
-
-    /***************************************************************************************
-     * Allocate borders and other things to store clustering info                          *
-     * Then Find borders between clusters and then merge clusters using peaks significance *
-     ***************************************************************************************/
-   // Clusters_allocate(&c);  
-    Clusters_allocate(&c, opt.UseSparseBorders);  
-
-    // sprintf(aux_fname, "%s_int", argv[2]);
-    // write_point_info(aux_fname,particles,n);
-
-    Heuristic2(&c, particles);
-
-    //sprintf(aux_fname, "%s_bord_int", argv[2]);
-    //write_border_idx(aux_fname,&c);
-
-    c.n = n;
-    
-    Heuristic3(&c, particles, opt.Z, opt.halo);
-    //sprintf(aux_fname, "%s_bord", argv[2]);
-    //write_border_idx(aux_fname,&c);
-
-    clock_gettime(CLOCK_MONOTONIC, &start);
-    write_point_info(opt.outputFile,particles,n);
-    clock_gettime(CLOCK_MONOTONIC, &finish);
-
-    elapsed = (finish.tv_sec - start.tv_sec);
-    elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
-
-    printf("Writing results: %.3lf\n",elapsed);
-    /*******************
-     * Free all memory *
-     *******************/
-
-	freeDatapointArray(particles,n);
-    free(data);
-    Clusters_free(&c);
 
     clock_gettime(CLOCK_MONOTONIC, &finish_tot);
     elapsed_tot = (finish_tot.tv_sec - start_tot.tv_sec);

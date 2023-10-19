@@ -1910,6 +1910,8 @@ Datapoint_info* NgbhSearch_vpTree(void* data, size_t n, size_t byteSize, size_t 
 	for(size_t i = 0; i < n; ++i) 
 	{
 		points[i].ngbh = KNN_vpTree(vpNodeArray[i].data, root, k, metric);
+		points[i].cluster_idx = -1;
+		points[i].is_center = 0;
 		
 	}
 	#ifdef VERBOSE
