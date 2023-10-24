@@ -1,5 +1,6 @@
 //#include "../include/read_fof_snapshot.h"
 #include "../include/dadac.h"
+#include <math.h>
 #include <omp.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -392,7 +393,8 @@ FLOAT_TYPE idEstimate(Datapoint_info* dpInfo, idx_t n)
     printf("ID estimation:\n");
     clock_gettime(CLOCK_MONOTONIC, &start_tot);
 
-    FLOAT_TYPE fraction = 0.9;
+	FLOAT_TYPE fraction = 0.9;
+    //FLOAT_TYPE fraction = 0.7;
     FLOAT_TYPE* r = (FLOAT_TYPE*)malloc(n*sizeof(FLOAT_TYPE));
     FLOAT_TYPE* Pemp = (FLOAT_TYPE*)malloc(n*sizeof(FLOAT_TYPE));
 
@@ -549,7 +551,7 @@ void computeCorrection(Datapoint_info* dpInfo, idx_t n, FLOAT_TYPE Z)
     //printf("%lf\n",min_log_rho);
 }
 
-Clusters Heuristic1(Datapoint_info* dpInfo, FLOAT_TYPE* data, idx_t n)
+Clusters Heuristic1(Datapoint_info* dpInfo, idx_t n)
 {
     /**************************************************************
      * Heurisitc 1, from paper of Errico, Facco, Laio & Rodriguez *
@@ -629,58 +631,6 @@ Clusters Heuristic1(Datapoint_info* dpInfo, FLOAT_TYPE* data, idx_t n)
     for(idx_t c = 0; c < allCenters.count; ++c) {to_remove[c] = MY_SIZE_MAX;}
 
     qsort(dpInfo_ptrs, n, sizeof(Datapoint_info*), cmpPP);
-    /*****************************************************************************************************
-     * /!\ This part is VERY time consuming, complexity depends on the number of center previously found *
-     * /!\ It is actually faster when using only a few threads                                           *
-     *****************************************************************************************************/
-    //#pragma omp parallel for num_threads(4)
-    
-    //#pragma omp parallel for 
-    //for(idx_t p = 0; p < allCenters.count; ++p)
-    //{   
-    //    /*
-
-    //    Check if the center spotted in the previous part belongs to the neighborhood
-    //    of a point of higher density. If this is true remove it from the actual centers
-
-    //    */
-    //    idx_t i = allCenters.data[p];
-    //    int e = 0;
-    //    FLOAT_TYPE gi = dpInfo[i].g;
-    //    idx_t i_arrIdx = dpInfo[i].array_idx;
-    //    idx_t mr = MY_SIZE_MAX;
-    //    FLOAT_TYPE max_g = -99999.0;
-    //    for(idx_t j = 0; j < n; ++j)
-    //    {
-    //        //retrive the particle pointed by the pointer
-    //        Datapoint_info pp = *(dpInfo_ptrs[j]);
-    //        idx_t kMAXj = pp.kstar;
-    //        Heap j_ngbh = pp.ngbh;
-    //        FLOAT_TYPE gj = pp.g;
-    //        //e = 0;
-    //        //check if there is point in which the point i is a neighbor with grater g
-    //            //if gj > gi check the neighborhood
-    //        //preliminarity check, if i is more distant than k* neighbor break
-    //        FLOAT_TYPE dk = j_ngbh.data[kMAXj + 1].value;
-    //        FLOAT_TYPE di = euclidean_distance(data + (i*data_dims), data + (pp.array_idx*data_dims));
-    //        int stop = 0;
-    //        if(dk > di)
-    //        {
-    //            mr = pp.array_idx;
-    //            //found a neighborhood with higher g, break
-    //            stop = 1;
-    //            //max_g = gj;
-    //        } 
-    //        if(stop == 1|| i == pp.array_idx)
-    //        {
-    //            break;
-    //        }
-    //        
-    //    }
-    //    to_remove[p] = mr;
-    //}
-    //
-    
 
     #pragma omp parallel
     {
@@ -1128,7 +1078,7 @@ void fix_SparseBorders_A_into_B(idx_t s,idx_t t,Clusters* c)
 {
 	//delete border trg -> src
 	
-	idx_t nclus = c -> centers.count;
+	//idx_t nclus = c -> centers.count;
 	
 	{
 		{
@@ -1810,7 +1760,7 @@ void Heuristic3(Clusters* cluster, Datapoint_info* dpInfo, FLOAT_TYPE Z, int hal
 }
 
 
-Datapoint_info* NgbhSearch(FLOAT_TYPE* data, size_t n, size_t ndims, size_t k)
+Datapoint_info* NgbhSearch_kdtree(FLOAT_TYPE* data, size_t n, size_t ndims, size_t k)
 {
     struct timespec start, finish;
     double elapsed;
@@ -1873,7 +1823,57 @@ int FloatAndUintSize()
 	return v;
 }
 
-Datapoint_info* NgbhSearch_vpTree(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *))
+
+void KNN_search_vpTree(Datapoint_info* dpInfo, vpTreeNode* vpNodeArray,vpTreeNode* root,idx_t k,size_t n, float_t (*metric)(void*, void*))
+{	
+    struct timespec start_tot, finish_tot;
+    double elapsed_tot;
+    printf("KNN search:\n");
+    clock_gettime(CLOCK_MONOTONIC, &start_tot);
+
+    idx_t progress_count = 0;
+    idx_t step = n/100;
+    printf("Progress 0/%lu -> 0%%\r",(uint64_t)n);
+    fflush(stdout);
+    
+    #pragma omp parallel
+    {
+
+	    #pragma omp for schedule(dynamic)
+		for(size_t i = 0; i < n; ++i) 
+		{
+			dpInfo[i].ngbh = KNN_vpTree(vpNodeArray[i].data, root, k, metric);
+			dpInfo[i].cluster_idx = -1;
+			dpInfo[i].is_center = 0;
+			dpInfo[i].array_idx = i;
+			
+			idx_t aa;
+			#pragma omp atomic capture
+			aa = ++progress_count;
+
+			if(aa % step == 0 )
+			{
+				printf("Progress %lu/%lu -> %u%%\r",(uint64_t)aa, (uint64_t)n, (uint32_t)((100*aa)/n) );
+				fflush(stdout);
+			}
+		}
+	}
+	
+
+    
+	
+
+    printf("Progress %lu/%lu -> 100%%\n",(uint64_t)n, (uint64_t)n);
+    //printf("Progress %lu/%lu\n",(uint64_t)progress_count, (uint64_t)n);
+
+    clock_gettime(CLOCK_MONOTONIC, &finish_tot);
+    elapsed_tot = (finish_tot.tv_sec - start_tot.tv_sec);
+    elapsed_tot += (finish_tot.tv_nsec - start_tot.tv_nsec) / 1000000000.0;
+    printf("\tTotal time: %.3lfs\n\n", elapsed_tot);
+    return;
+}
+
+Datapoint_info* NgbhSearch_vptree(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *))
 {
 
     struct timespec start, finish;
@@ -1893,8 +1893,8 @@ Datapoint_info* NgbhSearch_vpTree(void* data, size_t n, size_t byteSize, size_t 
 	vpTreeNode* root = build_vpTree(vpPtrArray, 0, n-1, NULL, metric);
 	#ifdef VERBOSE
 		clock_gettime(CLOCK_MONOTONIC, &finish);
-		elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
 		elapsed = (finish.tv_sec - start.tv_sec);
+		elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
     	printf("\tTotal time: %.3lfs\n\n", elapsed);
 	#endif
 
@@ -1903,29 +1903,45 @@ Datapoint_info* NgbhSearch_vpTree(void* data, size_t n, size_t byteSize, size_t 
     /**************
      * KNN search *
      **************/
-	#ifdef VERBOSE
-		clock_gettime(CLOCK_MONOTONIC, &start);
-		printf("KNN search\n");
-	#endif
+
 	
-	#pragma omp parallel for schedule(dynamic)
-	for(size_t i = 0; i < n; ++i) 
-	{
-		points[i].ngbh = KNN_vpTree(vpNodeArray[i].data, root, k, metric);
-		points[i].cluster_idx = -1;
-		points[i].is_center = 0;
-		points[i].array_idx = i;
-		
-	}
-	#ifdef VERBOSE
-		clock_gettime(CLOCK_MONOTONIC, &finish);
-		elapsed = (finish.tv_sec - start.tv_sec);
-		elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
-		printf("\tTotal time: %.3lfs\n\n", elapsed);
-	#endif
+	KNN_search_vpTree(points, vpNodeArray, root, k, n, metric);
+	
 
 	//printf("NODE STRAMBO: %lf %p %lu\n", vpNodeArray[1516].mu, vpNodeArray[1516].inside, vpNodeArray[1516].parent -> array_idx);
     free(vpPtrArray);
     free(vpNodeArray);
 	return points;
+}
+
+void setRhoErrK(Datapoint_info* points, FLOAT_TYPE* rho, FLOAT_TYPE* rhoErr, idx_t* k, size_t n)
+{
+	for(size_t i = 0; i < n; ++i)
+	{
+		points[i].log_rho = rho[i];
+		points[i].log_rho_err = rhoErr[i];
+		points[i].g = points[i].log_rho - points[i].log_rho_err;
+		points[i].kstar = k[i];
+	}
+	return;
+}
+
+void computeAvg(Datapoint_info* p, FLOAT_TYPE *va, FLOAT_TYPE* ve, FLOAT_TYPE* vals, FLOAT_TYPE* verr, size_t k, size_t n)
+{
+	#pragma omp parallel for
+	for(size_t i = 0; i < n; ++i)
+	{
+		Heap H = p[i].ngbh;
+		float_t v_acc = 0.;
+		float_t err_acc = 0.;
+		for(size_t j = 0; j < k; ++j)
+		{
+			idx_t ngbhIdx =  H.data[j].array_idx; 
+			v_acc += vals[ngbhIdx]; 
+			err_acc += verr[ngbhIdx]; 
+		}
+		va[i] = v_acc/(float_t)k;
+		ve[i] = err_acc/(float_t)k;
+	}
+		
 }

@@ -1,17 +1,17 @@
 LIBRARIES=-lm -fopenmp 
 OPTIM=-O4 -march=native  -Wall -Wextra -DUSE_NORM
-DEBUG= 
+DEBUG=-ggdb
 SRC="src"
 VERBOSE=-DVERBOSE
 
 CC=gcc
 
-DADAC=bin/clustering.o bin/kdtree.o 
+all: driver test
 
-test: test.o libdadac.so
+test: test.o bin/libdadac.so
 	${CC} test.o -L./bin -ldadac ${LIBRARIES} ${DEBUG} -o test
 
-driver: driver.o libdadac.so
+driver: driver.o bin/libdadac.so
 	${CC} driver.o -L./bin -ldadac ${LIBRARIES} ${DEBUG} -o driver
 
 test.o: test.c
@@ -20,24 +20,21 @@ test.o: test.c
 driver.o: driver.c
 	${CC} -c driver.c -o driver.o ${OPTIM} -fopenmp ${DEBUG}
 
-libdadac.so: dadac.o kdtree.o heap.o vptree.o
+bin/libdadac.so: bin/dadac.o bin/kdtree.o bin/heap.o bin/vptree.o
 	${CC} -shared bin/dadac.o bin/kdtree.o bin/heap.o bin/vptree.o ${DEBUG} ${OPTIM} ${LIBRARIES} -o bin/libdadac.so 
 
-dadac.o: src/dadac.c
+bin/dadac.o: src/dadac.c
 	${CC} -c src/dadac.c -o bin/dadac.o ${OPTIM} -fopenmp ${DEBUG} -fpic ${VERBOSE}
 
-kdtree.o: src/kdtree.c
+bin/kdtree.o: src/kdtree.c
 	${CC} -c src/kdtree.c -o bin/kdtree.o ${OPTIM} -fopenmp ${DEBUG} -fpic ${VERBOSE}
 
-vptree.o: src/vptree.c
+bin/vptree.o: src/vptree.c
 	${CC} -c src/vptree.c -o bin/vptree.o ${OPTIM} -fopenmp ${DEBUG} -fpic ${VERBOSE}
 
-heap.o: src/heap.c
+bin/heap.o: src/heap.c
 	${CC} -c src/heap.c -o bin/heap.o ${OPTIM} -fopenmp ${DEBUG} -fpic ${VERBOSE}
 
 
 clean:
-	
-	rm bin/*.so bin/*.o *.o
-	rm driver
-	rm driver.o
+	rm bin/*.so bin/*.o *.o driver test

@@ -274,8 +274,6 @@ kd_node * build_tree(kd_node** kd_ptrs, size_t n, size_t dimensions )
      *************************************************/
     
    	data_dims = dimensions; 
-    struct timespec start_tot, finish_tot;
-    double elapsed_tot;
 
     kd_node* root = make_tree(kd_ptrs, 0, n-1, NULL ,0);
 

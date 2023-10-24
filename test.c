@@ -161,14 +161,14 @@ float_t* generateRandomMatrix(idx_t ncols,idx_t nrows)
 }
 
 
-int main(int argc, char** argv){
+int main(){
 
-    char aux_fname[80];
+    //char aux_fname[80];
 
-    struct timespec start, finish;
-    double elapsed;
-    struct timespec start_tot, finish_tot;
-    double elapsed_tot;
+    //struct timespec start, finish;
+    //double elapsed;
+    //struct timespec start_tot, finish_tot;
+    //double elapsed_tot;
 
 	size_t n;
 	float_t* data;
@@ -194,14 +194,14 @@ int main(int argc, char** argv){
 	
     //Start timer
 
-	Datapoint_info* particles = NgbhSearch(data, n, data_dims, k); 
-	Datapoint_info* pp = NgbhSearch_vpTree(data,n ,sizeof(float_t),data_dims, k, eud); 
+	Datapoint_info* particles = NgbhSearch_kdtree(data, n, data_dims, k); 
+	Datapoint_info* pp = NgbhSearch_vptree(data,n ,sizeof(float_t),data_dims, k, eud); 
 
-	for(int idx=0; idx < n; ++idx)
-	for(int i=0; i < k; ++i)
+	for(size_t i = 0; i < k; ++i)
+	for(idx_t idx=0; idx < n; ++idx)
 	{
 		if(particles[idx].ngbh.data[i].array_idx != pp[idx].ngbh.data[i].array_idx ) {
-			printf("%d --> %d -- %lu %lf -- %lu %lf\n", idx, i, 
+			printf("%lu --> %lu -- %lu %lf -- %lu %lf\n", idx, i, 
 													particles[idx].ngbh.data[i].array_idx,
 													particles[idx].ngbh.data[i].value,
 													pp[idx].ngbh.data[i].array_idx,
@@ -209,67 +209,5 @@ int main(int argc, char** argv){
 		}
 	}
 
-	
-    /********************************
-     * Intrinsic Dimension estimate *
-     ********************************/
-/*
-//    double id = idEstimate(particles, n);
-//
-//    /***********************
-//     * Density computation *
-//     ***********************/
-//    computeRho(particles,id,n);
-//    computeCorrection(particles,n,opt.Z);
-//
-//    /********************
-//     * First clustering *
-//     ********************/
-//
-//    Clusters c = Heuristic1(particles, data, n);
-//
-//    /***************************************************************************************
-//     * Allocate borders and other things to store clustering info                          *
-//     * Then Find borders between clusters and then merge clusters using peaks significance *
-//     ***************************************************************************************/
-//   // Clusters_allocate(&c);  
-//    Clusters_allocate(&c, opt.UseSparseBorders);  
-//
-//    // sprintf(aux_fname, "%s_int", argv[2]);
-//    // write_point_info(aux_fname,particles,n);
-//
-//    Heuristic2(&c, particles);
-//
-//    //sprintf(aux_fname, "%s_bord_int", argv[2]);
-//    //write_border_idx(aux_fname,&c);
-//
-//    c.n = n;
-//    
-//    Heuristic3(&c, particles, opt.Z, opt.halo);
-//
-//    //sprintf(aux_fname, "%s_bord", argv[2]);
-//    //write_border_idx(aux_fname,&c);
-//
-//    clock_gettime(CLOCK_MONOTONIC, &start);
-//    write_point_info(opt.outputFile,particles,n);
-//    clock_gettime(CLOCK_MONOTONIC, &finish);
-//
-//    elapsed = (finish.tv_sec - start.tv_sec);
-//    elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
-//
-//    printf("Writing results: %.3lf\n",elapsed);
-//    /*******************
-//     * Free all memory *
-//     *******************/
-//
-//	freeDatapointArray(particles,n);
-//    free(data);
-//    Clusters_free(&c);
-//
-//    clock_gettime(CLOCK_MONOTONIC, &finish_tot);
-//    elapsed_tot = (finish_tot.tv_sec - start_tot.tv_sec);
-//    elapsed_tot += (finish_tot.tv_nsec - start_tot.tv_nsec) / 1000000000.0;
-//    printf("ELAPSED time (measured by driver): %.3lfs\n\n", elapsed_tot);
-//
     return 0;
 }

@@ -156,10 +156,10 @@ struct Options Parser(int argc, char** argv)
 
 int main(int argc, char** argv){
 
-    char aux_fname[80];
+    //char aux_fname[80];
 
-    struct timespec start, finish;
-    double elapsed;
+    //struct timespec start, finish;
+    //double elapsed;
     struct timespec start_tot, finish_tot;
     double elapsed_tot;
     //Start timer
@@ -217,8 +217,8 @@ int main(int argc, char** argv){
 		free(df);
 	}
 
-	//Datapoint_info* particles = NgbhSearch(data, n, opt.data_dims, opt.k); 
-	Datapoint_info* particles = NgbhSearch_vpTree(data, n,sizeof(FLOAT_TYPE), opt.data_dims, opt.k, eud); 
+	//Datapoint_info* particles = NgbhSearch_kdtree(data, n, opt.data_dims, opt.k); 
+	Datapoint_info* particles = NgbhSearch_vptree(data, n,sizeof(FLOAT_TYPE), opt.data_dims, opt.k, eud); 
     /********************************
      * Intrinsic Dimension estimate *
      ********************************/
@@ -235,7 +235,7 @@ int main(int argc, char** argv){
      * First clustering *
      ********************/
 
-    Clusters c = Heuristic1(particles, data, n);
+    Clusters c = Heuristic1(particles, n);
 
     /***************************************************************************************
      * Allocate borders and other things to store clustering info                          *
@@ -256,6 +256,8 @@ int main(int argc, char** argv){
     
     Heuristic3(&c, particles, opt.Z, opt.halo);
 
+	write_point_info(opt.outputFile, particles, n);
+	free(data);
 	freeDatapointArray(particles,n);
 	Clusters_free(&c);
 

@@ -115,8 +115,8 @@ FLOAT_TYPE avg(const FLOAT_TYPE *x, const idx_t n);
 FLOAT_TYPE mEst2(FLOAT_TYPE *x, FLOAT_TYPE *y, idx_t n);
 FLOAT_TYPE mEst(FLOAT_TYPE *x, FLOAT_TYPE *y, idx_t n);
 FLOAT_TYPE idEstimate(Datapoint_info *particles, idx_t n);
-Datapoint_info* NgbhSearch_vpTree(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *));
-Datapoint_info* NgbhSearch(FLOAT_TYPE* data, size_t n, size_t ndims, size_t k);
+Datapoint_info* NgbhSearch_vptree(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *));
+Datapoint_info* NgbhSearch_kdtree(FLOAT_TYPE* data, size_t n, size_t ndims, size_t k);
 void computeRho(Datapoint_info *particles, const FLOAT_TYPE d,
                 const idx_t points);
 int cmpPP(const void *p1, const void *p2);
@@ -124,7 +124,7 @@ void computeCorrection(Datapoint_info *particles, idx_t n, FLOAT_TYPE Z);
 void KNN_search(Datapoint_info *particles, FLOAT_TYPE *data, kd_node *root,
                 idx_t n, idx_t k);
 
-Clusters Heuristic1(Datapoint_info *dp, FLOAT_TYPE *data, idx_t n);
+Clusters Heuristic1(Datapoint_info *dp, idx_t n);
 void Heuristic2(Clusters *cluster, Datapoint_info *particles);
 void Heuristic3(Clusters *cluster, Datapoint_info *particles, FLOAT_TYPE Z,int halo);
 void freeDatapointArray(Datapoint_info* d, size_t n);

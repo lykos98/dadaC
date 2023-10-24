@@ -116,9 +116,37 @@ class Data():
 
         #retrieve function pointers form .so file
 
-        self.__NgbhSearch = self.lib.NgbhSearch
-        self.__NgbhSearch.argtypes = [np.ctypeslib.ndpointer(ctFloatType), ct.c_uint64, ct.c_uint64, ct.c_uint64 ]
-        self.__NgbhSearch.restype  = ct.POINTER(DatapointInfo)
+        self.__NgbhSearch_kdtree = self.lib.NgbhSearch_kdtree
+        self.__NgbhSearch_kdtree.argtypes = [np.ctypeslib.ndpointer(ctFloatType), ct.c_uint64, ct.c_uint64, ct.c_uint64 ]
+        self.__NgbhSearch_kdtree.restype  = ct.POINTER(DatapointInfo)
+
+        #Datapoint_info* NgbhSearch_vpTree(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *));
+        self.__NgbhSearch_vptree = self.lib.NgbhSearch_vptree
+        #actually do not define anything and hope for the best
+        #function pointers are not documented
+        #METRIC = ct.CFUNCTYPE(x) 
+        self.__NgbhSearch_vptree.argtypes = [ct.c_void_p, ct.c_uint64, ct.c_uint64, ct.c_uint64, ct.c_uint64, ct.c_void_p ]
+        self.__NgbhSearch_vptree.restype  = ct.POINTER(DatapointInfo)
+        self.__eud = self.lib.eud
+
+        #void setRhoErrK(Datapoint_info* points, FLOAT_TYPE* rho, FLOAT_TYPE* rhoErr, idx_t* k, size_t n)
+        self.__setRhoErrK = self.lib.setRhoErrK
+        self.__setRhoErrK.argtypes = [  ct.POINTER(DatapointInfo),    
+                                        np.ctypeslib.ndpointer(ctFloatType), 
+                                        np.ctypeslib.ndpointer(ctFloatType),
+                                        np.ctypeslib.ndpointer(ctIdxType),
+                                        ct.c_uint64 ]
+
+
+        #void computeAvg(Datapoint_info* p, FLOAT_TYPE *va, FLOAT_TYPE* ve, FLOAT_TYPE* vals, FLOAT_TYPE* verr, size_t k, size_t n)
+        self.__computeAvg = self.lib.computeAvg
+        self.__computeAvg.argtypes = [  ct.POINTER(DatapointInfo),    
+                                        np.ctypeslib.ndpointer(ctFloatType), 
+                                        np.ctypeslib.ndpointer(ctFloatType),
+                                        np.ctypeslib.ndpointer(ctFloatType),
+                                        np.ctypeslib.ndpointer(ctFloatType),
+                                        ctIdxType,
+                                        ct.c_uint64 ]
 
         self.__idEstimate = self.lib.idEstimate
         self.__idEstimate.argtypes = [ct.POINTER(DatapointInfo), ct.c_uint64]
@@ -132,7 +160,7 @@ class Data():
         self.__computeCorrection.argtypes = [ct.POINTER(DatapointInfo), ctIdxType, ct.c_double]
 
         self.__H1 = self.lib.Heuristic1
-        self.__H1.argtypes = [ct.POINTER(DatapointInfo), np.ctypeslib.ndpointer(ctFloatType), ct.c_uint64]
+        self.__H1.argtypes = [ct.POINTER(DatapointInfo), ct.c_uint64]
         self.__H1.restype = Clusters
 
         self.__ClustersAllocate = self.lib.Clusters_allocate
@@ -170,15 +198,37 @@ class Data():
 
 
 
-    def computeNeighbors(self, k : int):
+    def computeNeighbors_kdtree(self, k : int):
         
         """Compute the k nearest neighbors of each point
 
         Args:
             k (int): Number of neighbors to compute for each point 
+            alg (str): default "kd" for kdtree else choose "vp" for vptree
         """
         self.k = k
-        self.__datapoints = self.__NgbhSearch(self.data, self.n, self.dims, self.k)
+        self.__datapoints = self.__NgbhSearch_kdtree(self.data, self.n, self.dims, self.k)
+        #Datapoint_info* NgbhSearch_vpTree(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *));
+        self.state["ngbh"] = True
+        self.neighbors = None
+
+    def computeAvgOverNgbh(self, vals, error,k):
+        retVals = np.zeros_like(vals)
+        retError = np.zeros_like(error)
+        self.__computeAvg(self.__datapoints, retVals, retError, vals, error, k, self.n)
+        return retVals, retError
+
+    def computeNeighbors_vptree(self, k : int, alg="kd"):
+        
+        """Compute the k nearest neighbors of each point
+
+        Args:
+            k (int): Number of neighbors to compute for each point 
+            alg (str): default "kd" for kdtree else choose "vp" for vptree
+        """
+        self.k = k
+        #Datapoint_info* NgbhSearch_vpTree(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *));
+        self.__datapoints = self.__NgbhSearch_vptree(self.data.ctypes.data, self.n, self.data.itemsize, self.dims, self.k, self.__eud)
         self.state["ngbh"] = True
         self.neighbors = None
 
@@ -236,7 +286,7 @@ class Data():
         self.state["computeHalo"] = halo 
         self.Z = Z
         self.__computeCorrection(self.__datapoints, self.n, self.Z)
-        self.__clusters = self.__H1(self.__datapoints,self.data, self.n)
+        self.__clusters = self.__H1(self.__datapoints, self.n)
         self.__ClustersAllocate(ct.pointer(self.__clusters), 1 if self.state["useSparse"] else 0)
         self.__H2(ct.pointer(self.__clusters), self.__datapoints)
         self.__H3(ct.pointer(self.__clusters), self.__datapoints, self.Z, 1 if halo else 0 )
@@ -263,7 +313,7 @@ class Data():
         #        raise ValueError("Clustering is not computed yet")
         #else:
         #    return self.clusterAssignment
-        self.clusterAssignment = np.array([int(self.__datapoints[j].cluster_idx) for j in range(self.n)])
+        self.clusterAssignment = np.array([int(self.__datapoints[j].cluster_idx) for j in range(self.n)], dtype = np.int32)
         return self.clusterAssignment
 
     def getBorders(self):
@@ -328,6 +378,11 @@ class Data():
                 raise ValueError("Density is not computed yet")
         else:
             return self.neighbors
+
+    def setRhoErrK(self, rho, err, k):
+        self.__setRhoErrK(self.__datapoints, rho, err, k, self.n)
+        self.state["density"] = True
+        return
 
     def __del__(self):
         if not self.__datapoints is None:
