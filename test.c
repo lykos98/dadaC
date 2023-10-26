@@ -156,7 +156,7 @@ struct Options Parser(int argc, char** argv)
 float_t* generateRandomMatrix(idx_t ncols,idx_t nrows)
 {
 	float_t* mat = (float_t*)malloc(sizeof(float_t)*ncols*nrows);
-	for(idx_t i = 0; i < nrows*ncols; ++i) mat[i] = (float_t)rand()/RAND_MAX;
+	for(idx_t i = 0; i < nrows*ncols; ++i) mat[i] = ((float_t)rand())/((float_t)RAND_MAX);
 	return mat;
 }
 
@@ -169,14 +169,27 @@ int main(){
     //double elapsed;
     //struct timespec start_tot, finish_tot;
     //double elapsed_tot;
+	
+	
 
 	size_t n;
 	float_t* data;
 	uint32_t data_dims, k;
 
-	n = 12000;
-	data_dims = 5;
-	k = 10;
+	//n = 35947;
+	n = 300000;
+	data_dims = 3;
+	k = 1101;
+	//FILE* f = fopen("Bunny.txt","r");
+	//data = (float_t*)malloc(n*data_dims*sizeof(float_t));
+	//for(int i = 0; i < n; ++i)
+	//{
+	//	float x, y, z;
+	//	fscanf(f,"%f %f %f\n",&x, &y, &z);
+	//	data[i*data_dims] = (float_t)x;
+	//	data[i*data_dims + 1] = (float_t)y;
+	//	data[i*data_dims + 2] = (float_t)z;
+	//}
 	data = generateRandomMatrix(n, data_dims);
 
 //	n = 2000;
@@ -194,8 +207,8 @@ int main(){
 	
     //Start timer
 
-	Datapoint_info* particles = NgbhSearch_kdtree(data, n, data_dims, k); 
 	Datapoint_info* pp = NgbhSearch_vptree(data,n ,sizeof(float_t),data_dims, k, eud); 
+	Datapoint_info* particles = NgbhSearch_kdtree(data, n, data_dims, k); 
 
 	for(size_t i = 0; i < k; ++i)
 	for(idx_t idx=0; idx < n; ++idx)

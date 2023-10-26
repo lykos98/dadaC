@@ -637,6 +637,7 @@ Clusters Heuristic1(Datapoint_info* dpInfo, idx_t n)
             
         idx_t * to_remove_private = (idx_t*)malloc(allCenters.count*sizeof(idx_t));
     	for(idx_t c = 0; c < allCenters.count; ++c) {to_remove_private[c] = MY_SIZE_MAX;}
+
         #pragma omp for
         for(idx_t p = 0; p < n; ++p)
         {
@@ -653,8 +654,7 @@ Clusters Heuristic1(Datapoint_info* dpInfo, idx_t n)
 
 						if(to_remove_private[c] != MY_SIZE_MAX)
 						{
-							to_remove_private[c] = pp.g > 	dpInfo[to_remove_private[c]].g  ? 
-											pp.array_idx : to_remove_private[c];
+							to_remove_private[c] = pp.g > 	dpInfo[to_remove_private[c]].g  ? pp.array_idx : to_remove_private[c];
 						}
 						else
 						{

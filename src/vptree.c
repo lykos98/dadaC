@@ -178,13 +178,34 @@ vpTreeNode* build_vpTree(vpTreeNode** t, int start, int end, vpTreeNode* parent,
 	//printf("*****\n\n");
 	float_t mu = t[median_idx]->__dist;
 	//now swap start with the median
+	
     if(median_idx > -1){
         n = t[vpIdx];
 		n->mu = mu;
-        n->inside  = build_vpTree(t, start + 1, median_idx, n, metric);
-        n->outside = build_vpTree(t, median_idx + 1, end, n, metric);
+		#pragma omp parallel
+		{
+			#pragma omp single
+			{
+				#pragma omp task shared(n)
+				n->inside  = build_vpTree(t, start + 1, median_idx, n, metric);
+				#pragma omp task shared(n)
+				n->outside = build_vpTree(t, median_idx + 1, end, n, metric);
+				//#pragma omp taskwait
+			}
+
+		}
         n->parent = parent;
     }
+
+	/*
+    if(median_idx > -1){
+        n = t[vpIdx];
+		n->mu = mu;
+		n->inside  = build_vpTree(t, start + 1, median_idx, n, metric);
+		n->outside = build_vpTree(t, median_idx + 1, end, n, metric);
+        n->parent = parent;
+    }
+	*/
     return n;
 
 }

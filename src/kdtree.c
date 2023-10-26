@@ -1,5 +1,6 @@
 #include "../include/kdtree.h"
 #include "../include/heap.h"
+#include <math.h>
 #include <stdint.h>
 #include <time.h>
 
@@ -21,11 +22,7 @@ FLOAT_TYPE euclidean_distance(FLOAT_TYPE* p1, FLOAT_TYPE* p2){
         FLOAT_TYPE dd = (p1[i] - p2[i]);
         d += dd*dd;
     }
-	#ifdef USE_NORM
-    	return sqrt(d);
-	#else
-		return d;
-	#endif
+	return d;
 }
 
 void swapHeapNode(heap_node* a, heap_node* b){
@@ -184,12 +181,30 @@ kd_node* make_tree(kd_node** t, int start, int end, kd_node* parent, int level)
     //printf("%d median idx\n", median_idx);
     if(median_idx > -1){
         n = t[median_idx];
+		#pragma omp parallel
+		{
+			#pragma omp single
+			{
+				#pragma omp task shared(n)
+				n->lch  = make_tree(t, start, median_idx - 1, n, level + 1);
+				#pragma omp task shared(n)
+				n->rch = make_tree(t, median_idx + 1, end, n, level + 1);
+			}
+		}
+        n -> split_var = split_var;
+        n->parent = parent;
+        n->level = level;
+    }
+	/*
+    if(median_idx > -1){
+        n = t[median_idx];
         n->lch  = make_tree(t, start, median_idx - 1, n, level + 1);
         n->rch = make_tree(t, median_idx + 1, end, n, level + 1);
         n -> split_var = split_var;
         n->parent = parent;
         n->level = level;
     }
+	*/
     return n;
 }
 
@@ -260,6 +275,9 @@ Heap KNN(FLOAT_TYPE* point, kd_node* kdtree_root, int maxk)
     initHeap(&H);
     KNN_sub_tree_search(point, kdtree_root,&H);
     HeapSort(&H);
+	#ifdef USE_NORM
+		for(size_t k = 0; k < H.count; ++k) H.data[k].value = sqrt(H.data[k].value); 
+	#endif
     return H;
 }
 
