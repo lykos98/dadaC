@@ -121,7 +121,7 @@ void computeRho(Datapoint_info *particles, const FLOAT_TYPE d,
                 const idx_t points);
 int cmpPP(const void *p1, const void *p2);
 void computeCorrection(Datapoint_info *particles, idx_t n, FLOAT_TYPE Z);
-void KNN_search(Datapoint_info *particles, FLOAT_TYPE *data, kd_node *root,
+void KNN_search_kdtree(Datapoint_info *particles, FLOAT_TYPE *data, kd_node *root,
                 idx_t n, idx_t k);
 
 Clusters Heuristic1(Datapoint_info *dp, idx_t n);

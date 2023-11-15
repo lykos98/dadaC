@@ -243,7 +243,8 @@ void KNN_sub_vpTree_search(void* point, vpTreeNode* root, Heap * H, float_t (*me
 			break;
 
 		case OUTSIDE:
-			if 	( root -> inside && ((current_distance - tau) < root->mu  || heapNotFull)) KNN_sub_vpTree_search(point, root -> inside, H, metric);
+			//if 	( root -> inside && ((current_distance - tau) < root->mu  || heapNotFull)) KNN_sub_vpTree_search(point, root -> inside, H, metric);
+			if 	( root -> inside && (current_distance  < (root->mu + tau)  || heapNotFull)) KNN_sub_vpTree_search(point, root -> inside, H, metric);
 			break;
 		
 		default:
@@ -261,6 +262,7 @@ Heap KNN_vpTree(void* point, vpTreeNode* root, int maxk, float_t (*metric)(void*
     initHeap(&H);
     KNN_sub_vpTree_search(point, root,&H,metric);
     HeapSort(&H);
+	for(size_t i = 0; i < H.count; ++i) H.data[i].value = H.data[i].value*H.data[i].value;
     return H;
 }
 

@@ -23,6 +23,7 @@ FLOAT_TYPE euclidean_distance(FLOAT_TYPE* p1, FLOAT_TYPE* p2){
         d += dd*dd;
     }
 	return d;
+	//return sqrt(d);
 }
 
 void swapHeapNode(heap_node* a, heap_node* b){
@@ -244,6 +245,7 @@ void KNN_sub_tree_search(FLOAT_TYPE* point, kd_node* kdtree_root, Heap * H)
     }
     FLOAT_TYPE max_d = H -> data[0].value;
     int c   = max_d > (hp_distance * hp_distance);
+    //int c   = max_d > fabs(hp_distance);
     //if(!c) printf("%f %f\n",max_d, hp_distance*hp_distance);
     if(c || (H -> count) < (H -> N))
     {
@@ -275,9 +277,6 @@ Heap KNN(FLOAT_TYPE* point, kd_node* kdtree_root, int maxk)
     initHeap(&H);
     KNN_sub_tree_search(point, kdtree_root,&H);
     HeapSort(&H);
-	#ifdef USE_NORM
-		for(size_t k = 0; k < H.count; ++k) H.data[k].value = sqrt(H.data[k].value); 
-	#endif
     return H;
 }
 

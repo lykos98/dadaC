@@ -254,7 +254,7 @@ void DynamicArray_Init(lu_dynamicArray * a)
  * Clustering part *
  *******************/
 
-void KNN_search(Datapoint_info * dpInfo, FLOAT_TYPE * data, kd_node* root, idx_t n, idx_t k)
+void KNN_search_kdtree(Datapoint_info * dpInfo, FLOAT_TYPE * data, kd_node* root, idx_t n, idx_t k)
 {
     struct timespec start_tot, finish_tot;
     double elapsed_tot;
@@ -400,12 +400,7 @@ FLOAT_TYPE idEstimate(Datapoint_info* dpInfo, idx_t n)
 
     for(idx_t i = 0; i < n; ++i)
     {
-		#ifdef USE_NORM
-        	r[i] = log(dpInfo[i].ngbh.data[2].value/dpInfo[i].ngbh.data[1].value);
-		#else
-        	r[i] = 0.5 * log(dpInfo[i].ngbh.data[2].value/dpInfo[i].ngbh.data[1].value);
-		#endif
-
+        r[i] = 0.5 * log(dpInfo[i].ngbh.data[2].value/dpInfo[i].ngbh.data[1].value);
         Pemp[i] = -log(1 - (FLOAT_TYPE)(i + 1)/(FLOAT_TYPE)n);
     }
     qsort(r,n,sizeof(FLOAT_TYPE),cmp);
@@ -458,24 +453,16 @@ void computeRho(Datapoint_info* dpInfo, const FLOAT_TYPE d, const idx_t points){
         idx_t k;
         FLOAT_TYPE dL  = 0.;
         FLOAT_TYPE vvi = 0.;
-	FLOAT_TYPE vvj = 0.;
-	FLOAT_TYPE vp  = 0.;
+		FLOAT_TYPE vvj = 0.;
+		FLOAT_TYPE vp  = 0.;
         while(j < kMAX && dL < DTHR)
         {
             idx_t ksel = j - 1;
-			#ifdef USE_NORM
-            	vvi = omega * pow(dpInfo[i].ngbh.data[ksel].value,d);
-			#else
-            	vvi = omega * pow(dpInfo[i].ngbh.data[ksel].value,d/2.);
-			#endif
+            vvi = omega * pow(dpInfo[i].ngbh.data[ksel].value,d/2.);
 
             idx_t jj = dpInfo[i].ngbh.data[j].array_idx;
 
-			#ifdef USE_NORM
-            	vvj = omega * pow(dpInfo[jj].ngbh.data[ksel].value,d);
-			#else
-            	vvj = omega * pow(dpInfo[jj].ngbh.data[ksel].value,d/2.);
-			#endif
+            vvj = omega * pow(dpInfo[jj].ngbh.data[ksel].value,d/2.);
 
             vp = (vvi + vvj)*(vvi + vvj);
             dL = -2.0 * ksel * log(4.*vvi*vvj/vp);
@@ -1797,7 +1784,7 @@ Datapoint_info* NgbhSearch_kdtree(FLOAT_TYPE* data, size_t n, size_t ndims, size
      * KNN search *
      **************/
 
-    KNN_search(points,data, root, n, k);
+    KNN_search_kdtree(points,data, root, n, k);
 
     free(kd_ptrs);
     free(kd_node_array);
