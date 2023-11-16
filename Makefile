@@ -1,5 +1,5 @@
 LIBRARIES=-lm -fopenmp 
-OPTIM=-O3 -march=native  -Wall -Wextra -DUSE_NORM
+OPTIM=-O3 -march=native  -Wall -Wextra 
 DEBUG=-ggdb
 SRC="src"
 VERBOSE=-DVERBOSE
