@@ -613,11 +613,15 @@ Clusters Heuristic1(Datapoint_info* dpInfo, idx_t n)
         printf("\tFinding putative centers: %.3lfs\n",elapsed);
         clock_gettime(CLOCK_MONOTONIC, &start);
     #endif
+	qsort(dpInfo_ptrs, n, sizeof(Datapoint_info*), cmpPP);
 
+
+	#ifdef NO_OPT_H1
+	
     idx_t * to_remove = (idx_t*)malloc(allCenters.count*sizeof(idx_t));
     for(idx_t c = 0; c < allCenters.count; ++c) {to_remove[c] = MY_SIZE_MAX;}
 
-    qsort(dpInfo_ptrs, n, sizeof(Datapoint_info*), cmpPP);
+
 
     #pragma omp parallel
     {
@@ -714,6 +718,92 @@ Clusters Heuristic1(Datapoint_info* dpInfo, idx_t n)
                 break;
         }
     }
+	free(to_remove);
+
+	#else	
+		
+	idx_t* to_remove_mask = (idx_t*)malloc(n*sizeof(idx_t));
+    for(idx_t p = 0; p < n; ++p) {to_remove_mask[p] = MY_SIZE_MAX;}
+
+	
+    #pragma omp parallel shared(to_remove_mask)
+    {
+        #pragma omp for
+        for(idx_t p = 0; p < n; ++p)
+        {
+        	Datapoint_info pp = *(dpInfo_ptrs[p]);
+			int flag = 0;
+			idx_t ppp = 0;
+			
+        	for(idx_t j = 1; j < pp.kstar + 1; ++j)
+			{
+				idx_t jidx = pp.ngbh.data[j].array_idx; 
+				if(dpInfo[jidx].is_center && pp.g > dpInfo[jidx].g)
+				{
+					
+					#pragma omp critical 
+					{
+						ppp = to_remove_mask[jidx];
+						flag = ppp != MY_SIZE_MAX;							
+						to_remove_mask[jidx] = flag ? (pp.g > dpInfo[ppp].g ? pp.array_idx : ppp) : pp.array_idx; 
+					}
+					
+					//#pragma omp atomic read 
+					//ppp = to_remove_mask[jidx];
+
+					//flag = ppp != MY_SIZE_MAX;							
+					//
+					//#pragma omp atomic write
+					//to_remove_mask[jidx] = flag ? (pp.g > dpInfo[ppp].g ? pp.array_idx : ppp) : pp.array_idx; 
+				}
+			}
+		}
+	}
+    
+    
+
+    for(idx_t p = 0; p < allCenters.count; ++p)
+    {
+        idx_t i = allCenters.data[p];
+        int e = 0;
+        //FLOAT_TYPE gi = dpInfo[i].g;
+        idx_t mr = to_remove_mask[i];
+        if(mr != MY_SIZE_MAX)
+        {
+            //if(dpInfo[mr].g > gi) e = 1;
+			e = 1;
+        }
+        switch (e)
+        {
+            case 1:
+                {
+                    DynamicArray_pushBack(&removedCenters,i);
+                    dpInfo[i].is_center = 0;
+                    for(idx_t c = 0; c < removedCenters.count - 1; ++c)
+                    {
+                        if(mr == removedCenters.data[c])
+                        {
+                            mr = max_rho.data[c];
+                        }
+                    }
+                    DynamicArray_pushBack(&max_rho,mr);
+                    
+                }
+                break;
+            case 0:
+                {
+                    DynamicArray_pushBack(&actualCenters,i);
+                    dpInfo[i].cluster_idx = actualCenters.count - 1;
+                }
+                break;
+            default:
+                break;
+        }
+    }
+
+	free(to_remove_mask);
+
+	#endif
 
     #ifdef VERBOSE
         clock_gettime(CLOCK_MONOTONIC, &finish);
@@ -724,7 +814,6 @@ Clusters Heuristic1(Datapoint_info* dpInfo, idx_t n)
         clock_gettime(CLOCK_MONOTONIC, &start);
     #endif
 
-    free(to_remove);
 
     //idx_t nclusters = 0;
 
