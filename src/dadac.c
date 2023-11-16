@@ -1990,6 +1990,96 @@ Datapoint_info* NgbhSearch_vptree(void* data, size_t n, size_t byteSize, size_t 
 	return points;
 }
 
+void KNN_search_vpTree_V2(Datapoint_info* dpInfo, vpTreeNodeV2* vpNodeArray,vpTreeNodeV2* root,idx_t k,size_t n, float_t (*metric)(void*, void*))
+{	
+    struct timespec start_tot, finish_tot;
+    double elapsed_tot;
+    printf("KNN search:\n");
+    clock_gettime(CLOCK_MONOTONIC, &start_tot);
+
+    idx_t progress_count = 0;
+    idx_t step = n/100;
+    printf("Progress 0/%lu -> 0%%\r",(uint64_t)n);
+    fflush(stdout);
+    
+    #pragma omp parallel
+    {
+
+	    #pragma omp for schedule(dynamic)
+		for(size_t i = 0; i < n; ++i) 
+		{
+			dpInfo[i].ngbh = KNN_vpTree_V2(vpNodeArray[i].data, root, k, metric);
+			dpInfo[i].cluster_idx = -1;
+			dpInfo[i].is_center = 0;
+			dpInfo[i].array_idx = i;
+			
+			idx_t aa;
+			#pragma omp atomic capture
+			aa = ++progress_count;
+
+			if(aa % step == 0 )
+			{
+				printf("Progress %lu/%lu -> %u%%\r",(uint64_t)aa, (uint64_t)n, (uint32_t)((100*aa)/n) );
+				fflush(stdout);
+			}
+		}
+	}
+	
+
+    
+	
+
+    printf("Progress %lu/%lu -> 100%%\n",(uint64_t)n, (uint64_t)n);
+    //printf("Progress %lu/%lu\n",(uint64_t)progress_count, (uint64_t)n);
+
+    clock_gettime(CLOCK_MONOTONIC, &finish_tot);
+    elapsed_tot = (finish_tot.tv_sec - start_tot.tv_sec);
+    elapsed_tot += (finish_tot.tv_nsec - start_tot.tv_nsec) / 1000000000.0;
+    printf("\tTotal time: %.3lfs\n\n", elapsed_tot);
+    return;
+}
+
+Datapoint_info* NgbhSearch_vptree_V2(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *))
+{
+
+    struct timespec start, finish;
+    double elapsed;
+	METRICS_DATADIMS = dims;
+	
+	#ifdef VERBOSE
+		clock_gettime(CLOCK_MONOTONIC, &start);
+		printf("Building the vp tree\n");
+	#endif
+
+	vpTreeNodeV2* vpNodeArray = (vpTreeNodeV2*)malloc(n*sizeof(vpTreeNodeV2));
+	vpTreeNodeV2** vpPtrArray = (vpTreeNodeV2**)malloc(n*sizeof(vpTreeNodeV2*));
+	initialize_vpTreeNode_array_V2(vpNodeArray, data, n, byteSize*dims);
+	initialize_vpTreeNodes_pointers_V2(vpPtrArray, vpNodeArray, n);
+
+	vpTreeNodeV2* root = build_vpTree_V2(vpPtrArray, 0, n-1, NULL, metric);
+	#ifdef VERBOSE
+		clock_gettime(CLOCK_MONOTONIC, &finish);
+		elapsed = (finish.tv_sec - start.tv_sec);
+		elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+    	printf("\tTotal time: %.3lfs\n\n", elapsed);
+	#endif
+
+    Datapoint_info* points = (Datapoint_info*)malloc(n*sizeof(Datapoint_info));
+
+    /**************
+     * KNN search *
+     **************/
+
+	
+	KNN_search_vpTree_V2(points, vpNodeArray, root, k, n, metric);
+	
+
+	//printf("NODE STRAMBO: %lf %p %lu\n", vpNodeArray[1516].mu, vpNodeArray[1516].inside, vpNodeArray[1516].parent -> array_idx);
+    free(vpPtrArray);
+    free(vpNodeArray);
+	return points;
+}
+
 void setRhoErrK(Datapoint_info* points, FLOAT_TYPE* rho, FLOAT_TYPE* rhoErr, idx_t* k, size_t n)
 {
 	for(size_t i = 0; i < n; ++i)

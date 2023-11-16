@@ -20,8 +20,8 @@ test.o: test.c
 driver.o: driver.c
 	${CC} -c driver.c -o driver.o ${OPTIM} -fopenmp ${DEBUG}
 
-bin/libdadac.so: bin/dadac.o bin/kdtree.o bin/heap.o bin/vptree.o
-	${CC} -shared bin/dadac.o bin/kdtree.o bin/heap.o bin/vptree.o ${DEBUG} ${OPTIM} ${LIBRARIES} -o bin/libdadac.so 
+bin/libdadac.so: bin/dadac.o bin/kdtree.o bin/heap.o bin/vptree.o bin/vptreeV2.o
+	${CC} -shared bin/dadac.o bin/kdtree.o bin/heap.o bin/vptree.o bin/vptreeV2.o ${DEBUG} ${OPTIM} ${LIBRARIES} -o bin/libdadac.so 
 
 bin/dadac.o: src/dadac.c
 	${CC} -c src/dadac.c -o bin/dadac.o ${OPTIM} -fopenmp ${DEBUG} -fpic ${VERBOSE}
@@ -31,6 +31,9 @@ bin/kdtree.o: src/kdtree.c
 
 bin/vptree.o: src/vptree.c
 	${CC} -c src/vptree.c -o bin/vptree.o ${OPTIM} -fopenmp ${DEBUG} -fpic ${VERBOSE}
+
+bin/vptreeV2.o: src/vptreeV2.c
+	${CC} -c src/vptreeV2.c -o bin/vptreeV2.o ${OPTIM} -fopenmp ${DEBUG} -fpic ${VERBOSE}
 
 bin/heap.o: src/heap.c
 	${CC} -c src/heap.c -o bin/heap.o ${OPTIM} -fopenmp ${DEBUG} -fpic ${VERBOSE}

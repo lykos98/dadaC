@@ -179,7 +179,7 @@ int main(){
 	//n = 35947;
 	n = 300000;
 	data_dims = 3;
-	k = 1101;
+	k = 500;
 	//FILE* f = fopen("Bunny.txt","r");
 	//data = (float_t*)malloc(n*data_dims*sizeof(float_t));
 	//for(int i = 0; i < n; ++i)
@@ -207,7 +207,8 @@ int main(){
 	
     //Start timer
 
-	Datapoint_info* pp = NgbhSearch_vptree(data,n ,sizeof(float_t),data_dims, k, eud); 
+	//Datapoint_info* pp = NgbhSearch_vptree(data,n ,sizeof(float_t),data_dims, k, eud); 
+	Datapoint_info* pp = NgbhSearch_vptree_V2(data,n ,sizeof(float_t),data_dims, k, eud); 
 	Datapoint_info* particles = NgbhSearch_kdtree(data, n, data_dims, k); 
 
 	for(size_t i = 0; i < k; ++i)
