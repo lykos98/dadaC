@@ -207,8 +207,8 @@ int main(){
 	
     //Start timer
 
-	//Datapoint_info* pp = NgbhSearch_vptree(data,n ,sizeof(float_t),data_dims, k, eud); 
-	Datapoint_info* pp = NgbhSearch_vptree_V2(data,n ,sizeof(float_t),data_dims, k, eud); 
+	Datapoint_info* pp = NgbhSearch_vptree(data,n ,sizeof(float_t),data_dims, k, eud); 
+	//Datapoint_info* pp = NgbhSearch_vptree_V2(data,n ,sizeof(float_t),data_dims, k, eud); 
 	Datapoint_info* particles = NgbhSearch_kdtree(data, n, data_dims, k); 
 
 	for(size_t i = 0; i < k; ++i)

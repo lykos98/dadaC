@@ -34,6 +34,27 @@ struct vpTreeNode
 
 };
 
+struct stackNode
+{
+	int side;
+	struct vpTreeNode* node;
+	float_t current_distance;
+	float_t mu;
+};
+
+struct stack_vpTreeNodes
+{
+	struct stackNode* data;
+	size_t count;
+	size_t size;
+};
+
+typedef struct stackNode stackNode;
+typedef struct stack_vpTreeNodes stack_vpTreeNodes;
+
+#define DEFAULT_STACK_SIZE 200
+
+
 
 typedef struct vpTreeNode vpTreeNode;
 
@@ -42,5 +63,6 @@ void initialize_vpTreeNodes_pointers(vpTreeNode** pointersArray, vpTreeNode* nod
 void initialize_vpTreeNode_array(vpTreeNode* nodeArray, void* data, idx_t n, idx_t bytesPerElement);
 vpTreeNode* build_vpTree(vpTreeNode** t, int start, int end, vpTreeNode* parent, float_t (*metric)(void*, void*));
 void KNN_sub_vpTree_search(void* point, vpTreeNode* root, Heap * H, float_t (*metric)(void*,void*));
-Heap KNN_vpTree(void* point, vpTreeNode* root, int maxk, float_t (*metric)(void*, void*));
+Heap KNN_vpTree(void* point, vpTreeNode* root, int maxk, stack_vpTreeNodes* s, float_t (*metric)(void*, void*));
+void stackInit(stack_vpTreeNodes* s);
 

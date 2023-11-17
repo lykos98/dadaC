@@ -210,6 +210,144 @@ vpTreeNode* build_vpTree(vpTreeNode** t, int start, int end, vpTreeNode* parent,
 
 }
 
+const stackNode nodeNULL = { .node = NULL, .side = -1, .mu = 0, .current_distance = 0};
+
+void stackInit(stack_vpTreeNodes* s)
+{
+	s -> count = 0;
+	s -> size  = DEFAULT_STACK_SIZE;
+	s -> data  = (stackNode*)malloc(DEFAULT_STACK_SIZE*sizeof(stackNode));
+}
+
+void stackPush(stack_vpTreeNodes* s, stackNode n)
+{
+	if(s -> count < s -> size)	
+	{
+		size_t idx = s -> count;
+		s -> data[idx] = n;
+		s -> count ++;
+	}
+	else
+	{
+		size_t new_size = s -> size + DEFAULT_STACK_SIZE;
+		s -> data = realloc(s -> data, new_size * sizeof(stackNode));
+		s -> size = new_size;
+		size_t idx = s -> count;
+		s -> data[idx] = n;
+		s -> count ++;
+	}
+}
+
+stackNode stackPop(stack_vpTreeNodes* s)
+{
+	if(s -> count == 0)
+	{
+		return nodeNULL;
+	}
+	else
+	{
+		s -> count--;
+		return s -> data[s -> count];
+	}
+}
+
+void stackReset(stack_vpTreeNodes* s)
+{
+	s -> count = 0;
+	return;
+}
+
+
+#define INSIDE 0
+#define OUTSIDE 1
+
+void KNN_sub_vpTree_search_iterative(void* point, vpTreeNode* root, Heap * H, stack_vpTreeNodes* s, float_t (*metric)(void*,void*))
+{
+    //int split_var = kdtree_root -> split_var;
+	vpTreeNode* n = root;
+    //float_t current_distance = metric(point, root -> data);
+    //insertMaxHeap(H, current_distance, root -> array_idx);
+	stackReset(s);
+
+	while(s -> count > 0 || n != NULL)
+	{
+		switch(n != NULL)
+		{
+			case 1:
+				{
+					float_t current_distance = metric(point, n -> data);
+					insertMaxHeap(H, current_distance, n -> array_idx);
+					int side = (current_distance > n -> mu);
+					switch (side)
+					{
+						case INSIDE:
+						{
+							if(n -> outside)
+							{
+								stackNode sn = {.node = n -> outside, .side = side, .mu = n -> mu, .current_distance = current_distance};	
+								stackPush(s, sn);
+							}
+							n = n -> inside;
+							break;
+						}
+						case OUTSIDE:
+						{
+							if(n -> inside)
+							{
+								stackNode sn = {.node = n -> inside, .side = side, .mu = n -> mu, .current_distance = current_distance};	
+								stackPush(s, sn);
+							}
+							n  = n -> outside;
+							break;
+						}
+						default:
+							break;
+					}
+					
+				}
+				break;
+			
+			case 0:
+				{
+					stackNode sn = stackPop(s);
+					float_t tau = H -> data[0].value;
+					//retrieve the maximum distance found so far
+					int heapNotFull = (H -> count) < (H -> N);
+					switch (sn.side)
+					{
+						case INSIDE:
+							// the node MUST have the CHILD, then or the condition holds or the Heap is not full yet 
+							//if ((sn.current_distance + tau) > sn.mu  || heapNotFull) 
+							//{
+							//	n = sn.node;
+							//}
+							n = ((sn.current_distance + tau) > sn.mu  || heapNotFull) ? sn.node : NULL;
+							break;
+
+						case OUTSIDE:
+							//if 	( root -> inside && ((current_distance - tau) < root->mu  || heapNotFull)) KNN_sub_vpTree_search(point, root -> inside, H, metric);
+							//if 	(sn.current_distance  < (sn.mu + tau)  || heapNotFull) 
+							//{
+							//	n = sn.node;
+							//}
+							n = (sn.current_distance  < (sn.mu + tau)  || heapNotFull) ? sn.node : NULL; 
+							break;
+						
+						default:
+							break;
+					}
+				}
+				break;
+
+			default:
+				break;
+		}
+	}
+    return;
+	
+
+}
+
 
 void KNN_sub_vpTree_search(void* point, vpTreeNode* root, Heap * H, float_t (*metric)(void*,void*))
 {
@@ -255,12 +393,13 @@ void KNN_sub_vpTree_search(void* point, vpTreeNode* root, Heap * H, float_t (*me
 
 }
 
-Heap KNN_vpTree(void* point, vpTreeNode* root, int maxk, float_t (*metric)(void*, void*))
+Heap KNN_vpTree(void* point, vpTreeNode* root, int maxk, stack_vpTreeNodes* s, float_t (*metric)(void*, void*))
 {
     Heap H;
     allocateHeap(&H,maxk);
     initHeap(&H);
     KNN_sub_vpTree_search(point, root,&H,metric);
+    //KNN_sub_vpTree_search_iterative(point, root,&H,s,metric);
     HeapSort(&H);
 	for(size_t i = 0; i < H.count; ++i) H.data[i].value = H.data[i].value*H.data[i].value;
     return H;

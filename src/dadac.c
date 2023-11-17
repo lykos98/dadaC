@@ -1915,10 +1915,12 @@ void KNN_search_vpTree(Datapoint_info* dpInfo, vpTreeNode* vpNodeArray,vpTreeNod
     #pragma omp parallel
     {
 
+		stack_vpTreeNodes stack;
+		stackInit(&stack);
 	    #pragma omp for schedule(dynamic)
 		for(size_t i = 0; i < n; ++i) 
 		{
-			dpInfo[i].ngbh = KNN_vpTree(vpNodeArray[i].data, root, k, metric);
+			dpInfo[i].ngbh = KNN_vpTree(vpNodeArray[i].data, root,  k, &stack, metric);
 			dpInfo[i].cluster_idx = -1;
 			dpInfo[i].is_center = 0;
 			dpInfo[i].array_idx = i;
@@ -1933,6 +1935,7 @@ void KNN_search_vpTree(Datapoint_info* dpInfo, vpTreeNode* vpNodeArray,vpTreeNod
 				fflush(stdout);
 			}
 		}
+		free(stack.data);
 	}
 	
 
