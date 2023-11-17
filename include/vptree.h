@@ -34,6 +34,8 @@ struct vpTreeNode
 
 };
 
+#ifdef ITERATIVE_VPTREE
+
 struct stackNode
 {
 	int side;
@@ -54,6 +56,8 @@ typedef struct stack_vpTreeNodes stack_vpTreeNodes;
 
 #define DEFAULT_STACK_SIZE 200
 
+#endif
+
 
 
 typedef struct vpTreeNode vpTreeNode;
@@ -63,6 +67,11 @@ void initialize_vpTreeNodes_pointers(vpTreeNode** pointersArray, vpTreeNode* nod
 void initialize_vpTreeNode_array(vpTreeNode* nodeArray, void* data, idx_t n, idx_t bytesPerElement);
 vpTreeNode* build_vpTree(vpTreeNode** t, int start, int end, vpTreeNode* parent, float_t (*metric)(void*, void*));
 void KNN_sub_vpTree_search(void* point, vpTreeNode* root, Heap * H, float_t (*metric)(void*,void*));
-Heap KNN_vpTree(void* point, vpTreeNode* root, int maxk, stack_vpTreeNodes* s, float_t (*metric)(void*, void*));
-void stackInit(stack_vpTreeNodes* s);
+
+#ifdef ITERATIVE_VPTREE
+	Heap KNN_vpTree(void* point, vpTreeNode* root, int maxk, stack_vpTreeNodes* s, float_t (*metric)(void*, void*));
+	void stackInit(stack_vpTreeNodes* s);
+#else
+	Heap KNN_vpTree(void* point, vpTreeNode* root, int maxk, float_t (*metric)(void*, void*));
+#endif 
 

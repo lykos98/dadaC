@@ -1915,12 +1915,20 @@ void KNN_search_vpTree(Datapoint_info* dpInfo, vpTreeNode* vpNodeArray,vpTreeNod
     #pragma omp parallel
     {
 
-		stack_vpTreeNodes stack;
-		stackInit(&stack);
+		#ifdef ITERATIVE_VPTREE
+			stack_vpTreeNodes stack;
+			stackInit(&stack);
+		#endif
+
 	    #pragma omp for schedule(dynamic)
 		for(size_t i = 0; i < n; ++i) 
 		{
-			dpInfo[i].ngbh = KNN_vpTree(vpNodeArray[i].data, root,  k, &stack, metric);
+			#ifdef ITERATIVE_VPTREE
+				dpInfo[i].ngbh = KNN_vpTree(vpNodeArray[i].data, root,  k, &stack, metric);
+			#else
+				dpInfo[i].ngbh = KNN_vpTree(vpNodeArray[i].data, root,  k, metric);
+			#endif 
+
 			dpInfo[i].cluster_idx = -1;
 			dpInfo[i].is_center = 0;
 			dpInfo[i].array_idx = i;
@@ -1935,7 +1943,10 @@ void KNN_search_vpTree(Datapoint_info* dpInfo, vpTreeNode* vpNodeArray,vpTreeNod
 				fflush(stdout);
 			}
 		}
-		free(stack.data);
+
+		#ifdef ITERATIVE_VPTREE
+			free(stack.data);
+		#endif
 	}
 	
 

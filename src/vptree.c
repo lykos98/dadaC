@@ -210,6 +210,13 @@ vpTreeNode* build_vpTree(vpTreeNode** t, int start, int end, vpTreeNode* parent,
 
 }
 
+
+
+#define INSIDE 0
+#define OUTSIDE 1
+
+#ifdef ITERATIVE_VPTREE
+
 const stackNode nodeNULL = { .node = NULL, .side = -1, .mu = 0, .current_distance = 0};
 
 void stackInit(stack_vpTreeNodes* s)
@@ -256,10 +263,6 @@ void stackReset(stack_vpTreeNodes* s)
 	s -> count = 0;
 	return;
 }
-
-
-#define INSIDE 0
-#define OUTSIDE 1
 
 void KNN_sub_vpTree_search_iterative(void* point, vpTreeNode* root, Heap * H, stack_vpTreeNodes* s, float_t (*metric)(void*,void*))
 {
@@ -348,6 +351,7 @@ void KNN_sub_vpTree_search_iterative(void* point, vpTreeNode* root, Heap * H, st
 
 }
 
+#else
 
 void KNN_sub_vpTree_search(void* point, vpTreeNode* root, Heap * H, float_t (*metric)(void*,void*))
 {
@@ -393,13 +397,22 @@ void KNN_sub_vpTree_search(void* point, vpTreeNode* root, Heap * H, float_t (*me
 
 }
 
+#endif
+
+#ifdef ITERATIVE_VPTREE 
 Heap KNN_vpTree(void* point, vpTreeNode* root, int maxk, stack_vpTreeNodes* s, float_t (*metric)(void*, void*))
+#else
+Heap KNN_vpTree(void* point, vpTreeNode* root, int maxk, float_t (*metric)(void*, void*))
+#endif
 {
     Heap H;
     allocateHeap(&H,maxk);
     initHeap(&H);
-    KNN_sub_vpTree_search(point, root,&H,metric);
-    //KNN_sub_vpTree_search_iterative(point, root,&H,s,metric);
+	#ifdef ITERATIVE_VPTREE
+		//KNN_sub_vpTree_search_iterative(point, root,&H,s,metric);
+	#else
+		KNN_sub_vpTree_search(point, root,&H,metric);
+	#endif
     HeapSort(&H);
 	for(size_t i = 0; i < H.count; ++i) H.data[i].value = H.data[i].value*H.data[i].value;
     return H;
