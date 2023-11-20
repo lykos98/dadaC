@@ -25,7 +25,7 @@
 
 #define HEAP_LCH(x) (2*x + 1)
 #define HEAP_RCH(x) (2*x + 2)
-#define HEAP_PARENT(x) (x-1)/2
+#define HEAP_PARENT(x) (x-1)/2  
 
 #define HP_LEFT_SIDE 0
 #define HP_RIGHT_SIDE 1

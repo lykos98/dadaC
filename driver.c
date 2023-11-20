@@ -151,6 +151,31 @@ struct Options Parser(int argc, char** argv)
 	return opt;
 }
 
+float_t eudOpt(void* a, void* b)
+{
+	float_t* aa = (float_t*)a;
+	float_t* bb = (float_t*)b;
+	
+	float_t d 	 = (aa[0] - bb[0]);
+	float_t dacc = d*d; 
+
+	d 	 = 	(aa[1] - bb[1]);
+	dacc += d*d; 
+
+	d 	 = 	(aa[2] - bb[2]);
+	dacc += d*d; 
+
+	d 	 = 	(aa[3] - bb[3]);
+	dacc += d*d; 
+
+	d 	 = 	(aa[4] - bb[4]);
+	dacc += d*d; 
+
+	return sqrt(dacc);
+
+
+
+}
 
 
 
@@ -218,7 +243,7 @@ int main(int argc, char** argv){
 	}
 
 	//Datapoint_info* particles = NgbhSearch_kdtree(data, n, opt.data_dims, opt.k); 
-	Datapoint_info* particles = NgbhSearch_vptree(data, n,sizeof(FLOAT_TYPE), opt.data_dims, opt.k, eud); 
+	Datapoint_info* particles = NgbhSearch_vptree(data, n,sizeof(FLOAT_TYPE), opt.data_dims, opt.k, eudOpt); 
     /********************************
      * Intrinsic Dimension estimate *
      ********************************/

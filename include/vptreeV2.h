@@ -32,6 +32,7 @@ struct vpTreeNodeV2
 {
    void * data;
    idx_t array_idx;
+   idx_t __bytesize;
    float_t mu;
    float_t __dist;
    int isLeaf;
@@ -48,7 +49,7 @@ typedef struct vpTreeNodeV2List vpTreeNodeV2List;
 
 void initialize_vpTreeNodes_pointers_V2(vpTreeNodeV2** pointersArray, vpTreeNodeV2* nodeArray, idx_t n);
 void initialize_vpTreeNode_array_V2(vpTreeNodeV2* noV2deArray, void* data, idx_t n, idx_t bytesPerElement);
-vpTreeNodeV2* build_vpTree_V2(vpTreeNodeV2** t, int start, int end, vpTreeNodeV2* parent, float_t (*metric)(void*, void*));
+vpTreeNodeV2* build_vpTree_V2(vpTreeNodeV2* t, int start, int end, vpTreeNodeV2* parent, float_t (*metric)(void*, void*));
 void KNN_sub_vpTree_search_V2(void* point, vpTreeNodeV2* root, Heap * H, float_t (*metric)(void*,void*));
 Heap KNN_vpTree_V2(void* point, vpTreeNodeV2* root, int maxk, float_t (*metric)(void*, void*));
 

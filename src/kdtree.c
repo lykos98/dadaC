@@ -16,14 +16,43 @@ void swap(T* a, T* b){
     return;
 }
 
-FLOAT_TYPE euclidean_distance(FLOAT_TYPE* p1, FLOAT_TYPE* p2){
-    FLOAT_TYPE d = 0;
+FLOAT_TYPE euclidean_distance(FLOAT_TYPE* restrict p1, FLOAT_TYPE* restrict p2){
+    register FLOAT_TYPE d = 0;
     for(unsigned int i = 0; i<data_dims; ++i){
-        FLOAT_TYPE dd = (p1[i] - p2[i]);
+        register FLOAT_TYPE dd = (p1[i] - p2[i]);
         d += dd*dd;
     }
 	return d;
 	//return sqrt(d);
+}
+
+#ifdef USE_FLOAT32 
+	typedef float v4f __attribute__ ((vector_size (16)));
+#else
+	typedef double v4f __attribute__ ((vector_size (32)));
+#endif
+
+FLOAT_TYPE euclidean_distance2(FLOAT_TYPE* restrict u, FLOAT_TYPE* restrict v)
+{
+    register float_t s;
+    uint32_t i = 0;
+    // manually unrolled loop, might be vectorized
+    register v4f acc = {0., 0., 0., 0.};
+    for (; i + 4 <= data_dims; i += 4) {
+        register v4f _u = {u[i], u[i + 1], u[i + 2], u[i + 3]};
+        register v4f _v = {v[i], v[i + 1], v[i + 2], v[i + 3]};
+        register v4f _diff = _u - _v;
+		acc = _diff*_diff;
+    }
+
+    s = acc[0] + acc[1] + acc[2] + acc[3];
+    if (i < data_dims) {
+        for(; i<data_dims; ++i) {
+            float_t d = u[i] - v[i];
+            s += d * d;
+        }
+    }
+    return s;
 }
 
 void swapHeapNode(heap_node* a, heap_node* b){
@@ -209,7 +238,7 @@ kd_node* make_tree(kd_node** t, int start, int end, kd_node* parent, int level)
     return n;
 }
 
-inline FLOAT_TYPE hyper_plane_dist(FLOAT_TYPE* p1, FLOAT_TYPE* p2, int var)
+static inline FLOAT_TYPE hyper_plane_dist(FLOAT_TYPE* p1, FLOAT_TYPE* p2, int var)
 {
     return p1[var] - p2[var];
 }
@@ -225,6 +254,8 @@ void KNN_sub_tree_search(FLOAT_TYPE* point, kd_node* kdtree_root, Heap * H)
     FLOAT_TYPE current_distance = euclidean_distance(point, kdtree_root -> data);
     FLOAT_TYPE hp_distance = hyper_plane_dist(point, kdtree_root -> data, kdtree_root -> split_var);
     insertMaxHeap(H, current_distance, kdtree_root -> array_idx);
+	__builtin_prefetch(kdtree_root -> lch, 0, 3);
+	__builtin_prefetch(kdtree_root -> rch, 0, 3);
 
     int side = hp_distance > 0.f;
 
@@ -233,11 +264,19 @@ void KNN_sub_tree_search(FLOAT_TYPE* point, kd_node* kdtree_root, Heap * H)
     switch (side)
     {
         case HP_LEFT_SIDE:
-            if(kdtree_root -> lch) KNN_sub_tree_search(point, kdtree_root -> lch, H);
+            if(kdtree_root -> lch)
+			{
+				__builtin_prefetch(kdtree_root -> lch -> data);
+				KNN_sub_tree_search(point, kdtree_root -> lch, H);
+			}
             break;
         
         case HP_RIGHT_SIDE:
-            if(kdtree_root -> rch) KNN_sub_tree_search(point, kdtree_root -> rch, H);
+			if(kdtree_root -> rch)
+			{
+				__builtin_prefetch(kdtree_root -> rch -> data);
+				KNN_sub_tree_search(point, kdtree_root -> rch, H);
+			}
             break;
 
         default:
@@ -253,11 +292,19 @@ void KNN_sub_tree_search(FLOAT_TYPE* point, kd_node* kdtree_root, Heap * H)
         switch (side)
         {
             case HP_LEFT_SIDE:
-                if(kdtree_root -> rch) KNN_sub_tree_search(point, kdtree_root -> rch, H);
+                if(kdtree_root -> rch) 
+				{
+					__builtin_prefetch(kdtree_root -> rch -> data);
+					KNN_sub_tree_search(point, kdtree_root -> rch, H);
+				}
                 break;
             
             case HP_RIGHT_SIDE:
-                if(kdtree_root -> lch) KNN_sub_tree_search(point, kdtree_root -> lch, H);
+                if(kdtree_root -> lch) 
+				{
+					__builtin_prefetch(kdtree_root -> lch -> data);
+					KNN_sub_tree_search(point, kdtree_root -> lch, H);
+				}
                 break;
 
             default:

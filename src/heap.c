@@ -8,8 +8,9 @@ void allocateSimpleHeap(SimpleHeap* H, idx_t n){
     return;
 }
 
+
 void allocateHeap(Heap* H, idx_t n){
-    H -> data = (heap_node*)malloc(n*sizeof(heap_node));
+	H -> data = (heap_node*)malloc(n*sizeof(heap_node));
     H -> N = n;
     H -> count = 0;
     return;
@@ -56,23 +57,44 @@ void heapifyMaxSimpleHeap(SimpleHeap* H, idx_t node){
 }
 
 void heapifyMaxHeap(Heap* H, idx_t node){
-    idx_t largest = node; 
+	idx_t nn = node;
+    idx_t largest = nn; 
     /*
     Found gratest between children of node and boundcheck if the node is a leaf 
     */
-    if(HEAP_LCH(node) < H -> N){
-        if(H -> data[HEAP_LCH(node)].value > H -> data[largest].value ) largest = HEAP_LCH(node);
-    }
-    if(HEAP_RCH(node) < H -> N){
-        if(H -> data[HEAP_RCH(node)].value > H -> data[largest].value ) largest = HEAP_RCH(node);
-    }
-    if(largest == node){
-        return;
-    }
-    else{
-        swapHeapNode(H -> data + node, H -> data + largest);
-        heapifyMaxHeap(H, largest);
-    }
+	while(1)
+	{
+		largest = 	(HEAP_LCH(nn) < H -> N) && 
+					(H -> data[HEAP_LCH(nn)].value > H -> data[largest].value ) ? HEAP_LCH(nn) : largest;
+
+		largest = 	(HEAP_RCH(nn) < H -> N) && 
+					(H -> data[HEAP_RCH(nn)].value > H -> data[largest].value ) ? HEAP_RCH(nn) : largest;
+		if(largest != nn) 
+		{
+			swapHeapNode(H -> data + nn, H -> data + largest);
+			nn = largest;
+		}
+		else
+		{
+			break;
+		}
+	}
+
+    //if(HEAP_LCH(node) < H -> N){
+    //    //if(H -> data[HEAP_LCH(node)].value > H -> data[largest].value ) largest = HEAP_LCH(node);
+	//	largest = (H -> data[HEAP_LCH(nn)].value > H -> data[largest].value ) ? HEAP_LCH(nn) : largest;
+    //}
+    //if(HEAP_RCH(node) < H -> N){
+    //    //if(H -> data[HEAP_RCH(node)].value > H -> data[largest].value ) largest = HEAP_RCH(node);
+	//	largest = (H -> data[HEAP_RCH(nn)].value > H -> data[largest].value ) ? HEAP_RCH(nn) : largest;
+    //}
+    //if(largest == node){
+    //    return;
+    //}
+    //else{
+    //    swapHeapNode(H -> data + node, H -> data + largest);
+    //    heapifyMaxHeap(H, largest);
+    //}
 }
 
 void setRootMaxSimpleHeap(SimpleHeap * H, T val){
@@ -88,48 +110,82 @@ void setRootMaxHeap(Heap * H, FLOAT_TYPE val, idx_t array_idx){
     return;
 }
 
-void insertMaxHeap(Heap * H, FLOAT_TYPE val, idx_t array_idx){
-    if (H -> count == 0)
-    {
-        ++(H -> count);
-        H -> data[0].value = val;
-        H -> data[0].array_idx = array_idx;
-    }
-    else if(H -> count < H -> N){
-        idx_t node = H->count;
-        ++(H -> count);
-        H -> data[node].value = val;
-        H -> data[node].array_idx = array_idx;
-        /*
-        * Push up the node through the heap 
-        */
-        while(H -> data[node].value > H -> data[HEAP_PARENT(node)].value)
-        {
-            swapHeapNode(H -> data + node, H -> data + HEAP_PARENT(node));
-            node = HEAP_PARENT(node);
-            if(node == 0) break;
-        }
-        return;
-    }
-    else if (val < H -> data[0].value)
-    {
-        setRootMaxHeap(H,val,array_idx);
-        return;
-    }
-    else
-    {
-        return;
-    }
+void insertMaxHeap(Heap * H,const FLOAT_TYPE val,const idx_t array_idx){
+	int c1 = H -> count < H -> N;
+	int c2 = (val < H -> data[0].value) && (!c1);
+	int ctot = c1 + 2*c2;
+	switch (ctot) {
+		case 1:
+			{
+				idx_t node = H->count;
+				++(H -> count);
+				H -> data[node].value = val;
+				H -> data[node].array_idx = array_idx;
+				/*
+				* Push up the node through the heap 
+				*/
+				while(node && H -> data[node].value > H -> data[HEAP_PARENT(node)].value)
+				{
+					swapHeapNode(H -> data + node, H -> data + HEAP_PARENT(node));
+					node = HEAP_PARENT(node);
+					//if(node == 0) break;
+			}
+			}
+		break;
+		case 2: 
+			{
+				setRootMaxHeap(H,val,array_idx);
+			}
+			break;
+		default:
+			break;
+	}
+    //if(H -> count < H -> N){
+    //    idx_t node = H->count;
+    //    ++(H -> count);
+    //    H -> data[node].value = val;
+    //    H -> data[node].array_idx = array_idx;
+    //    /*
+    //    * Push up the node through the heap 
+    //    */
+    //    while(node && H -> data[node].value > H -> data[HEAP_PARENT(node)].value)
+    //    {
+    //        swapHeapNode(H -> data + node, H -> data + HEAP_PARENT(node));
+    //        node = HEAP_PARENT(node);
+    //        //if(node == 0) break;
+    //    }
+    //    return;
+    //}
+    //else if (val < H -> data[0].value)
+    //{
+    //    setRootMaxHeap(H,val,array_idx);
+    //    return;
+    //}
+    //else
+    //{
+    //    return;
+    //}
+	
     
+}
+
+int cmpHeapNodes(const void* a, const void* b)
+{
+	const heap_node* aa = (const heap_node*)a;
+	const heap_node* bb = (const heap_node*)b;
+	return - (aa -> value < bb -> value) + (aa -> value > bb -> value);
+
+
 }
 
 void HeapSort(Heap* H){
     idx_t n = H -> N;
-    for(idx_t i= (H -> N) - 1; i > 0; --i)
-    {
-        swapHeapNode(H -> data, H -> data + i);
-        H -> N = i;
-        heapifyMaxHeap(H,0);
-    }
-    H -> N = n;
+	qsort(H -> data, n, sizeof(heap_node),cmpHeapNodes);
+    //for(idx_t i= (H -> N) - 1; i > 0; --i)
+    //{
+    //    swapHeapNode(H -> data, H -> data + i);
+    //    H -> N = i;
+    //    heapifyMaxHeap(H,0);
+    //}
+    //H -> N = n;
 }

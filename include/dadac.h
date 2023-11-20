@@ -133,3 +133,4 @@ void freeDatapointArray(Datapoint_info* d, size_t n);
 
 float_t* eucMetricPx3(void*, void*);
 float_t eud(void*, void*);
+float_t eudOpt(void*, void*);

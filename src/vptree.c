@@ -399,6 +399,8 @@ void KNN_sub_vpTree_search(void* point, vpTreeNode* root, Heap * H, float_t (*me
 
 #endif
 
+
+
 #ifdef ITERATIVE_VPTREE 
 Heap KNN_vpTree(void* point, vpTreeNode* root, int maxk, stack_vpTreeNodes* s, float_t (*metric)(void*, void*))
 #else
@@ -406,10 +408,10 @@ Heap KNN_vpTree(void* point, vpTreeNode* root, int maxk, float_t (*metric)(void*
 #endif
 {
     Heap H;
-    allocateHeap(&H,maxk);
+	allocateHeap(&H, maxk);
     initHeap(&H);
 	#ifdef ITERATIVE_VPTREE
-		//KNN_sub_vpTree_search_iterative(point, root,&H,s,metric);
+		KNN_sub_vpTree_search_iterative(point, root,&H,s,metric);
 	#else
 		KNN_sub_vpTree_search(point, root,&H,metric);
 	#endif

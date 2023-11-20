@@ -254,17 +254,54 @@ void DynamicArray_Init(lu_dynamicArray * a)
  * Clustering part *
  *******************/
 
+
 void KNN_search_kdtree(Datapoint_info * dpInfo, FLOAT_TYPE * data, kd_node* root, idx_t n, idx_t k)
 {
     struct timespec start_tot, finish_tot;
     double elapsed_tot;
     printf("KNN search:\n");
     clock_gettime(CLOCK_MONOTONIC, &start_tot);
+	
+	#ifdef PROGRESS_BAR
+		idx_t progress_count = 0;
+		idx_t step = n/100;
+		printf("Progress 0/%lu -> 0%%\r",(uint64_t)n);
+		fflush(stdout);
+	#endif
 
-    idx_t progress_count = 0;
-    idx_t step = n/100;
-    printf("Progress 0/%lu -> 0%%\r",(uint64_t)n);
-    fflush(stdout);
+	/*		
+	heap_node* preallocatedHeaps = (heap_node*)malloc(k*n*sizeof(heap_node));
+    #pragma omp parallel
+    {
+
+	    #pragma omp for schedule(dynamic)
+	    for(int p = 0; p < n; ++p)
+	    {
+		Heap H;
+		H.count = 0;
+		H.N = k;
+		H.data = preallocatedHeaps + (k*p);
+
+		KNN_sub_tree_search(data + data_dims*p, root, &H);
+		HeapSort(&H);
+		dpInfo[p].ngbh = H;
+		dpInfo[p].array_idx = p;
+
+		#ifdef PROGRESS_BAR
+			idx_t aa;
+
+			#pragma omp atomic capture
+			aa = ++progress_count;
+
+			if(aa % step == 0 )
+			{
+				printf("Progress %lu/%lu -> %u%%\r",(uint64_t)aa, (uint64_t)n, (uint32_t)((100*aa)/n) );
+				fflush(stdout);
+			}
+		#endif
+		}
+    }
+	*/
     
     #pragma omp parallel
     {
@@ -275,21 +312,26 @@ void KNN_search_kdtree(Datapoint_info * dpInfo, FLOAT_TYPE * data, kd_node* root
 		dpInfo[p].ngbh = KNN(data + data_dims*p, root, k);
 		dpInfo[p].array_idx = p;
 
-		idx_t aa;
+		#ifdef PROGRESS_BAR
+			idx_t aa;
 
-		#pragma omp atomic capture
-		aa = ++progress_count;
+			#pragma omp atomic capture
+			aa = ++progress_count;
 
-		if(aa % step == 0 )
-		{
-			printf("Progress %lu/%lu -> %u%%\r",(uint64_t)aa, (uint64_t)n, (uint32_t)((100*aa)/n) );
-			fflush(stdout);
+			if(aa % step == 0 )
+			{
+				printf("Progress %lu/%lu -> %u%%\r",(uint64_t)aa, (uint64_t)n, (uint32_t)((100*aa)/n) );
+				fflush(stdout);
+			}
+		#endif
 		}
-	    }
     }
+
 	
 
-    printf("Progress %lu/%lu -> 100%%\n",(uint64_t)n, (uint64_t)n);
+	#ifdef PROGRESS_BAR
+		printf("Progress %lu/%lu -> 100%%\n",(uint64_t)n, (uint64_t)n);
+	#endif
     //printf("Progress %lu/%lu\n",(uint64_t)progress_count, (uint64_t)n);
 
     clock_gettime(CLOCK_MONOTONIC, &finish_tot);
@@ -1073,7 +1115,7 @@ int compare_merging_density( const void *A, const void *B)
 }
 
 
-inline int is_a_merging( FLOAT_TYPE dens1, FLOAT_TYPE dens1_err,
+static inline int is_a_merging( FLOAT_TYPE dens1, FLOAT_TYPE dens1_err,
 			 FLOAT_TYPE dens2, FLOAT_TYPE dens2_err,
 			 FLOAT_TYPE dens_border, FLOAT_TYPE dens_border_err,
 			 FLOAT_TYPE Z)
@@ -1104,7 +1146,7 @@ inline int is_a_merging( FLOAT_TYPE dens1, FLOAT_TYPE dens1_err,
 }
 
 
-inline int merging_roles( FLOAT_TYPE dens1, FLOAT_TYPE dens1_err,
+static inline int merging_roles( FLOAT_TYPE dens1, FLOAT_TYPE dens1_err,
 			  FLOAT_TYPE dens2, FLOAT_TYPE dens2_err,
 			  FLOAT_TYPE dens_border, FLOAT_TYPE dens_border_err )
 {
@@ -1141,7 +1183,7 @@ void fix_borders_A_into_B(idx_t A, idx_t B, border_t** borders, idx_t n)
    }
 }
 
-inline void Delete_adjlist_element(Clusters * c, const idx_t list_idx, const idx_t el)
+static inline void Delete_adjlist_element(Clusters * c, const idx_t list_idx, const idx_t el)
 {
 	//swap last element with 
 	idx_t count = c -> SparseBorders[list_idx].count;
@@ -1835,6 +1877,14 @@ void Heuristic3(Clusters* cluster, Datapoint_info* dpInfo, FLOAT_TYPE Z, int hal
 	}
 }
 
+void computeLevel(kd_node* root, idx_t prev_lvl)
+{
+	idx_t curr_lvl = prev_lvl + 1;
+	root -> level = curr_lvl;
+	if(root -> lch) computeLevel(root -> lch, curr_lvl);
+	if(root -> rch) computeLevel(root -> rch, curr_lvl);
+	return;
+}
 
 Datapoint_info* NgbhSearch_kdtree(FLOAT_TYPE* data, size_t n, size_t ndims, size_t k)
 {
@@ -1872,7 +1922,10 @@ Datapoint_info* NgbhSearch_kdtree(FLOAT_TYPE* data, size_t n, size_t ndims, size
     /**************
      * KNN search *
      **************/
-
+	//int lvls[25] = {0};
+	//computeLevel(root, 0);
+	//for(int i = 0; i < n; ++i) lvls[kd_ptrs[i]->level]++;
+	//for(int i = 0; i < 25; ++i) printf("lvl %d counts %d\n", i, lvls[i]);
     KNN_search_kdtree(points,data, root, n, k);
 
     free(kd_ptrs);
@@ -1906,10 +1959,13 @@ void KNN_search_vpTree(Datapoint_info* dpInfo, vpTreeNode* vpNodeArray,vpTreeNod
     double elapsed_tot;
     printf("KNN search:\n");
     clock_gettime(CLOCK_MONOTONIC, &start_tot);
+	
 
-    idx_t progress_count = 0;
-    idx_t step = n/100;
-    printf("Progress 0/%lu -> 0%%\r",(uint64_t)n);
+	#ifdef PROGRESS_BAR
+		idx_t progress_count = 0;
+		idx_t step = n/100;
+		printf("Progress 0/%lu -> 0%%\r",(uint64_t)n);
+	#endif
     fflush(stdout);
     
     #pragma omp parallel
@@ -1933,15 +1989,17 @@ void KNN_search_vpTree(Datapoint_info* dpInfo, vpTreeNode* vpNodeArray,vpTreeNod
 			dpInfo[i].is_center = 0;
 			dpInfo[i].array_idx = i;
 			
-			idx_t aa;
-			#pragma omp atomic capture
-			aa = ++progress_count;
+			#ifdef PROGRESS_BAR
+				idx_t aa;
+				#pragma omp atomic capture
+				aa = ++progress_count;
 
-			if(aa % step == 0 )
-			{
-				printf("Progress %lu/%lu -> %u%%\r",(uint64_t)aa, (uint64_t)n, (uint32_t)((100*aa)/n) );
-				fflush(stdout);
-			}
+				if(aa % step == 0 )
+				{
+					printf("Progress %lu/%lu -> %u%%\r",(uint64_t)aa, (uint64_t)n, (uint32_t)((100*aa)/n) );
+					fflush(stdout);
+				}
+			#endif
 		}
 
 		#ifdef ITERATIVE_VPTREE
@@ -1952,8 +2010,9 @@ void KNN_search_vpTree(Datapoint_info* dpInfo, vpTreeNode* vpNodeArray,vpTreeNod
 
     
 	
-
-    printf("Progress %lu/%lu -> 100%%\n",(uint64_t)n, (uint64_t)n);
+	#ifdef PROGRESS_BAR
+		printf("Progress %lu/%lu -> 100%%\n",(uint64_t)n, (uint64_t)n);
+	#endif
     //printf("Progress %lu/%lu\n",(uint64_t)progress_count, (uint64_t)n);
 
     clock_gettime(CLOCK_MONOTONIC, &finish_tot);
@@ -1962,6 +2021,7 @@ void KNN_search_vpTree(Datapoint_info* dpInfo, vpTreeNode* vpNodeArray,vpTreeNod
     printf("\tTotal time: %.3lfs\n\n", elapsed_tot);
     return;
 }
+
 
 Datapoint_info* NgbhSearch_vptree(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *))
 {
@@ -2011,10 +2071,12 @@ void KNN_search_vpTree_V2(Datapoint_info* dpInfo, vpTreeNodeV2* vpNodeArray,vpTr
     printf("KNN search:\n");
     clock_gettime(CLOCK_MONOTONIC, &start_tot);
 
-    idx_t progress_count = 0;
-    idx_t step = n/100;
-    printf("Progress 0/%lu -> 0%%\r",(uint64_t)n);
-    fflush(stdout);
+	#ifdef PROGRESS_BAR
+		idx_t progress_count = 0;
+		idx_t step = n/100;
+		printf("Progress 0/%lu -> 0%%\r",(uint64_t)n);
+		fflush(stdout);
+	#endif
     
     #pragma omp parallel
     {
@@ -2022,28 +2084,32 @@ void KNN_search_vpTree_V2(Datapoint_info* dpInfo, vpTreeNodeV2* vpNodeArray,vpTr
 	    #pragma omp for schedule(dynamic)
 		for(size_t i = 0; i < n; ++i) 
 		{
-			dpInfo[i].ngbh = KNN_vpTree_V2(vpNodeArray[i].data, root, k, metric);
-			dpInfo[i].cluster_idx = -1;
-			dpInfo[i].is_center = 0;
-			dpInfo[i].array_idx = i;
+			idx_t idx = vpNodeArray[i].array_idx;
+			dpInfo[idx].ngbh = KNN_vpTree_V2(vpNodeArray[i].data, root, k, metric);
+			dpInfo[idx].cluster_idx = -1;
+			dpInfo[idx].is_center = 0;
+			dpInfo[idx].array_idx = idx;
 			
-			idx_t aa;
-			#pragma omp atomic capture
-			aa = ++progress_count;
+			#ifdef PROGRESS_BAR
+				idx_t aa;
+				#pragma omp atomic capture
+				aa = ++progress_count;
 
-			if(aa % step == 0 )
-			{
-				printf("Progress %lu/%lu -> %u%%\r",(uint64_t)aa, (uint64_t)n, (uint32_t)((100*aa)/n) );
-				fflush(stdout);
-			}
+				if(aa % step == 0 )
+				{
+					printf("Progress %lu/%lu -> %u%%\r",(uint64_t)aa, (uint64_t)n, (uint32_t)((100*aa)/n) );
+					fflush(stdout);
+				}
+			#endif
 		}
 	}
 	
 
     
 	
-
-    printf("Progress %lu/%lu -> 100%%\n",(uint64_t)n, (uint64_t)n);
+	#ifdef PROGRESS_BAR
+		printf("Progress %lu/%lu -> 100%%\n",(uint64_t)n, (uint64_t)n);
+	#endif
     //printf("Progress %lu/%lu\n",(uint64_t)progress_count, (uint64_t)n);
 
     clock_gettime(CLOCK_MONOTONIC, &finish_tot);
@@ -2070,7 +2136,8 @@ Datapoint_info* NgbhSearch_vptree_V2(void* data, size_t n, size_t byteSize, size
 	initialize_vpTreeNode_array_V2(vpNodeArray, data, n, byteSize*dims);
 	initialize_vpTreeNodes_pointers_V2(vpPtrArray, vpNodeArray, n);
 
-	vpTreeNodeV2* root = build_vpTree_V2(vpPtrArray, 0, n-1, NULL, metric);
+	//vpTreeNodeV2* root = build_vpTree_V2(vpPtrArray, 0, n-1, NULL, metric);
+	vpTreeNodeV2* root = build_vpTree_V2(vpNodeArray, 0, n-1, NULL, metric);
 	#ifdef VERBOSE
 		clock_gettime(CLOCK_MONOTONIC, &finish);
 		elapsed = (finish.tv_sec - start.tv_sec);

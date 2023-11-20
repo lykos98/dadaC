@@ -177,9 +177,9 @@ int main(){
 	uint32_t data_dims, k;
 
 	//n = 35947;
-	n = 300000;
+	n = 1000000;
 	data_dims = 3;
-	k = 500;
+	k = 100;
 	//FILE* f = fopen("Bunny.txt","r");
 	//data = (float_t*)malloc(n*data_dims*sizeof(float_t));
 	//for(int i = 0; i < n; ++i)
@@ -207,21 +207,23 @@ int main(){
 	
     //Start timer
 
-	Datapoint_info* pp = NgbhSearch_vptree(data,n ,sizeof(float_t),data_dims, k, eud); 
-	//Datapoint_info* pp = NgbhSearch_vptree_V2(data,n ,sizeof(float_t),data_dims, k, eud); 
+	//Datapoint_info* pp2 = NgbhSearch_vptree(data,n ,sizeof(float_t),data_dims, k, eudOpt); 
 	Datapoint_info* particles = NgbhSearch_kdtree(data, n, data_dims, k); 
+	Datapoint_info* pp = NgbhSearch_vptree_V2(data,n ,sizeof(float_t),data_dims, k, eud); 
 
-	for(size_t i = 0; i < k; ++i)
+	
 	for(idx_t idx=0; idx < n; ++idx)
+	for(size_t i = 0; i < k; ++i)
 	{
 		if(particles[idx].ngbh.data[i].array_idx != pp[idx].ngbh.data[i].array_idx ) {
-			printf("%lu --> %lu -- %lu %lf -- %lu %lf\n", idx, i, 
+			printf("particle %lu --> ngbh %lu --> got m1 %lu %lf -- m2 %lu %lf\n", idx, i, 
 													particles[idx].ngbh.data[i].array_idx,
 													particles[idx].ngbh.data[i].value,
 													pp[idx].ngbh.data[i].array_idx,
 													pp[idx].ngbh.data[i].value);
 		}
 	}
+
 
     return 0;
 }
