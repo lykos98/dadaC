@@ -177,7 +177,7 @@ int main(){
 	uint32_t data_dims, k;
 
 	//n = 35947;
-	n = 1000000;
+	n = 100000;
 	data_dims = 3;
 	k = 100;
 	//FILE* f = fopen("Bunny.txt","r");
@@ -208,7 +208,7 @@ int main(){
     //Start timer
 
 	//Datapoint_info* pp2 = NgbhSearch_vptree(data,n ,sizeof(float_t),data_dims, k, eudOpt); 
-	Datapoint_info* particles = NgbhSearch_kdtree(data, n, data_dims, k); 
+	Datapoint_info* particles = NgbhSearch_kdtree_V2(data, n, data_dims, k); 
 	Datapoint_info* pp = NgbhSearch_vptree_V2(data,n ,sizeof(float_t),data_dims, k, eud); 
 
 	

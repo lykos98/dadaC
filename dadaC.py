@@ -109,6 +109,8 @@ class Data():
             self.data = data.astype(np.float32)
             ctFloatType = ct.c_float
         else:
+            #self.data = np.ascontiguousarray(data, dtype =np.float64)
+            self.data = np.ascontiguousarray(data, dtype =np.float64)
             self.data = data.astype(np.float64)
 
         if self.__useInt32:
@@ -116,12 +118,12 @@ class Data():
 
         #retrieve function pointers form .so file
 
-        self.__NgbhSearch_kdtree = self.lib.NgbhSearch_kdtree
+        self.__NgbhSearch_kdtree = self.lib.NgbhSearch_kdtree_V2
         self.__NgbhSearch_kdtree.argtypes = [np.ctypeslib.ndpointer(ctFloatType), ct.c_uint64, ct.c_uint64, ct.c_uint64 ]
         self.__NgbhSearch_kdtree.restype  = ct.POINTER(DatapointInfo)
 
         #Datapoint_info* NgbhSearch_vpTree(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *));
-        self.__NgbhSearch_vptree = self.lib.NgbhSearch_vptree
+        self.__NgbhSearch_vptree = self.lib.NgbhSearch_vptree_V2
         #actually do not define anything and hope for the best
         #function pointers are not documented
         #METRIC = ct.CFUNCTYPE(x) 

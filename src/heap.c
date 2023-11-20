@@ -169,11 +169,19 @@ void insertMaxHeap(Heap * H,const FLOAT_TYPE val,const idx_t array_idx){
     
 }
 
+#ifdef USE_FLOAT32
+	#define EPS 5.96e-08
+#else
+	#define EPS 2.11e-16
+#endif
+
 int cmpHeapNodes(const void* a, const void* b)
 {
 	const heap_node* aa = (const heap_node*)a;
 	const heap_node* bb = (const heap_node*)b;
-	return - (aa -> value < bb -> value) + (aa -> value > bb -> value);
+	int val =  (aa -> value > bb -> value) - (aa -> value < bb -> value); 
+	//return vv; 
+	return val;
 
 
 }
@@ -181,7 +189,7 @@ int cmpHeapNodes(const void* a, const void* b)
 void HeapSort(Heap* H){
     idx_t n = H -> N;
 	qsort(H -> data, n, sizeof(heap_node),cmpHeapNodes);
-    //for(idx_t i= (H -> N) - 1; i > 0; --i)
+	//for(idx_t i= (H -> N) - 1; i > 0; --i)
     //{
     //    swapHeapNode(H -> data, H -> data + i);
     //    H -> N = i;

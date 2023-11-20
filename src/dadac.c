@@ -253,6 +253,61 @@ void DynamicArray_Init(lu_dynamicArray * a)
 /*******************
  * Clustering part *
  *******************/
+void KNN_search_kdTreeV2(Datapoint_info * dpInfo,kdNodeV2* kdNodeArray, kdNodeV2* root, idx_t n, idx_t k)
+{
+    struct timespec start_tot, finish_tot;
+    double elapsed_tot;
+    printf("KNN search:\n");
+    clock_gettime(CLOCK_MONOTONIC, &start_tot);
+	
+	#ifdef PROGRESS_BAR
+		idx_t progress_count = 0;
+		idx_t step = n/100;
+		printf("Progress 0/%lu -> 0%%\r",(uint64_t)n);
+		fflush(stdout);
+	#endif
+    
+    #pragma omp parallel
+    {
+
+	    #pragma omp for //schedule(dynamic)
+	    for(int p = 0; p < n; ++p)
+	    {
+			idx_t idx = kdNodeArray[p].array_idx;
+			dpInfo[idx].ngbh = KNN_kdNodeV2(kdNodeArray[p].data, root, k);
+			dpInfo[idx].cluster_idx = -1;
+			dpInfo[idx].is_center = 0;
+			dpInfo[idx].array_idx = idx;
+
+			#ifdef PROGRESS_BAR
+				idx_t aa;
+
+				#pragma omp atomic capture
+				aa = ++progress_count;
+
+				if(aa % step == 0 )
+				{
+					printf("Progress %lu/%lu -> %u%%\r",(uint64_t)aa, (uint64_t)n, (uint32_t)((100*aa)/n) );
+					fflush(stdout);
+				}
+			#endif
+		}
+    }
+
+	
+
+	#ifdef PROGRESS_BAR
+		printf("Progress %lu/%lu -> 100%%\n",(uint64_t)n, (uint64_t)n);
+	#endif
+    //printf("Progress %lu/%lu\n",(uint64_t)progress_count, (uint64_t)n);
+
+    clock_gettime(CLOCK_MONOTONIC, &finish_tot);
+    elapsed_tot = (finish_tot.tv_sec - start_tot.tv_sec);
+    elapsed_tot += (finish_tot.tv_nsec - start_tot.tv_nsec) / 1000000000.0;
+    printf("\tTotal time: %.3lfs\n\n", elapsed_tot);
+    return;
+
+}
 
 
 void KNN_search_kdtree(Datapoint_info * dpInfo, FLOAT_TYPE * data, kd_node* root, idx_t n, idx_t k)
@@ -1930,6 +1985,51 @@ Datapoint_info* NgbhSearch_kdtree(FLOAT_TYPE* data, size_t n, size_t ndims, size
 
     free(kd_ptrs);
     free(kd_node_array);
+
+	return points;
+}
+
+Datapoint_info* NgbhSearch_kdtree_V2(FLOAT_TYPE* data, size_t n, size_t ndims, size_t k)
+{
+    struct timespec start, finish;
+    double elapsed;
+
+
+	data_dims = (unsigned int)ndims;
+
+	#ifdef VERBOSE
+		printf("Building the KDtree:\n");
+		clock_gettime(CLOCK_MONOTONIC, &start);
+	#endif
+
+    kdNodeV2* kdNode_array = (kdNodeV2*)malloc(n*sizeof(kdNodeV2));
+
+    initializeKDnodesV2(kdNode_array,data,n);
+
+    kdNodeV2* root = build_tree_kdNodeV2(kdNode_array, n, ndims);
+
+    //printf("The root of the tree is\n");
+    //printKDnode(root);
+	#ifdef VERBOSE
+		clock_gettime(CLOCK_MONOTONIC, &finish);
+		elapsed = (finish.tv_sec - start.tv_sec);
+		elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+		printf("\tTotal time: %.3lfs\n\n", elapsed);
+	#endif
+
+
+    Datapoint_info* points = (Datapoint_info*)malloc(n*sizeof(Datapoint_info));
+
+    /**************
+     * KNN search *
+     **************/
+	//int lvls[25] = {0};
+	//computeLevel(root, 0);
+	//for(int i = 0; i < n; ++i) lvls[kd_ptrs[i]->level]++;
+	//for(int i = 0; i < 25; ++i) printf("lvl %d counts %d\n", i, lvls[i]);
+	KNN_search_kdTreeV2(points,kdNode_array,root,n,k);
+
+    free(kdNode_array);
 
 	return points;
 }

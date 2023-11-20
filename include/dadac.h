@@ -1,5 +1,6 @@
 #pragma once
 #include "heap.h"
+#include "kdtreeV2.h"
 #include "kdtree.h"
 #include "vptree.h"
 #include "vptreeV2.h"
@@ -119,6 +120,7 @@ FLOAT_TYPE idEstimate(Datapoint_info *particles, idx_t n);
 Datapoint_info* NgbhSearch_vptree(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *));
 Datapoint_info* NgbhSearch_vptree_V2(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *));
 Datapoint_info* NgbhSearch_kdtree(FLOAT_TYPE* data, size_t n, size_t ndims, size_t k);
+Datapoint_info* NgbhSearch_kdtree_V2(FLOAT_TYPE* data, size_t n, size_t ndims, size_t k);
 void computeRho(Datapoint_info *particles, const FLOAT_TYPE d,
                 const idx_t points);
 int cmpPP(const void *p1, const void *p2);

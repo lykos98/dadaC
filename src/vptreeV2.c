@@ -8,7 +8,7 @@
 #include <stdint.h>
 #include  "../include/vptreeV2.h"
 
-#define DEFAULT_LEAF_SIZE 10 
+#define DEFAULT_LEAF_SIZE 10
 
 
 
@@ -61,7 +61,7 @@ void swap_vpTreeNode_ptrs_V2(vpTreeNodeV2 *x, vpTreeNodeV2 *y) {
 
 void initialize_vpTreeNode_array_V2(vpTreeNodeV2* nodeArray, void* data, idx_t n, idx_t bytesPerElement)
 {
-	printf("BS %lu\n", bytesPerElement);
+//printf("BS %lu\n", bytesPerElement);
     for(idx_t i = 0; i < n; ++i)
     {
         nodeArray[i].data = data + (i*bytesPerElement);
@@ -291,18 +291,21 @@ void KNN_sub_vpTree_search_V2(void* point, vpTreeNodeV2* root, Heap * H, float_t
     }
     float_t tau = H -> data[0].value;
 	//retrieve the maximum distance found so far
-	int heapNotFull = (H -> count) < (H -> N);
+	//int heapNotFull = (H -> count) < (H -> N);
+	int heapNotFull = 0; 
 	switch (side)
 	{
 		case INSIDE:
 			// the node MUST have the CHILD, then or the condition holds or the Heap is not full yet 
-			if 	( ((current_distance + tau) > root->mu  || heapNotFull)) KNN_sub_vpTree_search_V2(point, root -> outside, H, metric);
+			//if 	( ((current_distance + tau) > root->mu  || heapNotFull)) KNN_sub_vpTree_search_V2(point, root -> outside, H, metric);
+			if 	( (current_distance + tau) > root->mu  ) KNN_sub_vpTree_search_V2(point, root -> outside, H, metric);
 			//if 	( root -> outside && ((current_distance + tau) > root->mu  || heapNotFull)) KNN_sub_vpTree_search_V2(point, root -> outside, H, metric);
 			break;
 
 		case OUTSIDE:
 			//if 	( root -> inside && ((current_distance - tau) < root->mu  || heapNotFull)) KNN_sub_vpTree_search(point, root -> inside, H, metric);
-			if 	( (current_distance  < (root->mu + tau)  || heapNotFull)) KNN_sub_vpTree_search_V2(point, root -> inside, H, metric);
+			//if 	( (current_distance  < (root->mu + tau)  || heapNotFull)) KNN_sub_vpTree_search_V2(point, root -> inside, H, metric);
+			if 	( (current_distance  < (root->mu + tau) )) KNN_sub_vpTree_search_V2(point, root -> inside, H, metric);
 			//if 	( root -> inside && (current_distance  < (root->mu + tau)  || heapNotFull)) KNN_sub_vpTree_search_V2(point, root -> inside, H, metric);
 			break;
 		
