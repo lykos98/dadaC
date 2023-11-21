@@ -177,7 +177,7 @@ int main(){
 	uint32_t data_dims, k;
 
 	//n = 35947;
-	n = 100000;
+	n = 1000000;
 	data_dims = 3;
 	k = 100;
 	//FILE* f = fopen("Bunny.txt","r");

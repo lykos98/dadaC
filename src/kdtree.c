@@ -286,7 +286,8 @@ void KNN_sub_tree_search(FLOAT_TYPE* point, kd_node* kdtree_root, Heap * H)
     int c   = max_d > (hp_distance * hp_distance);
     //int c   = max_d > fabs(hp_distance);
     //if(!c) printf("%f %f\n",max_d, hp_distance*hp_distance);
-    if(c || (H -> count) < (H -> N))
+    //if(c || (H -> count) < (H -> N))
+    if(c)
     {
 
         switch (side)

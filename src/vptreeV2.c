@@ -20,17 +20,6 @@
 */
 
 
-
-// Standard Lomuto partition function
-
-
-// Implementation of QuickSelect
-
-
-//inline float_t hyper_plane_dist(float_t* p1, float_t* p2, int var);
-
-//inline int hyper_plane_side(float_t* p1, float_t* p2, int var);
-
 void* swapMem;
 
 void swap_vpTreeNode_ptrs_V2(vpTreeNodeV2 *x, vpTreeNodeV2 *y) {
@@ -61,7 +50,6 @@ void swap_vpTreeNode_ptrs_V2(vpTreeNodeV2 *x, vpTreeNodeV2 *y) {
 
 void initialize_vpTreeNode_array_V2(vpTreeNodeV2* nodeArray, void* data, idx_t n, idx_t bytesPerElement)
 {
-//printf("BS %lu\n", bytesPerElement);
     for(idx_t i = 0; i < n; ++i)
     {
         nodeArray[i].data = data + (i*bytesPerElement);
@@ -114,25 +102,12 @@ int median_of_vpTreeNodes_V2(vpTreeNodeV2* a, int left, int right)
 {
     //printf("----------\n");
     int k = left + ((right - left + 1)/2); 
-    //:w
-    //int c = right - left + 1;
-    //if(c < 20){
-    //    v = split_var;
-    //    qsort(a + left, c, sizeof(kd_node*),cmpKDN);
-    //    return k;
-
-    //}
 
     if(left == right) return left;
     if(left == (right - 1)){
         if(cmp_vpTreeNodes_V2(a + left,a + right)) {swap_vpTreeNode_ptrs_V2(a + left, a + right);}
         return right;
     }
-    //if(c == 3){
-    //    printKDnode(a[left]);
-    //    printKDnode(a[left + 1]);
-    //    printKDnode(a[left + 2]);
-    //}
     while (left <= right) {
  
         // Partition a[left..right] around a pivot
@@ -161,23 +136,17 @@ int median_of_vpTreeNodes_V2(vpTreeNodeV2* a, int left, int right)
 
 vpTreeNodeV2* build_vpTree_V2(vpTreeNodeV2* t, int start, int end, vpTreeNodeV2* parent, float_t (*metric)(void*, void*))
 {
+	/*
 	if(parent == NULL)
 	{
 		swapMem = malloc((t + start) ->__bytesize);
 	}
+	*/
     vpTreeNodeV2 *n = NULL;
     //printf("%d \n",level);
 
     int median_idx = -1;
     if ((end - start) < 0) return NULL;
-    //if (end  == start) {
-    //    n = t[start];
-    //    n -> parent = parent;
-    //    n -> inside = NULL;
-    //    n -> outside = NULL;
-	//	n -> mu = 0;
-    //    return n;
-    //}
 
 	if(end - start < DEFAULT_LEAF_SIZE)
 	//if(end - start < -1)
@@ -208,11 +177,13 @@ vpTreeNodeV2* build_vpTree_V2(vpTreeNodeV2* t, int start, int end, vpTreeNodeV2*
 
 	//compute distances
 	for(int i = start; i <= end; ++i) t[i].__dist = metric(t[vpIdx].data,t[i].data);
+
 	//for(int i = start; i <= end; ++i) 
 	//{
 	//	printf("%.5lf ", t[i] -> __dist );
 	//}
 	//printf("----\n\n");
+	
 	//now swap the vpIdx in the first place to retrieve it later
 	//swap_vpTreeNode_ptrs(t + vpIdx, t + start);
 	//compute the median, as byproduct obtain the array partitioned on inside and outside BUT, with the median in the median place
@@ -235,20 +206,13 @@ vpTreeNodeV2* build_vpTree_V2(vpTreeNodeV2* t, int start, int end, vpTreeNodeV2*
 
         n->parent = parent;
     }
+	/*
 	if(parent == NULL)
 	{
 		free(swapMem);
 	}
-
-	/*
-    if(median_idx > -1){
-        n = t[vpIdx];
-		n->mu = mu;
-		n->inside  = build_vpTree(t, start + 1, median_idx, n, metric);
-		n->outside = build_vpTree(t, median_idx + 1, end, n, metric);
-        n->parent = parent;
-    }
 	*/
+
     return n;
 
 }
@@ -256,7 +220,6 @@ vpTreeNodeV2* build_vpTree_V2(vpTreeNodeV2* t, int start, int end, vpTreeNodeV2*
 
 void KNN_sub_vpTree_search_V2(void* point, vpTreeNodeV2* root, Heap * H, float_t (*metric)(void*,void*))
 {
-    //int split_var = kdtree_root -> split_var;
 	if(root -> isLeaf)
 	{
 		for(size_t i = 0; i < root -> nodeList.count; ++i)
@@ -292,11 +255,9 @@ void KNN_sub_vpTree_search_V2(void* point, vpTreeNodeV2* root, Heap * H, float_t
     float_t tau = H -> data[0].value;
 	//retrieve the maximum distance found so far
 	//int heapNotFull = (H -> count) < (H -> N);
-	int heapNotFull = 0; 
 	switch (side)
 	{
 		case INSIDE:
-			// the node MUST have the CHILD, then or the condition holds or the Heap is not full yet 
 			//if 	( ((current_distance + tau) > root->mu  || heapNotFull)) KNN_sub_vpTree_search_V2(point, root -> outside, H, metric);
 			if 	( (current_distance + tau) > root->mu  ) KNN_sub_vpTree_search_V2(point, root -> outside, H, metric);
 			//if 	( root -> outside && ((current_distance + tau) > root->mu  || heapNotFull)) KNN_sub_vpTree_search_V2(point, root -> outside, H, metric);
