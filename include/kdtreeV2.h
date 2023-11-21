@@ -52,6 +52,6 @@ void initializeKDnodesV2(kdNodeV2* node_array, FLOAT_TYPE* d, idx_t n );
 
 // Standard Lomuto partition function
 
-Heap KNN_kdNodeV2(FLOAT_TYPE* point, kdNodeV2* kdtree_root, int maxk);
+Heap KNN_kdTreeV2(FLOAT_TYPE* point, kdNodeV2* kdtree_root, int maxk);
 
-kdNodeV2 * build_tree_kdNodeV2(kdNodeV2* kd_ptrs, size_t n, size_t dimensions);
+kdNodeV2 * build_tree_kdTreeV2(kdNodeV2* kd_ptrs, size_t n, size_t dimensions);

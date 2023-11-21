@@ -186,6 +186,7 @@ int cmpHeapNodes(const void* a, const void* b)
 
 }
 
+
 void HeapSort(Heap* H){
     idx_t n = H -> N;
 	qsort(H -> data, n, sizeof(heap_node),cmpHeapNodes);

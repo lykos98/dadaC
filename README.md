@@ -1,4 +1,7 @@
 # dadaC
+## NOTE
+This implementation is in progress, currently clenaning up code and working on documentation. 
+
 ## Description
 Code repository for the thesis project *Density-based clustering application to substructures identification in cosmological simulations*, Francesco Tomba, 2023 @ University of Trieste.
 
@@ -11,7 +14,6 @@ In particular dadaC implements at the moment:
 - ADP Heuristics
 
 On the same input dadaC achieves a one to one match on the results, obtaining a factor 40 speedup on the whole procedure w.r.t. Python/Cython implementation. 
-NOTE: this is an experimental implementation, program may crash if a dataset requires a memory usage larger than the memory available on the machine. This issue will be fixed soon. 
 
 ## Usage
 
@@ -36,7 +38,7 @@ Once parameters are set `dadaC` can be launched using:
 - `s`	     : Use sparse borders implementation, y/n [sparse/dense]
 - `t`	     : Input binary is in Float32, y/n [float/double]
 
-
+Relies on kd-Tree or vantage point tree alogirthms in order to perform neighborhood search. _V2_ versions are optimized ones, use them. KNN search is validated against `scipy.spatial.KDtree` query time is comparable. 
 
 ## Compiling
 

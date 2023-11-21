@@ -274,7 +274,7 @@ void KNN_search_kdTreeV2(Datapoint_info * dpInfo,kdNodeV2* kdNodeArray, kdNodeV2
 	    for(int p = 0; p < n; ++p)
 	    {
 			idx_t idx = kdNodeArray[p].array_idx;
-			dpInfo[idx].ngbh = KNN_kdNodeV2(kdNodeArray[p].data, root, k);
+			dpInfo[idx].ngbh = KNN_kdTreeV2(kdNodeArray[p].data, root, k);
 			dpInfo[idx].cluster_idx = -1;
 			dpInfo[idx].is_center = 0;
 			dpInfo[idx].array_idx = idx;
@@ -2006,7 +2006,7 @@ Datapoint_info* NgbhSearch_kdtree_V2(FLOAT_TYPE* data, size_t n, size_t ndims, s
 
     initializeKDnodesV2(kdNode_array,data,n);
 
-    kdNodeV2* root = build_tree_kdNodeV2(kdNode_array, n, ndims);
+    kdNodeV2* root = build_tree_kdTreeV2(kdNode_array, n, ndims);
 
     //printf("The root of the tree is\n");
     //printKDnode(root);
@@ -2028,8 +2028,9 @@ Datapoint_info* NgbhSearch_kdtree_V2(FLOAT_TYPE* data, size_t n, size_t ndims, s
 	//for(int i = 0; i < n; ++i) lvls[kd_ptrs[i]->level]++;
 	//for(int i = 0; i < 25; ++i) printf("lvl %d counts %d\n", i, lvls[i]);
 	KNN_search_kdTreeV2(points,kdNode_array,root,n,k);
-
-    free(kdNode_array);
+	
+	for(idx_t i = 0; i < n; ++i) if(kdNode_array[i].nodeList.data) free(kdNode_array[i].nodeList.data);
+	free(kdNode_array);
 
 	return points;
 }
@@ -2232,9 +2233,7 @@ Datapoint_info* NgbhSearch_vptree_V2(void* data, size_t n, size_t byteSize, size
 	#endif
 
 	vpTreeNodeV2* vpNodeArray = (vpTreeNodeV2*)malloc(n*sizeof(vpTreeNodeV2));
-	vpTreeNodeV2** vpPtrArray = (vpTreeNodeV2**)malloc(n*sizeof(vpTreeNodeV2*));
 	initialize_vpTreeNode_array_V2(vpNodeArray, data, n, byteSize*dims);
-	initialize_vpTreeNodes_pointers_V2(vpPtrArray, vpNodeArray, n);
 
 	//vpTreeNodeV2* root = build_vpTree_V2(vpPtrArray, 0, n-1, NULL, metric);
 	vpTreeNodeV2* root = build_vpTree_V2(vpNodeArray, 0, n-1, NULL, metric);
@@ -2256,7 +2255,7 @@ Datapoint_info* NgbhSearch_vptree_V2(void* data, size_t n, size_t byteSize, size
 	
 
 	//printf("NODE STRAMBO: %lf %p %lu\n", vpNodeArray[1516].mu, vpNodeArray[1516].inside, vpNodeArray[1516].parent -> array_idx);
-    free(vpPtrArray);
+	for(idx_t i = 0; i < n; ++i) if(vpNodeArray[i].nodeList.data) free(vpNodeArray[i].nodeList.data);
     free(vpNodeArray);
 	return points;
 }

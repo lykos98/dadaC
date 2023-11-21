@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <time.h>
 
-#define DEFAULT_LEAF_SIZE 5
+#define DEFAULT_LEAF_SIZE 10 
 
 
 extern unsigned int data_dims;
@@ -84,15 +84,6 @@ void initializeKDnodesV2(kdNodeV2* node_array, FLOAT_TYPE* d, idx_t n )
 
     }
 }
-/*
-void initializePTRS(kdNodeV2** node_ptr_array, kdNodeV2* node_array, idx_t n )
-{
-    for(idx_t i = 0; i < n; ++i)
-    {
-        node_ptr_array[i] = node_array + i;
-    }
-}
-*/
 
 int cmpKDnodesV2(kdNodeV2* a, kdNodeV2* b, int var){
     
@@ -137,25 +128,12 @@ int medianOfNodes_kdNodeV2(kdNodeV2* a, int left, int right, int split_var)
 {
     //printf("----------\n");
     int k = left + ((right - left + 1)/2); 
-    //:w
-    //int c = right - left + 1;
-    //if(c < 20){
-    //    v = split_var;
-    //    qsort(a + left, c, sizeof(kdNodeV2*),cmpKDN);
-    //    return k;
-
-    //}
 
     if(left == right) return left;
     if(left == (right - 1)){
         if(cmpKDnodesV2(a + left,a + right,split_var)) {swap_kdNodeV2(a + left, a + right);}
         return right;
     }
-    //if(c == 3){
-    //    printKDnode(a[left]);
-    //    printKDnode(a[left + 1]);
-    //    printKDnode(a[left + 2]);
-    //}
     while (left <= right) {
  
         // Partition a[left..right] around a pivot
@@ -177,7 +155,6 @@ int medianOfNodes_kdNodeV2(kdNodeV2* a, int left, int right, int split_var)
         else
             left = pivotIndex + 1;
     }
-    //printf("Nope\n");
     return -1;
 }
 
@@ -185,9 +162,9 @@ kdNodeV2* make_tree_kdNodeV2(kdNodeV2* t, int start, int end, kdNodeV2* parent, 
 {
     kdNodeV2 *n = NULL;
     int split_var = level % data_dims; 
-    //printf("%d \n",level);
+	
+	/*
 	if(end - start < DEFAULT_LEAF_SIZE)
-	//if(end - start < -1)
 	{
 		n =  t + start;
 		n -> isLeaf = 1;
@@ -208,10 +185,12 @@ kdNodeV2* make_tree_kdNodeV2(kdNodeV2* t, int start, int end, kdNodeV2* parent, 
 		return n;
 		
 	}
+	*/
+
 
     int median_idx = -1;
-	/*
-    if ((end - start) < 0) return 0;
+	
+    //if ((end - start) < 0) return 0;
     if (end  == start) {
         n = t + start;
         n -> split_var = split_var;
@@ -221,7 +200,7 @@ kdNodeV2* make_tree_kdNodeV2(kdNodeV2* t, int start, int end, kdNodeV2* parent, 
         n -> rch = NULL;
         return n;
     }
-	*/
+
     median_idx = medianOfNodes_kdNodeV2(t, start, end, split_var);
     //printf("%d median idx\n", median_idx);
     if(median_idx > -1){
@@ -240,16 +219,6 @@ kdNodeV2* make_tree_kdNodeV2(kdNodeV2* t, int start, int end, kdNodeV2* parent, 
         n->parent = parent;
         n->level = level;
     }
-	/*
-    if(median_idx > -1){
-        n = t[median_idx];
-        n->lch  = make_tree(t, start, median_idx - 1, n, level + 1);
-        n->rch = make_tree(t, median_idx + 1, end, n, level + 1);
-        n -> split_var = split_var;
-        n->parent = parent;
-        n->level = level;
-    }
-	*/
     return n;
 }
 
@@ -263,7 +232,7 @@ static inline int hyper_plane_side(FLOAT_TYPE* p1, FLOAT_TYPE* p2, int var)
     return p1[var] > p2[var];
 }
 
-void KNN_sub_tree_search_kdNodeV2(FLOAT_TYPE* point, kdNodeV2* root, Heap * H)
+void KNN_sub_tree_search_kdTreeV2(FLOAT_TYPE* point, kdNodeV2* root, Heap * H)
 {
 	if(root -> isLeaf)
 	{
@@ -276,7 +245,7 @@ void KNN_sub_tree_search_kdNodeV2(FLOAT_TYPE* point, kdNodeV2* root, Heap * H)
 		}
 		return;
 	}
-    //int split_var = root -> split_var;
+
     FLOAT_TYPE current_distance = eud_kdTreeV2(point, root -> data);
     FLOAT_TYPE hp_distance = hyper_plane_dist(point, root -> data, root -> split_var);
     insertMaxHeap(H, current_distance, root -> array_idx);
@@ -285,21 +254,19 @@ void KNN_sub_tree_search_kdNodeV2(FLOAT_TYPE* point, kdNodeV2* root, Heap * H)
 
     int side = hp_distance > 0.f;
 
-    //if(root -> lch) KNN_sub_tree_search(point, root -> lch, H);
-    //if(root -> rch) KNN_sub_tree_search(point, root -> rch, H);
     switch (side)
     {
         case HP_LEFT_SIDE:
-            //if(root -> lch)
+            if(root -> lch)
 			{
-				KNN_sub_tree_search_kdNodeV2(point, root -> lch, H);
+				KNN_sub_tree_search_kdTreeV2(point, root -> lch, H);
 			}
             break;
         
         case HP_RIGHT_SIDE:
-			//if(root -> rch)
+			if(root -> rch)
 			{
-				KNN_sub_tree_search_kdNodeV2(point, root -> rch, H);
+				KNN_sub_tree_search_kdTreeV2(point, root -> rch, H);
 			}
             break;
 
@@ -308,8 +275,7 @@ void KNN_sub_tree_search_kdNodeV2(FLOAT_TYPE* point, kdNodeV2* root, Heap * H)
     }
     FLOAT_TYPE max_d = H -> data[0].value;
     int c   = max_d > (hp_distance * hp_distance);
-    //int c   = max_d > fabs(hp_distance);
-    //if(!c) printf("%f %f\n",max_d, hp_distance*hp_distance);
+
     //if(c || (H -> count) < (H -> N))
     if(c)
     {
@@ -317,16 +283,16 @@ void KNN_sub_tree_search_kdNodeV2(FLOAT_TYPE* point, kdNodeV2* root, Heap * H)
         switch (side)
         {
             case HP_LEFT_SIDE:
-                //if(root -> rch) 
+                if(root -> rch) 
 				{
-					KNN_sub_tree_search_kdNodeV2(point, root -> rch, H);
+					KNN_sub_tree_search_kdTreeV2(point, root -> rch, H);
 				}
                 break;
             
             case HP_RIGHT_SIDE:
-                //if(root -> lch) 
+                if(root -> lch) 
 				{
-					KNN_sub_tree_search_kdNodeV2(point, root -> lch, H);
+					KNN_sub_tree_search_kdTreeV2(point, root -> lch, H);
 				}
                 break;
 
@@ -340,17 +306,17 @@ void KNN_sub_tree_search_kdNodeV2(FLOAT_TYPE* point, kdNodeV2* root, Heap * H)
 
 
 
-Heap KNN_kdNodeV2(FLOAT_TYPE* point, kdNodeV2* kdtree_root, int maxk)
+Heap KNN_kdTreeV2(FLOAT_TYPE* point, kdNodeV2* kdtree_root, int maxk)
 {
     Heap H;
     allocateHeap(&H,maxk);
     initHeap(&H);
-    KNN_sub_tree_search_kdNodeV2(point, kdtree_root,&H);
+    KNN_sub_tree_search_kdTreeV2(point, kdtree_root,&H);
     HeapSort(&H);
     return H;
 }
 
-kdNodeV2 * build_tree_kdNodeV2(kdNodeV2* kd_ptrs, size_t n, size_t dimensions )
+kdNodeV2 * build_tree_kdTreeV2(kdNodeV2* kd_ptrs, size_t n, size_t dimensions )
 {
     /*************************************************
      * Wrapper for make_tree function.               *
