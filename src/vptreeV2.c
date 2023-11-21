@@ -28,13 +28,13 @@ void swap_vpTreeNode_ptrs_V2(vpTreeNodeV2 *x, vpTreeNodeV2 *y) {
     *x = *y;
     *y = tmp;
 
-	//memcpy(swapMem, x -> data, x -> __bytesize);
-	//memcpy(x -> data, y -> data, x -> __bytesize);
-	//memcpy(y -> data, swapMem, x -> __bytesize);
-	//
-	//void* tmpPtr = x -> data;
-	//x -> data = y -> data;
-	//y -> data = tmpPtr;
+	memcpy(swapMem, x -> data, x -> __bytesize);
+	memcpy(x -> data, y -> data, x -> __bytesize);
+	memcpy(y -> data, swapMem, x -> __bytesize);
+	
+	void* tmpPtr = x -> data;
+	x -> data = y -> data;
+	y -> data = tmpPtr;
 	//vpTreeNodeV2 tmpNode = *(*x);
 	//*(*x) = *(*y);
 	//*(*y)  = tmpNode;
@@ -224,7 +224,7 @@ void KNN_sub_vpTree_search_V2(void* point, vpTreeNodeV2* root, Heap * H, float_t
 	{
 		for(size_t i = 0; i < root -> nodeList.count; ++i)
 		{
-			__builtin_prefetch(root -> nodeList.data + 1, 0, 0);
+			__builtin_prefetch(root -> nodeList.data + i + 1, 0, 0);
 			vpTreeNodeV2* n = root -> nodeList.data[i];
 			float_t distance = metric(point, n -> data);
 			insertMaxHeap(H, distance,n -> array_idx);
