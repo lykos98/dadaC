@@ -24,7 +24,7 @@
 struct vpTreeNodeV2List
 {
 	size_t count;
-	#ifdef VPOPT
+	#ifdef VOPT
 		idx_t* indexes;
 		void* start_ptr;
 		void* end_ptr;
