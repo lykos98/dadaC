@@ -225,5 +225,8 @@ int main(){
 	}
 
 
+	free(particles);
+	free(pp);
+	free(data);
     return 0;
 }

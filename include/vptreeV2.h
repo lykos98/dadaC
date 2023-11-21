@@ -24,22 +24,25 @@
 struct vpTreeNodeV2List
 {
 	size_t count;
-	struct vpTreeNodeV2** data;
+	idx_t* indexes;
+	void* start_ptr;
+	void* end_ptr;
+	//struct vpTreeNodeV2** data;
 };
 
 
 struct vpTreeNodeV2
 {
    void * data;
+   struct vpTreeNodeV2List nodeList;
    idx_t array_idx;
-   idx_t __bytesize;
+   struct vpTreeNodeV2* outside;
+   struct vpTreeNodeV2* inside;
+   struct vpTreeNodeV2* parent;
    float_t mu;
    float_t __dist;
    int isLeaf;
-   struct vpTreeNodeV2* parent;
-   struct vpTreeNodeV2* outside;
-   struct vpTreeNodeV2* inside;
-   struct vpTreeNodeV2List nodeList;
+   idx_t __bytesize;
 };
 
 

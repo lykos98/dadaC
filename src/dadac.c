@@ -2255,7 +2255,8 @@ Datapoint_info* NgbhSearch_vptree_V2(void* data, size_t n, size_t byteSize, size
 	
 
 	//printf("NODE STRAMBO: %lf %p %lu\n", vpNodeArray[1516].mu, vpNodeArray[1516].inside, vpNodeArray[1516].parent -> array_idx);
-	for(idx_t i = 0; i < n; ++i) if(vpNodeArray[i].nodeList.data) free(vpNodeArray[i].nodeList.data);
+	//for(idx_t i = 0; i < n; ++i) if(vpNodeArray[i].nodeList.data) free(vpNodeArray[i].nodeList.data);
+	for(idx_t i = 0; i < n; ++i) if(vpNodeArray[i].nodeList.indexes) free(vpNodeArray[i].nodeList.indexes);
     free(vpNodeArray);
 	return points;
 }
