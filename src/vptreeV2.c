@@ -28,13 +28,13 @@ void swap_vpTreeNode_ptrs_V2(vpTreeNodeV2 *x, vpTreeNodeV2 *y) {
     *x = *y;
     *y = tmp;
 
-	memcpy(swapMem, x -> data, x -> __bytesize);
-	memcpy(x -> data, y -> data, x -> __bytesize);
-	memcpy(y -> data, swapMem, x -> __bytesize);
-	
-	void* tmpPtr = x -> data;
-	x -> data = y -> data;
-	y -> data = tmpPtr;
+	//memcpy(swapMem, x -> data, x -> __bytesize);
+	//memcpy(x -> data, y -> data, x -> __bytesize);
+	//memcpy(y -> data, swapMem, x -> __bytesize);
+	//
+	//void* tmpPtr = x -> data;
+	//x -> data = y -> data;
+	//y -> data = tmpPtr;
 	//vpTreeNodeV2 tmpNode = *(*x);
 	//*(*x) = *(*y);
 	//*(*y)  = tmpNode;
