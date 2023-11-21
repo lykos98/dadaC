@@ -11,6 +11,10 @@
 #define MAX_N_NGBH 1000
 #define PREALLOC_BORDERS 10
 
+#ifdef VOPT
+	#define SWMEM
+#endif
+
 unsigned int data_dims;
 idx_t Npart;
 const border_t border_null = {.density = -1.0, .error = 0, .idx = NOBORDER};
@@ -2232,8 +2236,15 @@ Datapoint_info* NgbhSearch_vptree_V2(void* data, size_t n, size_t byteSize, size
 		printf("Building the vp tree\n");
 	#endif
 
+	#ifdef SWMEM
+		void* dummy_data = malloc(byteSize*dims*n);
+		memcpy(dummy_data,data,byteSize*dims*n);
+		data = dummy_data;
+	#endif
+
 	vpTreeNodeV2* vpNodeArray = (vpTreeNodeV2*)malloc(n*sizeof(vpTreeNodeV2));
 	initialize_vpTreeNode_array_V2(vpNodeArray, data, n, byteSize*dims);
+
 
 	//vpTreeNodeV2* root = build_vpTree_V2(vpPtrArray, 0, n-1, NULL, metric);
 	vpTreeNodeV2* root = build_vpTree_V2(vpNodeArray, 0, n-1, NULL, metric);
@@ -2250,9 +2261,14 @@ Datapoint_info* NgbhSearch_vptree_V2(void* data, size_t n, size_t byteSize, size
      * KNN search *
      **************/
 
+
+
 	
 	KNN_search_vpTree_V2(points, vpNodeArray, root, k, n, metric);
 	
+	#ifdef SWMEM
+		free(data);
+	#endif
 
 	//printf("NODE STRAMBO: %lf %p %lu\n", vpNodeArray[1516].mu, vpNodeArray[1516].inside, vpNodeArray[1516].parent -> array_idx);
 	#ifdef VOPT

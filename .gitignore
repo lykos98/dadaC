@@ -1,4 +1,6 @@
 #*.ipynb
+perf.data
+perf.data.old
 test.o
 test
 Bunny.txt

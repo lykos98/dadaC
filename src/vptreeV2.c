@@ -10,7 +10,9 @@
 
 #define DEFAULT_LEAF_SIZE 10
 
-
+#ifdef VOPT
+	#define SWMEM
+#endif
 
 /**
  * 
@@ -27,14 +29,15 @@ void swap_vpTreeNode_ptrs_V2(vpTreeNodeV2 *x, vpTreeNodeV2 *y) {
     tmp = *x;
     *x = *y;
     *y = tmp;
-
-	memcpy(swapMem, x -> data, x -> __bytesize);
-	memcpy(x -> data, y -> data, x -> __bytesize);
-	memcpy(y -> data, swapMem, x -> __bytesize);
-	
-	void* tmpPtr = x -> data;
-	x -> data = y -> data;
-	y -> data = tmpPtr;
+	#ifdef SWMEM
+		memcpy(swapMem, x -> data, x -> __bytesize);
+		memcpy(x -> data, y -> data, x -> __bytesize);
+		memcpy(y -> data, swapMem, x -> __bytesize);
+		
+		void* tmpPtr = x -> data;
+		x -> data = y -> data;
+		y -> data = tmpPtr;
+	#endif
 	//vpTreeNodeV2 tmpNode = *(*x);
 	//*(*x) = *(*y);
 	//*(*y)  = tmpNode;
