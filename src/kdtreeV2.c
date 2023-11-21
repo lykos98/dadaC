@@ -84,6 +84,15 @@ void initializeKDnodesV2(kdNodeV2* node_array, FLOAT_TYPE* d, idx_t n )
 
     }
 }
+/*
+void initializePTRS(kdNodeV2** node_ptr_array, kdNodeV2* node_array, idx_t n )
+{
+    for(idx_t i = 0; i < n; ++i)
+    {
+        node_ptr_array[i] = node_array + i;
+    }
+}
+*/
 
 int cmpKDnodesV2(kdNodeV2* a, kdNodeV2* b, int var){
     
@@ -204,14 +213,18 @@ kdNodeV2* make_tree_kdNodeV2(kdNodeV2* t, int start, int end, kdNodeV2* parent, 
     median_idx = medianOfNodes_kdNodeV2(t, start, end, split_var);
     //printf("%d median idx\n", median_idx);
     if(median_idx > -1){
-        n = t + median_idx;
+		swap_kdNodeV2(t + start, t + median_idx);
+        //n = t + median_idx;
+        n = t + start;
 		#pragma omp parallel
 		{
 			#pragma omp single
 			{
 				#pragma omp task shared(n)
-				n->lch  = make_tree_kdNodeV2(t, start, median_idx - 1, n, level + 1);
+				//n->lch  = make_tree_kdNodeV2(t, start, median_idx - 1, n, level + 1);
+				n->lch  = make_tree_kdNodeV2(t, start + 1, median_idx, n, level + 1);
 				#pragma omp task shared(n)
+				//n->rch = make_tree_kdNodeV2(t, median_idx + 1, end, n, level + 1);
 				n->rch = make_tree_kdNodeV2(t, median_idx + 1, end, n, level + 1);
 			}
 		}
