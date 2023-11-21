@@ -159,17 +159,24 @@ vpTreeNodeV2* build_vpTree_V2(vpTreeNodeV2* t, int start, int end, vpTreeNodeV2*
 		n -> mu = 0;
 		size_t j = 0;
 		n -> nodeList.count = (size_t)(end - start + 1);
-		//n -> nodeList.data = (vpTreeNodeV2**)malloc(n -> nodeList.count * sizeof(vpTreeNodeV2*));
-		n -> nodeList.indexes = (idx_t*)malloc(n -> nodeList.count * sizeof(idx_t));
-		n -> nodeList.start_ptr = t[start].data;
-		n -> nodeList.end_ptr 	= t[end].data;
+		#ifdef VOPT
+			n -> nodeList.indexes = (idx_t*)malloc(n -> nodeList.count * sizeof(idx_t));
+			n -> nodeList.start_ptr = t[start].data;
+			n -> nodeList.end_ptr 	= t[end].data;
+		#else
+			n -> nodeList.data = (vpTreeNodeV2**)malloc(n -> nodeList.count * sizeof(vpTreeNodeV2*));
+		#endif
 		for(int i = start; i <= end; ++i){
 			t[i].parent = n;
 			t[i].isLeaf = 1;
 			t[i].inside = NULL;
 			t[i].outside = NULL;
-			//n -> nodeList.data[j] = t + i;
-			n -> nodeList.indexes[j] = t[i].array_idx;
+			#ifdef VOPT
+				n -> nodeList.indexes[j] = t[i].array_idx;
+			#else
+				n -> nodeList.data[j] = t + i;
+			#endif
+
 			++j;
 		}
 		return n;
@@ -224,19 +231,8 @@ vpTreeNodeV2* build_vpTree_V2(vpTreeNodeV2* t, int start, int end, vpTreeNodeV2*
 
 void KNN_sub_vpTree_search_V2(void* point, vpTreeNodeV2* root, Heap * H, float_t (*metric)(void*,void*))
 {
-	/*
-	if(root -> isLeaf)
-	{
-		for(size_t i = 0; i < root -> nodeList.count; ++i)
-		{
-			__builtin_prefetch(root -> nodeList.data + i + 1, 0, 0);
-			vpTreeNodeV2* n = root -> nodeList.data[i];
-			float_t distance = metric(point, n -> data);
-			insertMaxHeap(H, distance,n -> array_idx);
-		}
-		return;
-	}
-	*/
+	
+	#ifdef VOPT	
 	if(root -> isLeaf)
 	{
 		
@@ -249,6 +245,20 @@ void KNN_sub_vpTree_search_V2(void* point, vpTreeNodeV2* root, Heap * H, float_t
 		}
 		return;
 	}
+	#else
+		if(root -> isLeaf)
+		{
+			for(size_t i = 0; i < root -> nodeList.count; ++i)
+			{
+				__builtin_prefetch(root -> nodeList.data + i + 1, 0, 0);
+				vpTreeNodeV2* n = root -> nodeList.data[i];
+				float_t distance = metric(point, n -> data);
+				insertMaxHeap(H, distance,n -> array_idx);
+			}
+			return;
+		}
+	#endif
+
 
     float_t current_distance = metric(point, root -> data);
     insertMaxHeap(H, current_distance, root -> array_idx);

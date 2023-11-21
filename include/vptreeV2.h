@@ -24,10 +24,13 @@
 struct vpTreeNodeV2List
 {
 	size_t count;
-	idx_t* indexes;
-	void* start_ptr;
-	void* end_ptr;
-	//struct vpTreeNodeV2** data;
+	#ifdef VPOPT
+		idx_t* indexes;
+		void* start_ptr;
+		void* end_ptr;
+	#else
+		struct vpTreeNodeV2** data;
+	#endif
 };
 
 
