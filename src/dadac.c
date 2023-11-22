@@ -2007,8 +2007,8 @@ Datapoint_info* NgbhSearch_kdtree_V2(FLOAT_TYPE* data, size_t n, size_t ndims, s
 	#endif
 
 	#ifdef SWMEM
-		void* dummy_data = malloc(byteSize*dims*n);
-		memcpy(dummy_data,data,byteSize*dims*n);
+		void* dummy_data = malloc(byteSize*ndims*n);
+		memcpy(dummy_data,data,byteSize*ndims*n);
 		data = dummy_data;
 	#endif
 
