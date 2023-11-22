@@ -2006,6 +2006,12 @@ Datapoint_info* NgbhSearch_kdtree_V2(FLOAT_TYPE* data, size_t n, size_t ndims, s
 		clock_gettime(CLOCK_MONOTONIC, &start);
 	#endif
 
+	#ifdef SWMEM
+		void* dummy_data = malloc(byteSize*dims*n);
+		memcpy(dummy_data,data,byteSize*dims*n);
+		data = dummy_data;
+	#endif
+
     kdNodeV2* kdNode_array = (kdNodeV2*)malloc(n*sizeof(kdNodeV2));
 
     initializeKDnodesV2(kdNode_array,data,n);
@@ -2032,6 +2038,10 @@ Datapoint_info* NgbhSearch_kdtree_V2(FLOAT_TYPE* data, size_t n, size_t ndims, s
 	//for(int i = 0; i < n; ++i) lvls[kd_ptrs[i]->level]++;
 	//for(int i = 0; i < 25; ++i) printf("lvl %d counts %d\n", i, lvls[i]);
 	KNN_search_kdTreeV2(points,kdNode_array,root,n,k);
+
+	#ifdef SWMEM
+		free(data);
+	#endif
 	
 	for(idx_t i = 0; i < n; ++i) if(kdNode_array[i].nodeList.data) free(kdNode_array[i].nodeList.data);
 	free(kdNode_array);

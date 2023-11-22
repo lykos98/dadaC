@@ -54,9 +54,15 @@ void swap_kdNodeV2(kdNodeV2 *x, kdNodeV2 *y) {
     tmp = *x;
     *x = *y;
     *y = tmp;
-    //memcpy(&tmp,  x, sizeof(tmp));
-    //memcpy(x, y, sizeof(tmp));
-    //memcpy(y, &tmp,  sizeof(tmp));
+
+	#ifdef SWMEM
+		memcpy(&tmp,  x, sizeof(tmp));
+		memcpy(x, y, sizeof(tmp));
+		memcpy(y, &tmp,  sizeof(tmp));
+		void* tmpPtr = x -> data;
+		x -> data = y -> data;
+		y -> data = tmpPtr;
+	#endif
 }
 
 
@@ -172,6 +178,7 @@ kdNodeV2* make_tree_kdNodeV2(kdNodeV2* t, int start, int end, kdNodeV2* parent, 
     kdNodeV2 *n = NULL;
     int split_var = level % data_dims; 
 	
+	
 	/*
 	if(end - start < DEFAULT_LEAF_SIZE)
 	{
@@ -195,11 +202,12 @@ kdNodeV2* make_tree_kdNodeV2(kdNodeV2* t, int start, int end, kdNodeV2* parent, 
 		
 	}
 	*/
+	
 
 
     int median_idx = -1;
 	
-    //if ((end - start) < 0) return 0;
+    if ((end - start) < 0) return 0;
     if (end  == start) {
         n = t + start;
         n -> split_var = split_var;
@@ -251,7 +259,7 @@ void KNN_sub_tree_search_kdTreeV2(FLOAT_TYPE* point, kdNodeV2* root, Heap * H)
 	{
 		for(size_t i = 0; i < root -> nodeList.count; ++i)
 		{
-			__builtin_prefetch(root -> nodeList.data + 1, 0, 0);
+			//__builtin_prefetch(root -> nodeList.data + 1, 0, 0);
 			kdNodeV2* n = root -> nodeList.data[i];
 			float_t distance = eud_kdTreeV2(point, n -> data);
 			insertMaxHeap(H, distance,n -> array_idx);
