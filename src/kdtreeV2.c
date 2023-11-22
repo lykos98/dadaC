@@ -48,6 +48,7 @@ FLOAT_TYPE eud_kdTreeV2_2(FLOAT_TYPE* restrict u, FLOAT_TYPE* restrict v)
     return s;
 }
 
+void* swapMem_kdv2;
 
 void swap_kdNodeV2(kdNodeV2 *x, kdNodeV2 *y) {
     kdNodeV2 tmp;
@@ -56,9 +57,9 @@ void swap_kdNodeV2(kdNodeV2 *x, kdNodeV2 *y) {
     *y = tmp;
 
 	#ifdef SWMEM
-		memcpy(&tmp,  x, sizeof(tmp));
-		memcpy(x, y, sizeof(tmp));
-		memcpy(y, &tmp,  sizeof(tmp));
+		memcpy(swapMem_kdv2, x -> data, sizeof(FLOAT_TYPE)*data_dims);
+		memcpy(x -> data, y -> data, sizeof(FLOAT_TYPE)*data_dims);
+		memcpy(y -> data, swapMem_kdv2, sizeof(FLOAT_TYPE)*data_dims);
 		void* tmpPtr = x -> data;
 		x -> data = y -> data;
 		y -> data = tmpPtr;
@@ -178,6 +179,11 @@ kdNodeV2* make_tree_kdNodeV2(kdNodeV2* t, int start, int end, kdNodeV2* parent, 
     kdNodeV2 *n = NULL;
     int split_var = level % data_dims; 
 	
+		
+	if(parent == NULL)
+	{
+		swapMem_kdv2 = malloc(sizeof(FLOAT_TYPE)*data_dims);
+	}
 	
 	/*
 	if(end - start < DEFAULT_LEAF_SIZE)
@@ -240,6 +246,12 @@ kdNodeV2* make_tree_kdNodeV2(kdNodeV2* t, int start, int end, kdNodeV2* parent, 
         n->parent = parent;
         n->level = level;
     }
+
+	if(parent == NULL)
+	{
+		swapMem_kdv2 = malloc(sizeof(FLOAT_TYPE)*data_dims);
+	}
+
     return n;
 }
 
