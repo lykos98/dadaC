@@ -32,10 +32,10 @@ struct kdTreeNodeV2List
 
 struct kdNodeV2
 {   
+   FLOAT_TYPE * data;
    int level;
    int split_var;
    int isLeaf;
-   FLOAT_TYPE * data;
    idx_t array_idx;
    struct kdNodeV2* parent;
    struct kdNodeV2* lch;
