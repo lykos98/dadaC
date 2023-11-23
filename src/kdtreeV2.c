@@ -48,7 +48,7 @@ FLOAT_TYPE eud_kdTreeV2_2(FLOAT_TYPE* restrict u, FLOAT_TYPE* restrict v)
     return s;
 }
 
-void* swapMem_kdv2;
+FLOAT_TYPE* swapMem_kdv2;
 
 void swap_kdNodeV2(kdNodeV2 *x, kdNodeV2 *y) {
     kdNodeV2 tmp;
@@ -60,7 +60,7 @@ void swap_kdNodeV2(kdNodeV2 *x, kdNodeV2 *y) {
 		memcpy(swapMem_kdv2, x -> data, sizeof(FLOAT_TYPE)*data_dims);
 		memcpy(x -> data, y -> data, sizeof(FLOAT_TYPE)*data_dims);
 		memcpy(y -> data, swapMem_kdv2, sizeof(FLOAT_TYPE)*data_dims);
-		void* tmpPtr = x -> data;
+		FLOAT_TYPE* tmpPtr = x -> data;
 		x -> data = y -> data;
 		y -> data = tmpPtr;
 	#endif
@@ -182,7 +182,7 @@ kdNodeV2* make_tree_kdNodeV2(kdNodeV2* t, int start, int end, kdNodeV2* parent, 
 		
 	if(parent == NULL)
 	{
-		swapMem_kdv2 = malloc(sizeof(FLOAT_TYPE)*data_dims);
+		swapMem_kdv2 = (FLOAT_TYPE*)malloc(sizeof(FLOAT_TYPE)*data_dims);
 	}
 	
 	/*
@@ -230,18 +230,10 @@ kdNodeV2* make_tree_kdNodeV2(kdNodeV2* t, int start, int end, kdNodeV2* parent, 
 		swap_kdNodeV2(t + start, t + median_idx);
         //n = t + median_idx;
         n = t + start;
-		#pragma omp parallel
-		{
-			#pragma omp single
-			{
-				#pragma omp task shared(n)
 				//n->lch  = make_tree_kdNodeV2(t, start, median_idx - 1, n, level + 1);
 				n->lch  = make_tree_kdNodeV2(t, start + 1, median_idx, n, level + 1);
-				#pragma omp task shared(n)
 				//n->rch = make_tree_kdNodeV2(t, median_idx + 1, end, n, level + 1);
 				n->rch = make_tree_kdNodeV2(t, median_idx + 1, end, n, level + 1);
-			}
-		}
         n -> split_var = split_var;
         n->parent = parent;
         n->level = level;
