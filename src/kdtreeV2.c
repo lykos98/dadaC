@@ -263,8 +263,8 @@ void KNN_sub_tree_search_kdTreeV2(FLOAT_TYPE* point, kdNodeV2* root, Heap * H)
 	{
 		for(size_t i = 0; i < root -> nodeList.count; ++i)
 		{
-			__builtin_prefetch(root -> nodeList.data + i + 1, 0, 2);
 			kdNodeV2* n = root -> nodeList.data[i];
+			__builtin_prefetch(root -> nodeList.data + i + 1, 0, 3);
 			FLOAT_TYPE distance = eud_kdTreeV2(point, n -> data);
 			insertMaxHeap(H, distance,n -> array_idx);
 		}
