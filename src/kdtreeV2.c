@@ -185,7 +185,7 @@ kdNodeV2* make_tree_kdNodeV2(kdNodeV2* t, int start, int end, kdNodeV2* parent, 
 		swapMem_kdv2 = (FLOAT_TYPE*)malloc(sizeof(FLOAT_TYPE)*data_dims);
 	}
 	
-	/*
+	
 	if(end - start < DEFAULT_LEAF_SIZE)
 	{
 		n =  t + start;
@@ -207,7 +207,7 @@ kdNodeV2* make_tree_kdNodeV2(kdNodeV2* t, int start, int end, kdNodeV2* parent, 
 		return n;
 		
 	}
-	*/
+	
 	
 
 
@@ -263,9 +263,9 @@ void KNN_sub_tree_search_kdTreeV2(FLOAT_TYPE* point, kdNodeV2* root, Heap * H)
 	{
 		for(size_t i = 0; i < root -> nodeList.count; ++i)
 		{
-			//__builtin_prefetch(root -> nodeList.data + 1, 0, 0);
+			__builtin_prefetch(root -> nodeList.data + i + 1, 0, 2);
 			kdNodeV2* n = root -> nodeList.data[i];
-			float_t distance = eud_kdTreeV2(point, n -> data);
+			FLOAT_TYPE distance = eud_kdTreeV2(point, n -> data);
 			insertMaxHeap(H, distance,n -> array_idx);
 		}
 		return;
