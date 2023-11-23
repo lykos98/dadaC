@@ -1954,7 +1954,7 @@ Datapoint_info* NgbhSearch_kdtree(FLOAT_TYPE* data, size_t n, size_t ndims, size
 	data_dims = (unsigned int)ndims;
 
 	#ifdef VERBOSE
-		printf("Building the KDtree:\n");
+		printf("Building the KDtree v1:\n");
 		clock_gettime(CLOCK_MONOTONIC, &start);
 	#endif
 
@@ -2002,7 +2002,7 @@ Datapoint_info* NgbhSearch_kdtree_V2(FLOAT_TYPE* data, size_t n, size_t ndims, s
 	data_dims = (unsigned int)ndims;
 
 	#ifdef VERBOSE
-		printf("Building the KDtree:\n");
+		printf("Building the KDtree v2:\n");
 		clock_gettime(CLOCK_MONOTONIC, &start);
 	#endif
 
@@ -2147,7 +2147,7 @@ Datapoint_info* NgbhSearch_vptree(void* data, size_t n, size_t byteSize, size_t 
 	
 	#ifdef VERBOSE
 		clock_gettime(CLOCK_MONOTONIC, &start);
-		printf("Building the vp tree\n");
+		printf("Building the vp tree v1\n");
 	#endif
 
 	vpTreeNode* vpNodeArray = (vpTreeNode*)malloc(n*sizeof(vpTreeNode));
@@ -2243,7 +2243,7 @@ Datapoint_info* NgbhSearch_vptree_V2(void* data, size_t n, size_t byteSize, size
 	
 	#ifdef VERBOSE
 		clock_gettime(CLOCK_MONOTONIC, &start);
-		printf("Building the vp tree\n");
+		printf("Building the vp tree v2\n");
 	#endif
 
 	#ifdef SWMEM
