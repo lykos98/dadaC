@@ -88,9 +88,8 @@ void initializeKDnodesV2(kdNodeV2* node_array, FLOAT_TYPE* d, idx_t n )
         node_array[i].split_var = -1;
 		node_array[i].nodeList.data = NULL;
 		node_array[i].nodeList.count = 0;
-
     }
-}
+} 
 /*
 void initializePTRS(kdNodeV2** node_ptr_array, kdNodeV2* node_array, idx_t n )
 {
@@ -164,6 +163,7 @@ int medianOfNodes_kdNodeV2(kdNodeV2* a, int left, int right, int split_var)
         // If there are more than k-1 elements on
         // left of pivot, then k-th smallest must be
         // on left side.
+
         else if (pivotIndex > k)
             right = pivotIndex - 1;
  
