@@ -179,11 +179,12 @@ kdNodeV2* make_tree_kdNodeV2(kdNodeV2* t, int start, int end, kdNodeV2* parent, 
     kdNodeV2 *n = NULL;
     int split_var = level % data_dims; 
 	
-		
-	if(parent == NULL)
-	{
-		swapMem_kdv2 = (FLOAT_TYPE*)malloc(sizeof(FLOAT_TYPE)*data_dims);
-	}
+	#ifdef SWMEM	
+		if(parent == NULL)
+		{
+			swapMem_kdv2 = (FLOAT_TYPE*)malloc(sizeof(FLOAT_TYPE)*data_dims);
+		}
+	#endif
 	
 	
 	if(end - start < DEFAULT_LEAF_SIZE)
@@ -213,16 +214,16 @@ kdNodeV2* make_tree_kdNodeV2(kdNodeV2* t, int start, int end, kdNodeV2* parent, 
 
     int median_idx = -1;
 	
-    if ((end - start) < 0) return 0;
-    if (end  == start) {
-        n = t + start;
-        n -> split_var = split_var;
-        n->parent = parent;
-        n->level = level;
-        n -> lch = NULL;
-        n -> rch = NULL;
-        return n;
-    }
+    //if ((end - start) < 0) return 0;
+    //if (end  == start) {
+    //    n = t + start;
+    //    n -> split_var = split_var;
+    //    n->parent = parent;
+    //    n->level = level;
+    //    n -> lch = NULL;
+    //    n -> rch = NULL;
+    //    return n;
+    //}
 
     median_idx = medianOfNodes_kdNodeV2(t, start, end, split_var);
     //printf("%d median idx\n", median_idx);
@@ -238,11 +239,13 @@ kdNodeV2* make_tree_kdNodeV2(kdNodeV2* t, int start, int end, kdNodeV2* parent, 
         n->parent = parent;
         n->level = level;
     }
-
-	if(parent == NULL)
-	{
-		swapMem_kdv2 = malloc(sizeof(FLOAT_TYPE)*data_dims);
-	}
+	
+	#ifdef SWMEM
+		if(parent == NULL)
+		{
+			swapMem_kdv2 = malloc(sizeof(FLOAT_TYPE)*data_dims);
+		}
+	#endif
 
     return n;
 }

@@ -63,7 +63,7 @@ void initialize_vpTreeNode_array_V2(vpTreeNodeV2* nodeArray, void* data, idx_t n
         nodeArray[i].mu = 0;
         nodeArray[i].__dist = 0;
         nodeArray[i].isLeaf = 0;
-        //nodeArray[i].nodeList.data = NULL;
+        nodeArray[i].nodeList.data = NULL;
         nodeArray[i].nodeList.count = 0;
 		nodeArray[i].__bytesize = bytesPerElement;
 		
@@ -139,11 +139,12 @@ int median_of_vpTreeNodes_V2(vpTreeNodeV2* a, int left, int right)
 
 vpTreeNodeV2* build_vpTree_V2(vpTreeNodeV2* t, int start, int end, vpTreeNodeV2* parent, float_t (*metric)(void*, void*))
 {
-
-	if(parent == NULL)
-	{
-		swapMem = malloc((t + start) ->__bytesize);
-	}
+	#ifdef SWMEM
+		if(parent == NULL)
+		{
+			swapMem = malloc((t + start) ->__bytesize);
+		}
+	#endif
 
     vpTreeNodeV2 *n = NULL;
     //printf("%d \n",level);
@@ -220,11 +221,13 @@ vpTreeNodeV2* build_vpTree_V2(vpTreeNodeV2* t, int start, int end, vpTreeNodeV2*
 
         n->parent = parent;
     }
-	
+
+	#ifdef SWMEM
 	if(parent == NULL)
 	{
 		free(swapMem);
 	}
+	#endif
 
 
     return n;
@@ -253,7 +256,7 @@ void KNN_sub_vpTree_search_V2(void* point, vpTreeNodeV2* root, Heap * H, float_t
 		{
 			for(size_t i = 0; i < root -> nodeList.count; ++i)
 			{
-				__builtin_prefetch(root -> nodeList.data + i + 1, 0, 0);
+				__builtin_prefetch(root -> nodeList.data + i + 1, 0, 3);
 				vpTreeNodeV2* n = root -> nodeList.data[i];
 				float_t distance = metric(point, n -> data);
 				insertMaxHeap(H, distance,n -> array_idx);

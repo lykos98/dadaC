@@ -156,7 +156,7 @@ struct Options Parser(int argc, char** argv)
 float_t* generateRandomMatrix(idx_t ncols,idx_t nrows)
 {
 	float_t* mat = (float_t*)malloc(sizeof(float_t)*ncols*nrows);
-	for(idx_t i = 0; i < nrows*ncols; ++i) mat[i] = ((float_t)rand())/((float_t)RAND_MAX);
+	for(idx_t i = 0; i < nrows*ncols; ++i) mat[i] = ((float_t)rand())/((float_t)RAND_MAX)*255.;
 	return mat;
 }
 
@@ -177,8 +177,8 @@ int main(){
 	uint32_t data_dims, k;
 
 	//n = 35947;
-	n = 1000000;
-	data_dims = 3;
+	n = 10000;
+	data_dims = 784;
 	k = 100;
 	//FILE* f = fopen("Bunny.txt","r");
 	//data = (float_t*)malloc(n*data_dims*sizeof(float_t));

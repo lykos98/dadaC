@@ -242,8 +242,8 @@ int main(int argc, char** argv){
 		free(df);
 	}
 
-	//Datapoint_info* particles = NgbhSearch_kdtree(data, n, opt.data_dims, opt.k); 
-	Datapoint_info* particles = NgbhSearch_vptree(data, n,sizeof(FLOAT_TYPE), opt.data_dims, opt.k, eudOpt); 
+	//Datapoint_info* particles = NgbhSearch_kdtree_V2(data, n, opt.data_dims, opt.k); 
+	Datapoint_info* particles = NgbhSearch_vptree_V2(data, n,sizeof(FLOAT_TYPE), opt.data_dims, opt.k, eud); 
     /********************************
      * Intrinsic Dimension estimate *
      ********************************/

@@ -15,6 +15,7 @@
 	#define SWMEM
 #endif
 
+
 unsigned int data_dims;
 idx_t Npart;
 const border_t border_null = {.density = -1.0, .error = 0, .idx = NOBORDER};
@@ -2143,7 +2144,7 @@ Datapoint_info* NgbhSearch_vptree(void* data, size_t n, size_t byteSize, size_t 
 
     struct timespec start, finish;
     double elapsed;
-	METRICS_DATADIMS = dims;
+	METRICS_DATADIMS = (uint32_t)dims;
 	
 	#ifdef VERBOSE
 		clock_gettime(CLOCK_MONOTONIC, &start);
@@ -2239,7 +2240,7 @@ Datapoint_info* NgbhSearch_vptree_V2(void* data, size_t n, size_t byteSize, size
 
     struct timespec start, finish;
     double elapsed;
-	METRICS_DATADIMS = dims;
+	METRICS_DATADIMS = (uint32_t)dims;
 	
 	#ifdef VERBOSE
 		clock_gettime(CLOCK_MONOTONIC, &start);
