@@ -78,3 +78,7 @@ void setRootMaxHeap(Heap * H, FLOAT_TYPE val, idx_t array_idx);
 void insertMaxHeap(Heap * H, FLOAT_TYPE val, idx_t array_idx);
 
 void HeapSort(Heap* H);
+void insertMaxHeap_InsertionSort(Heap * H,const FLOAT_TYPE val,const idx_t array_idx);
+
+
+int cmpHeapNodes(const void* a, const void* b);

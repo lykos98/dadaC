@@ -18,6 +18,20 @@ float_t eud(void* a, void* b)
 	//return acc; 
 }
 
+float_t eud_sq(void* a, void* b)
+{
+	float_t* aa = (float_t*)a;
+	float_t* bb = (float_t*)b;
+	float_t acc = 0;
+	for(uint32_t i=0; i < METRICS_DATADIMS; ++i) 
+	{
+		float_t dd = (aa[i] - bb[i]);
+		acc += dd*dd;
+	}
+	return acc; 
+	//return acc; 
+}
+
 float_t eudOpt(void* uvoid, void* vvoid)
 {
     float_t s;

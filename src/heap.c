@@ -2,6 +2,14 @@
 #include <stdint.h>
 #include <time.h>
 
+void swapHeapNode(heap_node* a, heap_node* b){
+    heap_node tmp;
+    memcpy(&tmp,a,sizeof(heap_node));
+    memcpy(a,b,sizeof(heap_node));
+    memcpy(b,&tmp,sizeof(heap_node));
+    return;
+}
+
 void allocateSimpleHeap(SimpleHeap* H, idx_t n){
     H -> data = (T*)malloc(n*sizeof(T));
     H -> N = n;
@@ -108,6 +116,50 @@ void setRootMaxHeap(Heap * H, FLOAT_TYPE val, idx_t array_idx){
     H -> data[0].array_idx = array_idx;
     heapifyMaxHeap(H,0);
     return;
+}
+
+void insertMaxHeap_InsertionSort(Heap * H,const FLOAT_TYPE val,const idx_t array_idx){
+	heap_node tmpNode = {.value = val, .array_idx = array_idx};
+	if(H -> count < H -> N)
+	{
+		idx_t idx = H -> count;
+		H -> data[idx] = tmpNode;
+		++(H -> count);
+		while(idx >= 1)
+		{
+			if(H -> data[idx].value < H -> data[idx - 1].value)
+			{
+				swapHeapNode((H -> data) + idx, (H -> data) + idx - 1);
+				idx--;
+			}
+			else
+			{
+				break;
+			}
+		}
+
+	}
+	else
+	{
+		if(H -> data[H -> count - 1].value > val)
+		{
+			idx_t idx = H -> count - 1;
+			H -> data[idx] = tmpNode;
+			while(idx >= 1)
+			{
+				if(H -> data[idx].value < H -> data[idx - 1].value)
+				{
+					swapHeapNode(H -> data + idx, H -> data + idx - 1);
+					idx--;
+				}
+				else
+				{
+					break;
+				}
+			}
+		}
+	}
+	return;
 }
 
 void insertMaxHeap(Heap * H,const FLOAT_TYPE val,const idx_t array_idx){

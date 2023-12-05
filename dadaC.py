@@ -107,11 +107,12 @@ class Data():
                     }
         if self.__useFloat32:
             self.data = data.astype(np.float32)
+            self.data = np.ascontiguousarray(self.data, dtype = np.float32)
             ctFloatType = ct.c_float
         else:
             #self.data = np.ascontiguousarray(data, dtype =np.float64)
-            self.data = np.ascontiguousarray(data, dtype =np.float64)
             self.data = data.astype(np.float64)
+            self.data = np.ascontiguousarray(self.data, dtype = np.float64)
 
         if self.__useInt32:
             ctIdxType = ct.c_uint32
@@ -130,6 +131,14 @@ class Data():
         self.__NgbhSearch_vptree.argtypes = [ct.c_void_p, ct.c_uint64, ct.c_uint64, ct.c_uint64, ct.c_uint64, ct.c_void_p ]
         self.__NgbhSearch_vptree.restype  = ct.POINTER(DatapointInfo)
         self.__eud = self.lib.eud
+
+        self.__NgbhSearch_bruteforce = self.lib.NgbhSearch_bruteforce
+        #actually do not define anything and hope for the best
+        #function pointers are not documented
+        #METRIC = ct.CFUNCTYPE(x) 
+        self.__NgbhSearch_bruteforce.argtypes = [ct.c_void_p, ct.c_uint64, ct.c_uint64, ct.c_uint64, ct.c_uint64, ct.c_void_p ]
+        self.__NgbhSearch_bruteforce.restype  = ct.POINTER(DatapointInfo)
+        self.__eud_sq = self.lib.eud_sq
 
         #void setRhoErrK(Datapoint_info* points, FLOAT_TYPE* rho, FLOAT_TYPE* rhoErr, idx_t* k, size_t n)
         self.__setRhoErrK = self.lib.setRhoErrK
@@ -234,6 +243,35 @@ class Data():
         self.state["ngbh"] = True
         self.neighbors = None
 
+    def computeNeighbors_bruteforce(self, k : int, alg="kd"):
+        
+        """Compute the k nearest neighbors of each point
+
+        Args:
+            k (int): Number of neighbors to compute for each point 
+            alg (str): default "kd" for kdtree else choose "vp" for vptree
+        """
+        self.k = k
+        #Datapoint_info* NgbhSearch_vpTree(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *));
+        self.__datapoints = self.__NgbhSearch_bruteforce(self.data.ctypes.data, self.n, self.data.itemsize, self.dims, self.k, self.__eud_sq)
+        self.state["ngbh"] = True
+        self.neighbors = None
+
+    def computeNeighbors(self,k : int, alg = "auto"):
+        if alg == "auto" and (self.data.shape[1] > 15 or k > self.data.shape[0]//2):
+            alg = "bf"
+        else:
+            alg = "kd"
+
+        if alg == "kd":
+            self.computeNeighbors_kdtree(k)
+            return
+        if alg == "vp":
+            self.computeNeighbors_vptree(k)
+            return
+        if alg == "bf":
+            self.computeNeighbors_bruteforce(k)
+            return
     def computeIDtwoNN(self):
 
         """ Compute the intrinsic dimension of the dataset via the TWO Nearest Neighbors method.
@@ -341,6 +379,23 @@ class Data():
         else:
             return self.density
 
+    def getKstar(self) -> list:
+
+        """Retrieve list of density values
+
+        Raises:
+            ValueError: Raise error if density is not computed, use `Data.computeDensity()` 
+
+        Returns:
+            List of density values
+            
+        """
+        if self.state["density"]:
+            self.kstar = np.array([int(self.__datapoints[j].kstar) for j in range(self.n)])
+            return self.kstar
+        else:
+            raise ValueError("Density is not computed yet")
+
     def getDensityError(self):
         """Retrieve list of density error values
 
@@ -353,7 +408,7 @@ class Data():
         """
         if self.densityError is None:
             if self.state["density"]:
-                self.densityError = np.array([float(self.__datapoints[j].log_rho_err) for j in range(self.n)])
+                self.densityError = np.array([self.__datapoints[j].log_rho_err for j in range(self.n)], dtype=np.float64)
                 return self.densityError
             else:
                 raise ValueError("Density Error is not computed yet")

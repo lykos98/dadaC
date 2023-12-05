@@ -1,5 +1,5 @@
 LIBRARIES=-lm -fopenmp 
-OPTIM=-DSWMEM -DPROGRESS_BAR -O3 -march=native  -Wall -Wextra -mavx2 -funroll-loops -ffast-math -fprefetch-loop-arrays  
+OPTIM=-DPROGRESS_BAR -O3 -march=native -Wall -Wextra  
 DEBUG=-ggdb
 SRC="src"
 VERBOSE=-DVERBOSE

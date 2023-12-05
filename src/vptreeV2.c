@@ -8,7 +8,7 @@
 #include <stdint.h>
 #include  "../include/vptreeV2.h"
 
-#define DEFAULT_LEAF_SIZE 10
+#define DEFAULT_LEAF_SIZE 30 
 
 #ifdef VOPT
 	#define SWMEM

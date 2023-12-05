@@ -55,13 +55,6 @@ FLOAT_TYPE euclidean_distance2(FLOAT_TYPE* restrict u, FLOAT_TYPE* restrict v)
     return s;
 }
 
-void swapHeapNode(heap_node* a, heap_node* b){
-    heap_node tmp;
-    memcpy(&tmp,a,sizeof(heap_node));
-    memcpy(a,b,sizeof(heap_node));
-    memcpy(b,&tmp,sizeof(heap_node));
-    return;
-}
 
 void swap_kd_node_ptrs(kd_node **x, kd_node **y) {
     kd_node* tmp;

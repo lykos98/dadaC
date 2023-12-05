@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <time.h>
 
-#define DEFAULT_LEAF_SIZE 10 
+#define DEFAULT_LEAF_SIZE 30 
 
 
 extern unsigned int data_dims;
@@ -178,6 +178,22 @@ kdNodeV2* make_tree_kdNodeV2(kdNodeV2* t, int start, int end, kdNodeV2* parent, 
 {
     kdNodeV2 *n = NULL;
     int split_var = level % data_dims; 
+	FLOAT_TYPE max_diff = -999999.;
+	for(unsigned int v = 0; v < data_dims; ++v)
+	{
+		FLOAT_TYPE max_v = -9999999.;
+		FLOAT_TYPE min_v = 9999999.;
+		for(int i = start; i <= end; ++i)
+		{
+			max_v = t[i].data[v] > max_v ? t[i].data[v] : max_v;
+			min_v = t[i].data[v] < min_v ? t[i].data[v] : min_v;
+		}
+		if((max_v - min_v) > max_diff)
+		{
+			max_diff = max_v - min_v;
+			split_var = v;
+		}
+	}
 	
 	#ifdef SWMEM	
 		if(parent == NULL)
@@ -185,6 +201,7 @@ kdNodeV2* make_tree_kdNodeV2(kdNodeV2* t, int start, int end, kdNodeV2* parent, 
 			swapMem_kdv2 = (FLOAT_TYPE*)malloc(sizeof(FLOAT_TYPE)*data_dims);
 		}
 	#endif
+	
 	
 	
 	if(end - start < DEFAULT_LEAF_SIZE)

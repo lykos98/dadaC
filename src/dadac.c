@@ -275,7 +275,7 @@ void KNN_search_kdTreeV2(Datapoint_info * dpInfo,kdNodeV2* kdNodeArray, kdNodeV2
     #pragma omp parallel
     {
 
-	    #pragma omp for //schedule(dynamic)
+	    #pragma omp for schedule(dynamic)
 	    for(int p = 0; p < n; ++p)
 	    {
 			idx_t idx = kdNodeArray[p].array_idx;
@@ -573,6 +573,7 @@ void computeRho(Datapoint_info* dpInfo, const FLOAT_TYPE d, const idx_t points){
         if(j == kMAX)
         {
             k = j - 1;
+            vvi = omega * pow(dpInfo[i].ngbh.data[k].value,d/2.);
         }
         else
         {
@@ -1563,15 +1564,15 @@ void Heuristic3_sparse(Clusters* cluster, Datapoint_info* dpInfo, FLOAT_TYPE Z, 
 		    #pragma omp for
 		    for(idx_t c = 0; c < final_cluster_count; ++c)
 		    {
-			FLOAT_TYPE max_border_den = -2.;
-			for(idx_t el = 0; el < cluster -> SparseBorders[c].count; ++el)
-			{
-			    SparseBorder_t b = cluster -> SparseBorders[c].data[el];
-			    if(b.density > max_border_den)
-			    {
-				max_border_den = b.density;
-			    }
-			}
+				FLOAT_TYPE max_border_den = -2.;
+				for(idx_t el = 0; el < cluster -> SparseBorders[c].count; ++el)
+				{
+					SparseBorder_t b = cluster -> SparseBorders[c].data[el];
+					if(b.density > max_border_den)
+					{
+						max_border_den = b.density;
+					}
+				}
 			max_border_den_array[c] = max_border_den;
 		    }
 
@@ -1580,9 +1581,10 @@ void Heuristic3_sparse(Clusters* cluster, Datapoint_info* dpInfo, FLOAT_TYPE Z, 
 		    #pragma omp for
 		    for(idx_t i = 0; i < cluster -> n; ++i)
 		    {
-			int cidx = dpInfo[i].cluster_idx;
-			int halo_flag = dpInfo[i].log_rho_c < max_border_den_array[cidx]; 
-			dpInfo[i].cluster_idx = halo_flag ? -1 : cidx;
+				int cidx = dpInfo[i].cluster_idx;
+				int halo_flag = dpInfo[i].log_rho_c < max_border_den_array[cidx]; 
+				//int halo_flag = max_border_den_array[cidx] > dpInfo[i].log_rho_c  ; 
+				dpInfo[i].cluster_idx = halo_flag ? -1 : cidx;
 		    }
 		}
 		free(max_border_den_array);
@@ -1886,9 +1888,11 @@ void Heuristic3_dense(Clusters* cluster, Datapoint_info* dpInfo, FLOAT_TYPE Z, i
 		    #pragma omp for
 		    for(idx_t i = 0; i < cluster -> n; ++i)
 		    {
-			int cidx = dpInfo[i].cluster_idx;
-			int halo_flag = dpInfo[i].log_rho_c < max_border_den_array[cidx]; 
-			dpInfo[i].cluster_idx = halo_flag ? -1 : cidx;
+				int cidx = dpInfo[i].cluster_idx;
+				int halo_flag = dpInfo[i].log_rho_c < max_border_den_array[cidx];  
+				//int halo_flag =  (max_border_den_array[cidx] > dpInfo[i].log_rho_c) - (max_border_den_array[cidx] < dpInfo[i].log_rho_c); 
+				//halo_flag = halo_flag > 0;
+				dpInfo[i].cluster_idx = halo_flag ? -1 : cidx;
 		    }
 		}
 		free(max_border_den_array);
@@ -1944,6 +1948,145 @@ void computeLevel(kd_node* root, idx_t prev_lvl)
 	if(root -> lch) computeLevel(root -> lch, curr_lvl);
 	if(root -> rch) computeLevel(root -> rch, curr_lvl);
 	return;
+}
+
+Heap KNN_bruteforce(void* point, void* data, size_t n, idx_t elementSize, idx_t k, float_t (*metric)(void*, void*))
+{
+    Heap H;
+    allocateHeap(&H,k);
+    initHeap(&H);
+	for(idx_t j = 0; j < n; ++j)
+	{
+		float_t distance = metric(point, data + elementSize*j);
+		insertMaxHeap_InsertionSort(&H, distance, j);
+		//insertMaxHeap(&H, distance, j);
+	}
+	//HeapSort(&H);
+	//for(size_t i = 0; i < H.count; ++i) H.data[i].value = H.data[i].value*H.data[i].value;
+    return H;
+}
+
+int partition_heapNode(heap_node *array, int left, int right, int pivotIndex) {
+    int pivotValue = array[pivotIndex].value;
+    int storeIndex = left;
+    int i;
+    /* Move pivot to end */
+    swapHeapNode(array + pivotIndex, array + right);
+    for(i=left; i < right; i = i + 1 ){
+        if(array[i].value < pivotValue){
+    		swapHeapNode(array + storeIndex, array + i);
+            storeIndex += 1;
+        }
+    }
+    /* Move pivot to its final place */
+    swapHeapNode(array + storeIndex, array + right);
+
+    return storeIndex;
+}
+
+int qselect_heapNode(heap_node *array, int left, int right, int n) {
+    int pivotIndex;
+    if(left == right){
+        return left;
+    }
+    pivotIndex = left + (rand() % (right-left+1)); /* random int left <= x <= right */
+    pivotIndex = partition_heapNode(array, left, right, pivotIndex);
+    /* The pivot is in its final sorted position */
+    if(n == pivotIndex){
+        return pivotIndex;
+    }else if(n < pivotIndex){
+        return qselect_heapNode(array, left, pivotIndex-1, n);
+    }else{
+        return qselect_heapNode(array, pivotIndex+1, right, n);
+    }
+}
+
+int quickselect_heapNode(heap_node *array, int array_size, int k){
+    return qselect_heapNode(array, 0, array_size-1, k-1);
+}
+
+Datapoint_info* NgbhSearch_bruteforce(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *))
+{
+    struct timespec start, finish;
+    double elapsed;
+
+	METRICS_DATADIMS = dims;
+
+	#ifdef VERBOSE
+		printf("Brute-forcing kNN computation:\n");
+		clock_gettime(CLOCK_MONOTONIC, &start);
+	#endif
+    Datapoint_info* points = (Datapoint_info*)malloc(n*sizeof(Datapoint_info));
+
+    struct timespec start_tot, finish_tot;
+    double elapsed_tot;
+    printf("KNN search:\n");
+    clock_gettime(CLOCK_MONOTONIC, &start_tot);
+	
+	#ifdef PROGRESS_BAR
+		idx_t progress_count = 0;
+		idx_t step = n/100;
+		printf("Progress 0/%lu -> 0%%\r",(uint64_t)n);
+		fflush(stdout);
+	#endif
+
+    #pragma omp parallel
+    {
+
+		heap_node* pvt_working_mem = (heap_node*)malloc(sizeof(heap_node)*n);
+
+	    #pragma omp for 
+	    for(idx_t p = 0; p < n; ++p)
+	    {
+
+			//points[p].ngbh = KNN_bruteforce(data + p*dims*byteSize, data,  n, byteSize*dims, k, metric);
+			Heap H;
+			allocateHeap(&H, k);
+			initHeap(&H);
+			for(idx_t j = 0; j < n; ++j)
+			{
+				pvt_working_mem[j].value = metric(data + p*dims*byteSize, data + j*dims*byteSize);
+				pvt_working_mem[j].array_idx = j; 
+			}
+
+			int median_idx = quickselect_heapNode(pvt_working_mem, n,  k + 1);
+			qsort(pvt_working_mem, k, sizeof(heap_node), cmpHeapNodes);
+			memcpy(H.data, pvt_working_mem, k*sizeof(heap_node));
+		
+			points[p].ngbh = H;
+			points[p].array_idx = p;
+
+			#ifdef PROGRESS_BAR
+				idx_t aa;
+
+				#pragma omp atomic capture
+				aa = ++progress_count;
+
+				if(aa % step == 0 )
+				{
+					printf("Progress %lu/%lu -> %u%%\r",(uint64_t)aa, (uint64_t)n, (uint32_t)((100*aa)/n) );
+					fflush(stdout);
+				}
+			#endif
+		}
+
+		free(pvt_working_mem);
+
+    }
+
+	
+
+	#ifdef PROGRESS_BAR
+		printf("Progress %lu/%lu -> 100%%\n",(uint64_t)n, (uint64_t)n);
+	#endif
+    //printf("Progress %lu/%lu\n",(uint64_t)progress_count, (uint64_t)n);
+
+    clock_gettime(CLOCK_MONOTONIC, &finish_tot);
+    elapsed_tot = (finish_tot.tv_sec - start_tot.tv_sec);
+    elapsed_tot += (finish_tot.tv_nsec - start_tot.tv_nsec) / 1000000000.0;
+    printf("\tTotal time: %.3lfs\n\n", elapsed_tot);
+	return points;
+
 }
 
 Datapoint_info* NgbhSearch_kdtree(FLOAT_TYPE* data, size_t n, size_t ndims, size_t k)
