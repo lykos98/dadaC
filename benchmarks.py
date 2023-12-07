@@ -14,6 +14,8 @@ example_names = ["Fig1.dat", "Fig2.dat", "Fig1_mobius.dat", "FigS1.dat", "FigS2.
 dsInfo  = []
 results = [] 
 
+## -----------------------------------------
+## Change this directory to your saving path
 res_f_name = "benchmarks/res_laptop.txt"
 
 def get_example_from_drive():
