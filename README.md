@@ -102,6 +102,5 @@ MUCH MORE
 
 - Complete porting of all density estimation methods in `dadaPy` (i.e. pAK)
 - Adaptive strategies on k-NN search and density estimation
-- Add compilation targets to makefile to have different float type compilation
 
 
