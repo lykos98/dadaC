@@ -13,7 +13,48 @@ In particular dadaC implements at the moment:
 - k*-NN density estimator
 - ADP Heuristics
 
-On the same input dadaC achieves a one to one match on the results, obtaining a factor 40 speedup on the whole procedure w.r.t. Python/Cython implementation. 
+On the same input dadaC achieves a one to one match on the results, obtaining up to a factor 40 speedup on the whole procedure w.r.t. Python/Cython implementation. 
+
+## Benchmarks
+
+Validation of the procedure is done against the implementation of the original package with and without the computation of the halo. Hereafter some of the results, complete ones in the directory benchmarks.
+
+On Ryzen 7735HS (my laptop) (8 cores - 16 Threads, 16GB RAM)
+
+_from dadapy examples_ 
+
+**Fig1.dat:  N = 20.0k, D = 2**
+
+| Method   | part             | time   |
+|----------|------------------|--------|
+| py       | ngbh and density | 1.3s   |
+| py       | ADP              | 0.15s  |
+| C        | ngbh and density | 0.41s  |
+| C        | ADP              | 0.022s |
+
+_from dadapy examples_ 
+
+**Fig2.dat:  N = 38.4k, D = 2**
+
+| Method   | part             | time   |
+|----------|------------------|--------|
+| py       | ngbh and density | 2.6s   |
+| py       | ADP              | 0.96s  |
+| C        | ngbh and density | 0.74s  |
+| C        | ADP              | 0.056s |
+
+**CosmoSim (sub)Set1:   N = 100.0k,   D = 5**
+
+| Method   | part             | time     |
+|----------|------------------|----------|
+| py       | ngbh and density | 2.1e+01s |
+| py       | ADP              | 4.1s     |
+| C        | ngbh and density | 2.2s     |
+| C        | ADP              | 0.12s    |
+
+On IntelGold ... (4 sockets x 12 cores, 512GB RAM)
+
+
 
 ## Usage
 
@@ -38,7 +79,11 @@ Once parameters are set `dadaC` can be launched using:
 - `s`	     : Use sparse borders implementation, y/n [sparse/dense]
 - `t`	     : Input binary is in Float32, y/n [float/double]
 
-Relies on kd-Tree or vantage point tree alogirthms in order to perform neighborhood search. _V2_ versions are optimized ones, use them. KNN search is validated against `scipy.spatial.KDtree` query time is comparable. 
+Relies on kd-Tree or vantage point tree alogirthms in order to perform neighborhood search. _V2_ versions are optimized ones, use them. KNN search is validated against `scipy.spatial.KDtree` query time is comparable except for bruteforce search used when the dimensionality is > 15. 
+
+## Python interface
+
+dadaC comes also with a python interface build with `ctypes` which leverages the capabilities of the C-compiled library. In order to use it, build the package and then import `dadaC` module from python
 
 ## Compiling
 
@@ -48,9 +93,6 @@ Add `-DUSE_FLOAT32` or `-DUSE_INT32` to compile with support to 32bit types. By 
 Implementation with 64bit types results are binary equal w.r.t. `dadaPy`.
 
 
-## Python interface
-
-dadaC comes also with a python interface build with `ctypes` which leverages the capabilities of the C-compiled library. In order to use it, build the package and then import `dadaC` module from python
 
 **REQUIRES** Numpy package to properly work
 
@@ -59,8 +101,6 @@ dadaC comes also with a python interface build with `ctypes` which leverages the
 MUCH MORE
 
 - Complete porting of all density estimation methods in `dadaPy` (i.e. pAK)
-- Integration of C compiled code into `dadaPy` library
-- Improvement of memory imprinting for big datasets 
 - Adaptive strategies on k-NN search and density estimation
 - Add compilation targets to makefile to have different float type compilation
 

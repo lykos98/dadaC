@@ -1,5 +1,5 @@
 #*.ipynb
-results*
+*results*
 perf.data
 perf.data.old
 test.o

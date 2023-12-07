@@ -1,0 +1,42 @@
+2D Gaussian N = 600.0k D = 2
+| Method   | part             | time     |
+|----------|------------------|----------|
+| py       | ngbh and density | 4.1e+01s |
+| py       | ADP              | 4.6e+01s |
+| C        | ngbh and density | 6.9s     |
+| C        | ADP              | 1.4s     |
+5D Gaussian N = 100.0k D = 5
+| Method   | part             | time   |
+|----------|------------------|--------|
+| py       | ngbh and density | 8.7s   |
+| py       | ADP              | 0.74s  |
+| C        | ngbh and density | 1.9s   |
+| C        | ADP              | 0.13s  |
+MNIST N = 70.0k D = 784
+| Method   | part             | time     |
+|----------|------------------|----------|
+| py       | ngbh and density | 3.9e+01s |
+| py       | ADP              | 2.0s     |
+| C        | ngbh and density | 3.8e+01s |
+| C        | ADP              | 0.057s   |
+Fig1.dat N = 20.0k D = 2
+| Method   | part             | time   |
+|----------|------------------|--------|
+| py       | ngbh and density | 0.81s  |
+| py       | ADP              | 0.13s  |
+| C        | ngbh and density | 0.13s  |
+| C        | ADP              | 0.029s |
+Fig2.dat N = 38.4k D = 2
+| Method   | part             | time   |
+|----------|------------------|--------|
+| py       | ngbh and density | 1.3s   |
+| py       | ADP              | 0.95s  |
+| C        | ngbh and density | 0.25s  |
+| C        | ADP              | 0.059s |
+Astro (sub)Set 1 N = 100.0k D = 5
+| Method   | part             | time   |
+|----------|------------------|--------|
+| py       | ngbh and density | 5.7s   |
+| py       | ADP              | 4.1s   |
+| C        | ngbh and density | 1.5s   |
+| C        | ADP              | 0.11s  |

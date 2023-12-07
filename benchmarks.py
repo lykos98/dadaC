@@ -5,13 +5,16 @@ import matplotlib.pyplot as plt
 import time
 import sklearn.neighbors as NN
 
+#change this to run tests on bigger datasets
+run_big = False
+
 base_url = "https://raw.githubusercontent.com/sissa-data-science/DADApy/main/examples/datasets" 
 example_names = ["Fig1.dat", "Fig2.dat", "Fig1_mobius.dat", "FigS1.dat", "FigS2.dat", "FigS3.dat", "FigS4.dat"]
 
 dsInfo  = []
 results = [] 
 
-res_f_name = "benchmarks_results.txt"
+res_f_name = "benchmarks/res_laptop.txt"
 
 def get_example_from_drive():
     import os
@@ -36,6 +39,24 @@ def getFromUrl(base_url, ds_name, sep = " "):
 
     data = np.array(data, dtype=np.float64)
     return data
+
+def stringifyNum(n):
+    s = ""
+    nn = n
+    if n > 10**3:
+        s = "k"
+        nn = n / (10**3)
+        return f"{nn:.1f}{s}"
+
+    if n > 10**6:
+        s = "M"
+        nn = n / (10**6)
+        return f"{nn:.1f}{s}"
+
+    if n > 10**6:
+        s = "G"
+        nn = n / (10**9)
+        return f"{nn:.1f}{s}"
 ## ---------------------------------------------------------------------
 ## Benchmarks and tests dadaC vs dadapy
 ## ---------------------------------------------------------------------
@@ -44,7 +65,7 @@ def getFromUrl(base_url, ds_name, sep = " "):
 ## Gaussian mixture 2D
 ## 
 ## ---------------------------------------------------------------------
-def profileAndRun(dataset,dataset_name,k,Z,results):
+def profileAndRun(dataset,dataset_name,k,Z,results, halo = False):
     dp = dadapy.Data(dataset,verbose=True)
     dc = dadaC.Data(dataset)
 
@@ -55,7 +76,7 @@ def profileAndRun(dataset,dataset_name,k,Z,results):
 
     pres.append(["Method", "part", "time"])
     
-    dsInfo.append(f"{dataset_name} {dataset.shape[0]} points")
+    dsInfo.append(f"{dataset_name} N = {stringifyNum(dataset.shape[0])} D = {dataset.shape[1]}")
     t1 = time.monotonic()
     
     dp.compute_distances(k)
@@ -67,7 +88,7 @@ def profileAndRun(dataset,dataset_name,k,Z,results):
 
     t1 = time.monotonic()
 
-    dp.compute_clustering_ADP(Z = Z, halo = True)
+    dp.compute_clustering_ADP(Z = Z, halo = halo)
 
     t2 = time.monotonic()
     pres.append(["py", "ADP", f"{t2 - t1: .2}s"]) 
@@ -87,7 +108,7 @@ def profileAndRun(dataset,dataset_name,k,Z,results):
 
     t1 = time.monotonic()
 
-    dc.computeClusteringADP(Z = Z, halo = True)
+    dc.computeClusteringADP(Z = Z, halo = halo)
 
     t2 = time.monotonic()
     pres.append(["C", "ADP", f"{t2 - t1: .2}s"]) 
@@ -101,12 +122,7 @@ def profileAndRun(dataset,dataset_name,k,Z,results):
     print(f" --> \t Found {errors} errors! \n")
 
 
-
-disclaimer = '''
-                /!\ NOTE: time measures taken with time.monotonic() /!\ 
-             '''
-
-print(disclaimer,"\n")
+#print(disclaimer,"\n")
 k  = 300
 Z = 3
 
@@ -115,14 +131,14 @@ x1 = np.random.normal([0,2],1,size=(n,2))
 x2 = np.random.normal([2,0],1,size=(n,2)) 
 x  = np.concatenate([x1,x2])
 
-#profileAndRun(x, "2D Gaussian", k, Z, results)
+profileAndRun(x, "2D Gaussian", k, Z, results)
 
 n  = 50000
 x1 = np.random.normal([0,2,0,0,0],1,size=(n,5)) 
 x2 = np.random.normal([2,0,0,0,0],1,size=(n,5)) 
 x  = np.concatenate([x1,x2])
 
-#profileAndRun(x, "5D Gaussian", k, Z, results)
+profileAndRun(x, "5D Gaussian", k, Z, results)
 
 
 
@@ -135,7 +151,8 @@ x = np.ascontiguousarray(x)
 x = x.astype(np.float64)/255.
 
 
-#profileAndRun(x[:70000], "MNIST", k, Z, results)
+profileAndRun(x[:70000], "MNIST", k, Z, results)
+
 #trying to import from dadapy examples
 
 for ds_name in example_names[:2]:
@@ -144,7 +161,12 @@ for ds_name in example_names[:2]:
 
 
 data = get_example_from_drive()
-profileAndRun(data[:500000], "Astro Set 1", k, Z, results)
+profileAndRun(data[:100000], "Astro (sub)Set 1", k, Z, results)
+
+if(run_big):
+    profileAndRun(data[:500000], "Astro (sub)Set 1", k, Z, results)
+    profileAndRun(data, "Astro (sub)Set 1", k, Z, results)
+
 
 
 from tabulate import tabulate
@@ -158,7 +180,7 @@ for header, tab in zip(dsInfo,results):
 with open(res_f_name,"w") as f:
     for header, tab in zip(dsInfo,results):
         f.write(f"{header}\n")
-        f.write(f"{tabulate(tab, headers = 'firstrow', tablefmt='fancy_grid')}\n")
+        f.write(f"{tabulate(tab, headers = 'firstrow', tablefmt='github', floatfmt='.2f')}\n")
 
 
 #print(results)
