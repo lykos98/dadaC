@@ -8,6 +8,10 @@ import sklearn.neighbors as NN
 #change this to run tests on bigger datasets
 run_big = False
 
+#change this to affect ngbh search and Z parameter of ADP
+k  = 300
+Z = 3
+
 base_url = "https://raw.githubusercontent.com/sissa-data-science/DADApy/main/examples/datasets" 
 example_names = ["Fig1.dat", "Fig2.dat", "Fig1_mobius.dat", "FigS1.dat", "FigS2.dat", "FigS3.dat", "FigS4.dat"]
 
@@ -16,8 +20,10 @@ results = []
 
 ## -----------------------------------------
 ## Change this directory to your saving path
+## -----------------------------------------
 res_f_name = "benchmarks/res_laptop.txt"
 
+## ------- UTILITY FUNCTIONS ---------------
 def get_example_from_drive():
     import os
     url = "https://drive.usercontent.google.com/download?id=1zL39-F7PZvoYbZihMy5jAGuT3OTPbDPv&export=download&authuser=1&confirm=t&uuid=207b1e31-c1df-46ed-8ea9-fdfae7b3ae77&at=APZUnTVuuHrrOGJaQWYCYGQEDI1i:1701945274700"  
@@ -59,14 +65,7 @@ def stringifyNum(n):
         s = "G"
         nn = n / (10**9)
         return f"{nn:.1f}{s}"
-## ---------------------------------------------------------------------
-## Benchmarks and tests dadaC vs dadapy
-## ---------------------------------------------------------------------
 
-## ---------------------------------------------------------------------
-## Gaussian mixture 2D
-## 
-## ---------------------------------------------------------------------
 def profileAndRun(dataset,dataset_name,k,Z,results, halo = False):
     dp = dadapy.Data(dataset,verbose=True)
     dc = dadaC.Data(dataset)
@@ -123,10 +122,18 @@ def profileAndRun(dataset,dataset_name,k,Z,results, halo = False):
     errors = np.where(c1 != c2)[0].shape[0]
     print(f" --> \t Found {errors} errors! \n")
 
+## ---------------------------------------------------------------------
+##
+##              Benchmarks and tests dadaC vs dadapy
+##
+## ---------------------------------------------------------------------
 
-#print(disclaimer,"\n")
-k  = 300
-Z = 3
+## ---------------------------------------------------------------------
+##
+## Gaussian mixture 2D 
+##
+## ---------------------------------------------------------------------
+
 
 n  = 300000
 x1 = np.random.normal([0,2],1,size=(n,2)) 
@@ -135,6 +142,12 @@ x  = np.concatenate([x1,x2])
 
 profileAndRun(x, "2D Gaussian", k, Z, results)
 
+## ---------------------------------------------------------------------
+##
+## Gaussian mixture 5D 
+##
+## ---------------------------------------------------------------------
+
 n  = 50000
 x1 = np.random.normal([0,2,0,0,0],1,size=(n,5)) 
 x2 = np.random.normal([2,0,0,0,0],1,size=(n,5)) 
@@ -142,6 +155,11 @@ x  = np.concatenate([x1,x2])
 
 profileAndRun(x, "5D Gaussian", k, Z, results)
 
+## ---------------------------------------------------------------------
+##
+## MNIST 
+##
+## ---------------------------------------------------------------------
 
 
 from sklearn.datasets import fetch_openml
@@ -153,13 +171,25 @@ x = np.ascontiguousarray(x)
 x = x.astype(np.float64)/255.
 
 
-profileAndRun(x[:70000], "MNIST", k, Z, results)
+profileAndRun(x, "MNIST", k, Z, results)
+
+## ---------------------------------------------------------------------
+##
+## Dadapy examples 
+##
+## ---------------------------------------------------------------------
 
 #trying to import from dadapy examples
 
 for ds_name in example_names[:2]:
     data = getFromUrl(base_url, ds_name)
     profileAndRun(data, ds_name, k, Z, results)
+
+## ---------------------------------------------------------------------
+##
+## Cosmological simulation data 
+##
+## ---------------------------------------------------------------------
 
 
 data = get_example_from_drive()
@@ -168,6 +198,13 @@ profileAndRun(data[:100000], "Astro (sub)Set 1", k, Z, results)
 if(run_big):
     profileAndRun(data[:500000], "Astro (sub)Set 1", k, Z, results)
     profileAndRun(data, "Astro (sub)Set 1", k, Z, results)
+
+
+## ---------------------------------------------------------------------
+##
+## Generate tables
+##
+## ---------------------------------------------------------------------
 
 
 
