@@ -2007,14 +2007,12 @@ int quickselect_heapNode(heap_node *array, int array_size, int k){
 
 Datapoint_info* NgbhSearch_bruteforce(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *))
 {
-    struct timespec start, finish;
-    double elapsed;
-
 	METRICS_DATADIMS = dims;
 
 	#ifdef VERBOSE
 		printf("Brute-forcing kNN computation:\n");
-		clock_gettime(CLOCK_MONOTONIC, &start);
+		printf("/!\\ Experimental feature, terribly unoptimized and slow, do not use unless forced to \n");
+		printf("/!\\ If you have any ideas on how to make it faster contact me, for now use sklearn :)\n");
 	#endif
     Datapoint_info* points = (Datapoint_info*)malloc(n*sizeof(Datapoint_info));
 
@@ -2029,33 +2027,76 @@ Datapoint_info* NgbhSearch_bruteforce(void* data, size_t n, size_t byteSize, siz
 		printf("Progress 0/%lu -> 0%%\r",(uint64_t)n);
 		fflush(stdout);
 	#endif
+	#pragma omp parallel for
+	for(idx_t j = 0; j < n; ++j)
+	{
+		Heap H;
+		allocateHeap(&H, k);
+		initHeap(&H);
+		points[j].ngbh = H;
+		points[j].array_idx = j;
+
+	}
 
     #pragma omp parallel
     {
 
+		idx_t slice_len = n / omp_get_num_threads();
 		heap_node* pvt_working_mem = (heap_node*)malloc(sizeof(heap_node)*n);
 
 	    #pragma omp for 
-	    for(idx_t p = 0; p < n; ++p)
+		for(idx_t slice = 0; slice < n; slice += slice_len)
+		{
+			for(idx_t p = slice; p < slice + slice_len; ++p)
+			{
+				for(idx_t j = 0; j < n; ++j)
+				{
+					pvt_working_mem[j].value = metric(data + p*dims*byteSize, data + j*dims*byteSize);
+					pvt_working_mem[j].array_idx = j; 
+				}
+				//printf("Thread %d got slice %lu to %lu\n ", omp_get_thread_num(), slice, slice + slice_len);
+
+				//points[p].ngbh = KNN_bruteforce(data + p*dims*byteSize, data,  n, byteSize*dims, k, metric);
+				//
+				Heap H = points[p].ngbh;
+
+				quickselect_heapNode(pvt_working_mem, n,  k + 1);
+				qsort(pvt_working_mem, k + 1, sizeof(heap_node), cmpHeapNodes);
+				memcpy(H.data, pvt_working_mem, k*sizeof(heap_node));
+			
+
+				#ifdef PROGRESS_BAR
+					idx_t aa;
+
+					#pragma omp atomic capture
+					aa = ++progress_count;
+
+					if(aa % step == 0 )
+					{
+						printf("Progress %lu/%lu -> %u%%\r",(uint64_t)aa, (uint64_t)n, (uint32_t)((100*aa)/n) );
+						fflush(stdout);
+					}
+				#endif
+			}
+		}
+
+		idx_t remainder = omp_get_num_threads()*slice_len;
+	    #pragma omp for 
+	    for(idx_t p = remainder; p < n; ++p)
 	    {
 
 			//points[p].ngbh = KNN_bruteforce(data + p*dims*byteSize, data,  n, byteSize*dims, k, metric);
-			Heap H;
-			allocateHeap(&H, k);
-			initHeap(&H);
 			for(idx_t j = 0; j < n; ++j)
 			{
 				pvt_working_mem[j].value = metric(data + p*dims*byteSize, data + j*dims*byteSize);
 				pvt_working_mem[j].array_idx = j; 
 			}
 
-			int median_idx = quickselect_heapNode(pvt_working_mem, n,  k + 1);
+			Heap H = points[p].ngbh;
+			quickselect_heapNode(pvt_working_mem, n,  k + 1);
 			qsort(pvt_working_mem, k, sizeof(heap_node), cmpHeapNodes);
 			memcpy(H.data, pvt_working_mem, k*sizeof(heap_node));
 		
-			points[p].ngbh = H;
-			points[p].array_idx = p;
-
 			#ifdef PROGRESS_BAR
 				idx_t aa;
 
@@ -2465,4 +2506,50 @@ void computeAvg(Datapoint_info* p, FLOAT_TYPE *va, FLOAT_TYPE* ve, FLOAT_TYPE* v
 		ve[i] = err_acc/(float_t)k;
 	}
 		
+}
+
+
+Datapoint_info* allocDatapoints(idx_t n)
+{
+	Datapoint_info* points = (Datapoint_info*)malloc(sizeof(Datapoint_info)*n);
+	for(idx_t p = 0; p < n; ++p)
+	{
+		points[p].array_idx = p;
+		points[p].log_rho = 0.;
+		points[p].log_rho_c = 0.;
+		points[p].log_rho_err = 0.;
+		points[p].g = 0.;
+		points[p].kstar = 0;
+	}
+	return points;
+}
+
+void importNeighborsAndDistances(Datapoint_info* points, idx_t* indeces, float_t* distances, idx_t n, idx_t k)
+{
+	for(idx_t p = 0; p < n; ++p)
+	{
+		Heap H;
+		allocateHeap(&H, k);
+		initHeap(&H);
+		for(idx_t j = 0; j < k; ++j) 
+		{
+	//		if(j < 10 && p < 10) printf("%lu %lu -> %lu;  \t",p,k, indeces[p*k + j]);
+			H.data[j].value = distances[p*k + j]*distances[p*k + j];
+			H.data[j].array_idx = indeces[p*k + j];
+		}
+	//	if(p < 10) printf("\n");
+		H.count = k;
+		points[p].ngbh = H;
+	}
+}
+
+void importDensity(Datapoint_info* points, idx_t* kstar, float_t* density, float_t* density_err, idx_t n)
+{
+	for(idx_t p = 0; p < n; ++p)
+	{
+		points[p].log_rho 	  = density[p];
+		points[p].log_rho_err = density_err[p];
+		points[p].g 		  = density[p] - density_err[p]; 
+		points[p].kstar		  = kstar[p]; 
+	}
 }

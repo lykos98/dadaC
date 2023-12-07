@@ -1,6 +1,8 @@
 import ctypes as ct
 import numpy as np  
 import os
+from sklearn.neighbors import NearestNeighbors
+import time
 
 ctFloatType = ct.c_double
 ctIdxType = ct.c_uint64
@@ -149,6 +151,32 @@ class Data():
                                         ct.c_uint64 ]
 
 
+        #Datapoint_info* __allocDatapoints(idx_t* indeces, float_t* distances, idx_t n, idx_t k)
+
+        self.__allocateDatapoints = self.lib.allocDatapoints
+        self.__allocateDatapoints.argtypes = [ctIdxType]
+        self.__allocateDatapoints.restype  = ct.POINTER(DatapointInfo)
+
+
+        self.__importNeighborsAndDistances = self.lib.importNeighborsAndDistances
+
+        #void __importNeighborsAndDistances(Datapoint_info* points, idx_t* indeces, float_t* distances, idx_t n, idx_t k)
+        self.__importNeighborsAndDistances.argtypes =   [   ct.POINTER(DatapointInfo),
+                                                            np.ctypeslib.ndpointer(ctIdxType),
+                                                            np.ctypeslib.ndpointer(ctFloatType),
+                                                            ctIdxType,
+                                                            ctIdxType
+                                                        ]
+
+        #void __importDensity(Datapoint_info* points, idx_t* kstar, float_t* density, float_t* density_err, idx_t n)
+        self.__importDensity = self.lib.importDensity
+        self.__importDensity.argtypes = [   ct.POINTER(DatapointInfo),
+                                            np.ctypeslib.ndpointer(ctIdxType),
+                                            np.ctypeslib.ndpointer(ctFloatType),
+                                            np.ctypeslib.ndpointer(ctFloatType),
+                                            ctIdxType
+                                        ]
+
         #void computeAvg(Datapoint_info* p, FLOAT_TYPE *va, FLOAT_TYPE* ve, FLOAT_TYPE* vals, FLOAT_TYPE* verr, size_t k, size_t n)
         self.__computeAvg = self.lib.computeAvg
         self.__computeAvg.argtypes = [  ct.POINTER(DatapointInfo),    
@@ -158,6 +186,7 @@ class Data():
                                         np.ctypeslib.ndpointer(ctFloatType),
                                         ctIdxType,
                                         ct.c_uint64 ]
+
 
         self.__idEstimate = self.lib.idEstimate
         self.__idEstimate.argtypes = [ct.POINTER(DatapointInfo), ct.c_uint64]
@@ -270,7 +299,22 @@ class Data():
             self.computeNeighbors_vptree(k)
             return
         if alg == "bf":
-            self.computeNeighbors_bruteforce(k)
+            print("Falling back to sklearn brute force")
+            t1 = time.monotonic() 
+            nn = NearestNeighbors(n_neighbors=k, n_jobs=-1, p = 2, algorithm="brute").fit(self.data)
+            dist, ngbh = nn.kneighbors(self.data)
+            ngbh = ngbh.astype(np.uint64)
+            print(ngbh.dtype)
+            dist = np.ascontiguousarray(dist.astype(np.float64),dtype = np.float64)
+            ngbh = np.ascontiguousarray(ngbh)
+            
+            self.__datapoints = self.__allocateDatapoints(self.n)
+            self.__importNeighborsAndDistances(self.__datapoints,ngbh,dist,self.n, np.uint64(k))
+
+            self.state["ngbh"] = True
+            t2 = time.monotonic()
+            print(f"\tTotal time: {t2 - t1 : .2f}s")
+            #self.computeNeighbors_bruteforce(k)
             return
     def computeIDtwoNN(self):
 
