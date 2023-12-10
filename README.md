@@ -25,12 +25,13 @@ _from dadapy examples_
 
 **Fig1.dat:  N = 20.0k, D = 2**
 
+
 | Method   | part             | time   |
 |----------|------------------|--------|
-| py       | ngbh and density | 1.3s   |
-| py       | ADP              | 0.15s  |
-| C        | ngbh and density | 0.41s  |
-| C        | ADP              | 0.022s |
+| py       | ngbh and density | 1.53s  |
+| py       | ADP              | 0.13s  |
+| C        | ngbh and density | 0.26s  |
+| C        | ADP              | 0.04s  |
 
 _from dadapy examples_ 
 
@@ -38,23 +39,23 @@ _from dadapy examples_
 
 | Method   | part             | time   |
 |----------|------------------|--------|
-| py       | ngbh and density | 2.6s   |
-| py       | ADP              | 0.96s  |
-| C        | ngbh and density | 0.74s  |
-| C        | ADP              | 0.056s |
+| py       | ngbh and density | 2.76s  |
+| py       | ADP              | 0.94s  |
+| C        | ngbh and density | 0.22s  |
+| C        | ADP              | 0.03s  |
 
-**CosmoSim (sub)Set1:   N = 100.0k,   D = 5 (1817 Clusters)**
+**CosmoSim (sub)Set1:   N = 100.0k,   D = 5 (~500 Clusters)**
 
-| Method   | part             | time     |
-|----------|------------------|----------|
-| py       | ngbh and density | 2.1e+01s |
-| py       | ADP              | 4.1s     |
-| C        | ngbh and density | 2.2s     |
-| C        | ADP              | 0.12s    |
+| Method   | part             | time   |
+|----------|------------------|--------|
+| py       | ngbh and density | 21.93s |
+| py       | ADP              | 4.08s  |
+| C        | ngbh and density | 1.37s  |
+| C        | ADP              | 0.07s  |
 
 On Intel Xeon Gold 5118 CPU @ 2.30GHz (4 sockets x 12 cores - 48 Threads, 512GB RAM)
 
-**CosmoSim Set1:   N = 1.8M,     D = 5 (1817 Clusters)**
+**CosmoSim Set1:   N = 1.8M,     D = 5 (~2000 Clusters)**
 
 | Method   | part             | time     |
 |----------|------------------|----------|
