@@ -99,8 +99,13 @@ def profileAndRun(dataset,dataset_name,k,Z,results, halo = False):
     print(f"\n**** dadaC on {dataset_name} ****")
     print("dadapy output\n","-"*(30),"\n")
 
+
     t1 = time.monotonic()
     dc.computeNeighbors(k)
+    #n1 = dp.dist_indices
+    #n2, _ = dc.getNeighbors()
+    #print(n1.shape)
+    #print(n2.shape)
 
     dc.computeIDtwoNN()
     dc.computeDensity()
@@ -137,7 +142,7 @@ def profileAndRun(dataset,dataset_name,k,Z,results, halo = False):
 ## ---------------------------------------------------------------------
 
 
-n  = 300000
+n  = 10000
 x1 = np.random.normal([0,2],1,size=(n,2)) 
 x2 = np.random.normal([2,0],1,size=(n,2)) 
 x  = np.concatenate([x1,x2])

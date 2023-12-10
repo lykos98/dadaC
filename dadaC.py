@@ -287,6 +287,7 @@ class Data():
         self.neighbors = None
 
     def computeNeighbors(self,k : int, alg = "auto"):
+        k = k + 1
         if alg == "auto" and (self.data.shape[1] > 15 or k > self.data.shape[0]//2):
             alg = "bf"
         else:
@@ -299,6 +300,7 @@ class Data():
             self.computeNeighbors_vptree(k)
             return
         if alg == "bf":
+            self.k = k
             print("Falling back to sklearn brute force")
             t1 = time.monotonic() 
             nn = NearestNeighbors(n_neighbors=k, n_jobs=-1, p = 2, algorithm="brute").fit(self.data)
@@ -476,7 +478,7 @@ class Data():
                         )
                 return self.neighbors
             else:
-                raise ValueError("Density is not computed yet")
+                raise ValueError("Ngbh is not computed yet")
         else:
             return self.neighbors
 

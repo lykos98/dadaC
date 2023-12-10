@@ -538,7 +538,7 @@ void computeRho(Datapoint_info* dpInfo, const FLOAT_TYPE d, const idx_t points){
     printf("Density and k* estimation:\n");
     clock_gettime(CLOCK_MONOTONIC, &start_tot);
 
-    idx_t kMAX = dpInfo[0].ngbh.N;   
+    idx_t kMAX = dpInfo[0].ngbh.N - 1;   
 
     FLOAT_TYPE omega = 0.;  
     if(sizeof(FLOAT_TYPE) == sizeof(float)){ omega = powf(PI_F,d/2)/tgammaf(d/2.0f + 1.0f);}  
@@ -556,7 +556,7 @@ void computeRho(Datapoint_info* dpInfo, const FLOAT_TYPE d, const idx_t points){
         FLOAT_TYPE vvi = 0.;
 		FLOAT_TYPE vvj = 0.;
 		FLOAT_TYPE vp  = 0.;
-        while(j < kMAX && dL < DTHR)
+        while(j < kMAX  && dL < DTHR)
         {
             idx_t ksel = j - 1;
             vvi = omega * pow(dpInfo[i].ngbh.data[ksel].value,d/2.);
