@@ -6,7 +6,7 @@ import time
 import sklearn.neighbors as NN
 
 #change this to run tests on bigger datasets
-run_big = False
+run_big = False 
 
 #change this to affect ngbh search and Z parameter of ADP
 k  = 300
@@ -51,6 +51,12 @@ def getFromUrl(base_url, ds_name, sep = " "):
 def stringifyNum(n):
     s = ""
     nn = n
+
+    if n > 10**6:
+        s = "G"
+        nn = n / (10**9)
+        return f"{nn:.1f}{s}"
+
     if n > 10**3:
         s = "k"
         nn = n / (10**3)
@@ -61,10 +67,6 @@ def stringifyNum(n):
         nn = n / (10**6)
         return f"{nn:.1f}{s}"
 
-    if n > 10**6:
-        s = "G"
-        nn = n / (10**9)
-        return f"{nn:.1f}{s}"
 
 def profileAndRun(dataset,dataset_name,k,Z,results, halo = False):
     dp = dadapy.Data(dataset,verbose=True)
@@ -85,14 +87,14 @@ def profileAndRun(dataset,dataset_name,k,Z,results, halo = False):
     dp.compute_density_kstarNN()
 
     t2 = time.monotonic()
-    pres.append(["py","ngbh and density", f"{t2 - t1: .2}s"]) 
+    pres.append(["py","ngbh and density", f"{t2 - t1: .2f}s"]) 
 
     t1 = time.monotonic()
 
     dp.compute_clustering_ADP(Z = Z, halo = halo)
 
     t2 = time.monotonic()
-    pres.append(["py", "ADP", f"{t2 - t1: .2}s"]) 
+    pres.append(["py", "ADP", f"{t2 - t1: .2f}s"]) 
 
     print(f"\n**** dadaC on {dataset_name} ****")
     print("dadapy output\n","-"*(30),"\n")
@@ -105,14 +107,14 @@ def profileAndRun(dataset,dataset_name,k,Z,results, halo = False):
 
 
     t2 = time.monotonic()
-    pres.append(["C", "ngbh and density", f"{t2 - t1: .2}s"]) 
+    pres.append(["C", "ngbh and density", f"{t2 - t1: .2f}s"]) 
 
     t1 = time.monotonic()
 
     dc.computeClusteringADP(Z = Z, halo = halo)
 
     t2 = time.monotonic()
-    pres.append(["C", "ADP", f"{t2 - t1: .2}s"]) 
+    pres.append(["C", "ADP", f"{t2 - t1: .2f}s"]) 
 
     results.append(pres)
 

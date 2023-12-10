@@ -248,7 +248,7 @@ int main(int argc, char** argv){
      * Intrinsic Dimension estimate *
      ********************************/
 
-    double id = idEstimate(particles, n);
+    double id = idEstimate(particles, n,0.9);
 
     /***********************
      * Density computation *

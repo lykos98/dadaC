@@ -474,7 +474,7 @@ FLOAT_TYPE mEst(FLOAT_TYPE * x, FLOAT_TYPE *y, idx_t n)
     return num/den;
 }
 
-FLOAT_TYPE idEstimate(Datapoint_info* dpInfo, idx_t n)
+FLOAT_TYPE idEstimate(Datapoint_info* dpInfo, idx_t n,FLOAT_TYPE fraction)
 {
 
     /*********************************************************************************************
@@ -495,7 +495,6 @@ FLOAT_TYPE idEstimate(Datapoint_info* dpInfo, idx_t n)
     printf("ID estimation:\n");
     clock_gettime(CLOCK_MONOTONIC, &start_tot);
 
-	FLOAT_TYPE fraction = 0.9;
     //FLOAT_TYPE fraction = 0.7;
     FLOAT_TYPE* r = (FLOAT_TYPE*)malloc(n*sizeof(FLOAT_TYPE));
     FLOAT_TYPE* Pemp = (FLOAT_TYPE*)malloc(n*sizeof(FLOAT_TYPE));

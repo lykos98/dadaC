@@ -189,7 +189,7 @@ class Data():
 
 
         self.__idEstimate = self.lib.idEstimate
-        self.__idEstimate.argtypes = [ct.POINTER(DatapointInfo), ct.c_uint64]
+        self.__idEstimate.argtypes = [ct.POINTER(DatapointInfo), ct.c_uint64, ctFloatType]
         self.__idEstimate.restype  =  ct.c_double
 
 
@@ -316,7 +316,7 @@ class Data():
             print(f"\tTotal time: {t2 - t1 : .2f}s")
             #self.computeNeighbors_bruteforce(k)
             return
-    def computeIDtwoNN(self):
+    def computeIDtwoNN(self,fraction = 0.9):
 
         """ Compute the intrinsic dimension of the dataset via the TWO Nearest Neighbors method.
             Ref. paper 
@@ -327,7 +327,7 @@ class Data():
 
         if not self.state["ngbh"]:
             raise ValueError("Please compute Neighbors before calling this function")
-        self.id = self.__idEstimate(self.__datapoints,self.n)
+        self.id = self.__idEstimate(self.__datapoints,self.n,fraction)
         self.state["id"] = True
 
     def computeDensity(self):

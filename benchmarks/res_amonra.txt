@@ -1,0 +1,56 @@
+2D Gaussian N = 600.0k D = 2
+| Method   | part             | time     |
+|----------|------------------|----------|
+| py       | ngbh and density | 9.2e+01s |
+| py       | ADP              | 9.4e+01s |
+| C        | ngbh and density | 1.7e+01s |
+| C        | ADP              | 2.8s     |
+5D Gaussian N = 100.0k D = 5
+| Method   | part             | time     |
+|----------|------------------|----------|
+| py       | ngbh and density | 2.2e+01s |
+| py       | ADP              | 0.77s    |
+| C        | ngbh and density | 0.63s    |
+| C        | ADP              | 0.21s    |
+MNIST N = 70.0k D = 784
+| Method   | part             | time     |
+|----------|------------------|----------|
+| py       | ngbh and density | 1.2e+01s |
+| py       | ADP              | 2.3s     |
+| C        | ngbh and density | 1.2e+01s |
+| C        | ADP              | 0.17s    |
+Fig1.dat N = 20.0k D = 2
+| Method   | part             | time   |
+|----------|------------------|--------|
+| py       | ngbh and density | 2.2s   |
+| py       | ADP              | 0.28s  |
+| C        | ngbh and density | 0.1s   |
+| C        | ADP              | 0.14s  |
+Fig2.dat N = 38.4k D = 2
+| Method   | part             | time   |
+|----------|------------------|--------|
+| py       | ngbh and density | 3.7s   |
+| py       | ADP              | 1.3s   |
+| C        | ngbh and density | 0.17s  |
+| C        | ADP              | 0.18s  |
+Astro (sub)Set 1 N = 100.0k D = 5
+| Method   | part             | time     |
+|----------|------------------|----------|
+| py       | ngbh and density | 1.6e+01s |
+| py       | ADP              | 5.4s     |
+| C        | ngbh and density | 0.51s    |
+| C        | ADP              | 0.21s    |
+Astro (sub)Set 1 N = 500.0k D = 5
+| Method   | part             | time     |
+|----------|------------------|----------|
+| py       | ngbh and density | 9.6e+01s |
+| py       | ADP              | 2e+02s   |
+| C        | ngbh and density | 2.5s     |
+| C        | ADP              | 0.87s    |
+Astro (sub)Set 1 N = 1842.8k D = 5
+| Method   | part             | time     |
+|----------|------------------|----------|
+| py       | ngbh and density | 4.2e+02s |
+| py       | ADP              | 3.4e+03s |
+| C        | ngbh and density | 4.1e+01s |
+| C        | ADP              | 5.6s     |

@@ -19,7 +19,7 @@ On the same input dadaC achieves a one to one match on the results, obtaining up
 
 Validation of the procedure is done against the implementation of the original package with and without the computation of the halo. Hereafter some of the results, complete ones in the directory benchmarks.
 
-On Ryzen 7735HS (my laptop) (8 cores - 16 Threads, 16GB RAM)
+On AMD Ryzen 7 7735HS @ 4.80GHz (my laptop) (8 cores - 16 Threads, 16GB RAM)
 
 _from dadapy examples_ 
 
@@ -43,7 +43,7 @@ _from dadapy examples_
 | C        | ngbh and density | 0.74s  |
 | C        | ADP              | 0.056s |
 
-**CosmoSim (sub)Set1:   N = 100.0k,   D = 5**
+**CosmoSim (sub)Set1:   N = 100.0k,   D = 5 (1817 Clusters)**
 
 | Method   | part             | time     |
 |----------|------------------|----------|
@@ -52,7 +52,25 @@ _from dadapy examples_
 | C        | ngbh and density | 2.2s     |
 | C        | ADP              | 0.12s    |
 
-On IntelGold ... (4 sockets x 12 cores, 512GB RAM)
+On Intel Xeon Gold 5118 CPU @ 2.30GHz (4 sockets x 12 cores - 48 Threads, 512GB RAM)
+
+**CosmoSim Set1:   N = 1.8M,     D = 5 (1817 Clusters)**
+
+| Method   | part             | time     |
+|----------|------------------|----------|
+| py       | ngbh and density | 4.2e+02s |
+| py       | ADP              | 3.4e+03s |
+| C        | ngbh and density | 4.1e+01s |
+| C        | ADP              | 5.6s     |
+
+**MNIST N = 70.0k,  D = 784**
+
+| Method   | part             | time     |
+|----------|------------------|----------|
+| py       | ngbh and density | 1.2e+01s |
+| py       | ADP              | 2.3s     |
+| C        | ngbh and density | 1.2e+01s |
+| C        | ADP              | 0.17s    |
 
 
 
