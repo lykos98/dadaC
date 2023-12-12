@@ -17,8 +17,8 @@ def test_ngbh_kdtree():
     n1 = dpy.dist_indices
     dist = dpy.distances
     n2 , _ = dc.getNeighbors()
-    print(n1.shape)
-    print(n2.shape)
+    #print(n1.shape)
+    #print(n2.shape)
     assert np.all(n1 == n2)
 
 if __name__ == "__main__":

@@ -1,56 +1,56 @@
-2D Gaussian N = 600.0k D = 2
-| Method   | part             | time     |
-|----------|------------------|----------|
-| py       | ngbh and density | 9.2e+01s |
-| py       | ADP              | 9.4e+01s |
-| C        | ngbh and density | 1.7e+01s |
-| C        | ADP              | 2.8s     |
+2D Gaussian N = 20.0k D = 2
+| Method   | part             | time   |
+|----------|------------------|--------|
+| py       | ngbh and density | 2.49s  |
+| py       | ADP              | 0.16s  |
+| C        | ngbh and density | 0.45s  |
+| C        | ADP              | 0.17s  |
 5D Gaussian N = 100.0k D = 5
-| Method   | part             | time     |
-|----------|------------------|----------|
-| py       | ngbh and density | 2.2e+01s |
-| py       | ADP              | 0.77s    |
-| C        | ngbh and density | 0.63s    |
-| C        | ADP              | 0.21s    |
+| Method   | part             | time   |
+|----------|------------------|--------|
+| py       | ngbh and density | 21.41s |
+| py       | ADP              | 0.95s  |
+| C        | ngbh and density | 1.23s  |
+| C        | ADP              | 0.20s  |
 MNIST N = 70.0k D = 784
-| Method   | part             | time     |
-|----------|------------------|----------|
-| py       | ngbh and density | 1.2e+01s |
-| py       | ADP              | 2.3s     |
-| C        | ngbh and density | 1.2e+01s |
-| C        | ADP              | 0.17s    |
+| Method   | part             | time   |
+|----------|------------------|--------|
+| py       | ngbh and density | 11.62s |
+| py       | ADP              | 2.21s  |
+| C        | ngbh and density | 12.07s |
+| C        | ADP              | 0.18s  |
 Fig1.dat N = 20.0k D = 2
 | Method   | part             | time   |
 |----------|------------------|--------|
-| py       | ngbh and density | 2.2s   |
-| py       | ADP              | 0.28s  |
-| C        | ngbh and density | 0.1s   |
-| C        | ADP              | 0.14s  |
+| py       | ngbh and density | 2.27s  |
+| py       | ADP              | 0.20s  |
+| C        | ngbh and density | 0.11s  |
+| C        | ADP              | 0.16s  |
 Fig2.dat N = 38.4k D = 2
 | Method   | part             | time   |
 |----------|------------------|--------|
-| py       | ngbh and density | 3.7s   |
-| py       | ADP              | 1.3s   |
-| C        | ngbh and density | 0.17s  |
-| C        | ADP              | 0.18s  |
+| py       | ngbh and density | 3.77s  |
+| py       | ADP              | 1.23s  |
+| C        | ngbh and density | 0.13s  |
+| C        | ADP              | 0.05s  |
 Astro (sub)Set 1 N = 100.0k D = 5
-| Method   | part             | time     |
-|----------|------------------|----------|
-| py       | ngbh and density | 1.6e+01s |
-| py       | ADP              | 5.4s     |
-| C        | ngbh and density | 0.51s    |
-| C        | ADP              | 0.21s    |
+| Method   | part             | time   |
+|----------|------------------|--------|
+| py       | ngbh and density | 16.52s |
+| py       | ADP              | 4.97s  |
+| C        | ngbh and density | 0.56s  |
+| C        | ADP              | 0.21s  |
 Astro (sub)Set 1 N = 500.0k D = 5
+| Method   | part             | time    |
+|----------|------------------|---------|
+| py       | ngbh and density | 96.19s  |
+| py       | ADP              | 180.89s |
+| C        | ngbh and density | 13.49s  |
+| C        | ADP              | 1.20s   |
+Astro (sub)Set 1 N = 0.0G D = 5
 | Method   | part             | time     |
 |----------|------------------|----------|
-| py       | ngbh and density | 9.6e+01s |
-| py       | ADP              | 2e+02s   |
-| C        | ngbh and density | 2.5s     |
-| C        | ADP              | 0.87s    |
-Astro (sub)Set 1 N = 1842.8k D = 5
-| Method   | part             | time     |
-|----------|------------------|----------|
-| py       | ngbh and density | 4.2e+02s |
-| py       | ADP              | 3.4e+03s |
-| C        | ngbh and density | 4.1e+01s |
-| C        | ADP              | 5.6s     |
+| py       | ngbh and density | 414.83s  |
+| py       | ADP              | 3282.80s |
+| C        | ngbh and density | 47.52s   |
+| C        | ADP              | 7.46s    |

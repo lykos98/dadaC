@@ -59,19 +59,19 @@ On Intel Xeon Gold 5118 CPU @ 2.30GHz (4 sockets x 12 cores - 48 Threads, 512GB 
 
 | Method   | part             | time     |
 |----------|------------------|----------|
-| py       | ngbh and density | 4.2e+02s |
-| py       | ADP              | 3.4e+03s |
-| C        | ngbh and density | 4.1e+01s |
-| C        | ADP              | 5.6s     |
+| py       | ngbh and density | 414.83s  |
+| py       | ADP              | 3282.80s |
+| C        | ngbh and density | 47.52s   |
+| C        | ADP              | 7.46s    |
 
 **MNIST N = 70.0k,  D = 784**
 
-| Method   | part             | time     |
-|----------|------------------|----------|
-| py       | ngbh and density | 1.2e+01s |
-| py       | ADP              | 2.3s     |
-| C        | ngbh and density | 1.2e+01s |
-| C        | ADP              | 0.17s    |
+| Method   | part             | time   |
+|----------|------------------|--------|
+| py       | ngbh and density | 11.62s |
+| py       | ADP              | 2.21s  |
+| C        | ngbh and density | 12.07s |
+| C        | ADP              | 0.18s  |
 
 
 
