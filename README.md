@@ -9,7 +9,7 @@ Code repository for the thesis project *Density-based clustering application to 
 In particular dadaC implements at the moment:
 
 - TWO-NN Intrinsic Dimension estimator
-- k-NN search using a kd-tree
+- k-NN search using a kd-tree (or vp-tree with custom callable metric)
 - k*-NN density estimator
 - ADP Heuristics
 
@@ -98,7 +98,7 @@ Once parameters are set `dadaC` can be launched using:
 - `s`	     : Use sparse borders implementation, y/n [sparse/dense]
 - `t`	     : Input binary is in Float32, y/n [float/double]
 
-Relies on kd-Tree or vantage point tree alogirthms in order to perform neighborhood search. _V2_ versions are optimized ones, use them. KNN search is validated against `scipy.spatial.KDtree` query time is comparable except for bruteforce search used when the dimensionality is > 15. 
+Relies on kd-Tree or vantage point tree alogirthms in order to perform neighborhood search. _V2_ versions are optimized ones, use them. KNN search is validated against `scipy.spatial.KDtree` query time is comparable with state of the art libraries except for bruteforce search used when the dimensionality D > 15. 
 
 ## Python interface
 

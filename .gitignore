@@ -1,9 +1,8 @@
 #*.ipynb
-*results*
 perf.data
 perf.data.old
-test.o
-test
+*test.o
+*test
 Bunny.txt
 *Old.c
 d
@@ -12,12 +11,12 @@ __pycache__/
 aa
 bb
 sd.sh
-driver.o
-driver
-bin/*.so
-bin/*.o
-nope*
-run.sh
-example.sh
-bb.txt
-src/clustering\ copy.c
+*driver.o
+*driver
+*bin/*.so
+*bin/*.o
+*nope*
+*run.sh
+*example.sh
+*bb.txt
+*src/clustering\ copy.c

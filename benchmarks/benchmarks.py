@@ -21,7 +21,7 @@ results = []
 ## -----------------------------------------
 ## Change this directory to your saving path
 ## -----------------------------------------
-res_f_name = "benchmarks/res_laptop.txt"
+res_f_name = ""
 
 ## ------- UTILITY FUNCTIONS ---------------
 def get_example_from_drive():

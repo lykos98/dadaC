@@ -2006,6 +2006,13 @@ int quickselect_heapNode(heap_node *array, int array_size, int k){
 
 Datapoint_info* NgbhSearch_bruteforce(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *))
 {
+	/*
+	 *
+	 * /!\ Extremely inefficient implementation for euclidean metric
+	 *     currently working on optimized one with the use of blas
+	 *
+	 * */
+
 	METRICS_DATADIMS = dims;
 
 	#ifdef VERBOSE
