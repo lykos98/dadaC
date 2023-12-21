@@ -20,4 +20,5 @@ dadac/bin/*.o
 *example.sh
 *bb.txt
 dadac.egg-*
+build/*
 *src/clustering\ copy.c
