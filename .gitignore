@@ -19,4 +19,5 @@ dadac/bin/*.o
 *run.sh
 *example.sh
 *bb.txt
+dadac.egg-*
 *src/clustering\ copy.c
