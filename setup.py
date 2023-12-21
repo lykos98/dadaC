@@ -10,6 +10,7 @@ import sys
 from shutil import rmtree
 
 from setuptools import find_packages, setup, Command
+from setuptools.command.install import install
 
 # Package meta-data.
 NAME = 'dadac'
@@ -31,8 +32,21 @@ EXTRAS = {
     # 'fancy feature': ['django'],
 }
 
+
 #compile everything
 os.system("make -C $(pwd)/dadac")
+
+EXT_DIR = os.path.join(os.path.dirname(__file__), 'bin')
+class RunMake(install):
+    """Makefile on setuptools install."""
+    def run(self):
+        old_dir = os.getcwd()
+        try:
+            os.chdir(EXT_DIR)
+            self.spawn(['make'])
+        finally:
+            os.chdir(old_dir)
+        install.run(self)
 
 # The rest you shouldn't have to touch too much :)
 # ------------------------------------------------
@@ -118,6 +132,7 @@ setup(
     extras_require=EXTRAS,
     include_package_data=True,
     license='MIT',
+    package_data={'dadac': ["bin/*.so"]},
     classifiers=[
         # Trove classifiers
         # Full list: https://pypi.python.org/pypi?%3Aaction=list_classifiers
@@ -131,5 +146,6 @@ setup(
     # $ setup.py publish support.
     cmdclass={
         'upload': UploadCommand,
+        'intall': RunMake
     },
 )
