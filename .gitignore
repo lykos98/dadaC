@@ -1,4 +1,4 @@
-#*.ipynb
+*ipynb*
 perf.data
 perf.data.old
 *test.o
@@ -13,8 +13,8 @@ bb
 sd.sh
 *driver.o
 *driver
-*bin/*.so
-*bin/*.o
+dadac/bin/*.so
+dadac/bin/*.o
 *nope*
 *run.sh
 *example.sh

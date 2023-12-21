@@ -1,5 +1,5 @@
 import dadapy
-import dadaC
+import dadac
 import numpy as np
 import matplotlib.pyplot as plt
 import time
@@ -21,7 +21,7 @@ results = []
 ## -----------------------------------------
 ## Change this directory to your saving path
 ## -----------------------------------------
-res_f_name = ""
+res_f_name = "gggg"
 
 ## ------- UTILITY FUNCTIONS ---------------
 def get_example_from_drive():
@@ -70,7 +70,7 @@ def stringifyNum(n):
 
 def profileAndRun(dataset,dataset_name,k,Z,results, halo = False):
     dp = dadapy.Data(dataset,verbose=True)
-    dc = dadaC.Data(dataset)
+    dc = dadac.Data(dataset)
 
     pres = []
 
@@ -96,7 +96,7 @@ def profileAndRun(dataset,dataset_name,k,Z,results, halo = False):
     t2 = time.monotonic()
     pres.append(["py", "ADP", f"{t2 - t1: .2f}s"]) 
 
-    print(f"\n**** dadaC on {dataset_name} ****")
+    print(f"\n**** dadac on {dataset_name} ****")
     print("dadapy output\n","-"*(30),"\n")
 
 
@@ -131,7 +131,7 @@ def profileAndRun(dataset,dataset_name,k,Z,results, halo = False):
 
 ## ---------------------------------------------------------------------
 ##
-##              Benchmarks and tests dadaC vs dadapy
+##              Benchmarks and tests dadac vs dadapy
 ##
 ## ---------------------------------------------------------------------
 
