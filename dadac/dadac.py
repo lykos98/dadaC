@@ -3,6 +3,8 @@ import numpy as np
 import os
 from sklearn.neighbors import NearestNeighbors
 import time
+from wurlitzer import sys_pipes
+
 
 ctFloatType = ct.c_double
 ctIdxType = ct.c_uint64
@@ -247,7 +249,8 @@ class Data():
             alg (str): default "kd" for kdtree else choose "vp" for vptree
         """
         self.k = k
-        self.__datapoints = self.__NgbhSearch_kdtree(self.data, self.n, self.dims, self.k)
+        with sys_pipes():
+            self.__datapoints = self.__NgbhSearch_kdtree(self.data, self.n, self.dims, self.k)
         #Datapoint_info* NgbhSearch_vpTree(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *));
         self.state["ngbh"] = True
         self.neighbors = None
@@ -268,7 +271,8 @@ class Data():
         """
         self.k = k
         #Datapoint_info* NgbhSearch_vpTree(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *));
-        self.__datapoints = self.__NgbhSearch_vptree(self.data.ctypes.data, self.n, self.data.itemsize, self.dims, self.k, self.__eud)
+        with sys_pipes():
+            self.__datapoints = self.__NgbhSearch_vptree(self.data.ctypes.data, self.n, self.data.itemsize, self.dims, self.k, self.__eud)
         self.state["ngbh"] = True
         self.neighbors = None
 
@@ -282,7 +286,8 @@ class Data():
         """
         self.k = k
         #Datapoint_info* NgbhSearch_vpTree(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *));
-        self.__datapoints = self.__NgbhSearch_bruteforce(self.data.ctypes.data, self.n, self.data.itemsize, self.dims, self.k, self.__eud_sq)
+        with sys_pipes():
+            self.__datapoints = self.__NgbhSearch_bruteforce(self.data.ctypes.data, self.n, self.data.itemsize, self.dims, self.k, self.__eud_sq)
         self.state["ngbh"] = True
         self.neighbors = None
 
@@ -341,7 +346,8 @@ class Data():
         """
         if not self.state["id"]:
             raise ValueError("Please compute ID before calling this function")
-        self.__computeRho(self.__datapoints, self.id, self.n)
+        with sys_pipes():
+            self.__computeRho(self.__datapoints, self.id, self.n)
         self.state["density"] = True
         self.density = None
         self.densityError = None
@@ -371,11 +377,12 @@ class Data():
 
         self.state["computeHalo"] = halo 
         self.Z = Z
-        self.__computeCorrection(self.__datapoints, self.n, self.Z)
-        self.__clusters = self.__H1(self.__datapoints, self.n)
-        self.__ClustersAllocate(ct.pointer(self.__clusters), 1 if self.state["useSparse"] else 0)
-        self.__H2(ct.pointer(self.__clusters), self.__datapoints)
-        self.__H3(ct.pointer(self.__clusters), self.__datapoints, self.Z, 1 if halo else 0 )
+        with sys_pipes():
+            self.__computeCorrection(self.__datapoints, self.n, self.Z)
+            self.__clusters = self.__H1(self.__datapoints, self.n)
+            self.__ClustersAllocate(ct.pointer(self.__clusters), 1 if self.state["useSparse"] else 0)
+            self.__H2(ct.pointer(self.__clusters), self.__datapoints)
+            self.__H3(ct.pointer(self.__clusters), self.__datapoints, self.Z, 1 if halo else 0 )
         self.state["clustering"] = True
         self.clusterAssignment = None
 

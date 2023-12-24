@@ -1,8 +1,8 @@
 import dadapy
 import numpy as np
 import sys, os
-sys.path.append("./..")
-import dadaC
+#sys.path.append("./..")
+import dadac
 
 def test_ID_twoNN():
     n = 10000
@@ -10,7 +10,7 @@ def test_ID_twoNN():
     d = np.random.choice([ i for i in range(1,10)])
     x = np.random.rand(n,d)
     dpy = dadapy.Data(x)
-    dc = dadaC.Data(x)
+    dc = dadac.Data(x)
 
     dpy.compute_distances(300)
     dc.computeNeighbors(300, alg="kd")
@@ -28,7 +28,7 @@ def test_density_kstarNN():
     d = np.random.choice([ i for i in range(1,10)])
     x = np.random.rand(n,d)
     dpy = dadapy.Data(x)
-    dc = dadaC.Data(x)
+    dc = dadac.Data(x)
 
     dpy.compute_distances(300)
     dc.computeNeighbors(300, alg="kd")

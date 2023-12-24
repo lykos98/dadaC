@@ -24,7 +24,7 @@ VERSION = '0.2.0'
 # What packages are required for this module to be executed?
 REQUIRED = [
     # 'requests', 'maya', 'records',
-    'numpy', 'scikit-learn'
+    'numpy', 'scikit-learn','wurlitzer'
 ]
 
 # What packages are optional?
@@ -43,7 +43,9 @@ class RunMake(install):
         old_dir = os.getcwd()
         try:
             os.chdir(EXT_DIR)
-            self.spawn(['make'])
+            print("Building C library ...")
+            os.system("make")
+            #self.spawn(['make'])
         finally:
             os.chdir(old_dir)
         install.run(self)

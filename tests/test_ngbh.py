@@ -2,8 +2,8 @@ import dadapy
 import numpy as np
 import sys, os
 #sys.path.append(os.path.join(__file__,"./.."))
-sys.path.append("./..")
-import dadaC
+#sys.path.append("./..")
+import dadac
 
 def test_ngbh_kdtree():
     n = 10000
@@ -11,7 +11,7 @@ def test_ngbh_kdtree():
     d = np.random.choice([ i for i in range(1,10)])
     x = np.random.rand(n,d)
     dpy = dadapy.Data(x)
-    dc = dadaC.Data(x)
+    dc = dadac.Data(x)
 
     dpy.compute_distances(300)
     dc.computeNeighbors(300, alg="kd")
@@ -29,7 +29,7 @@ def test_ngbh_vptree():
     d = np.random.choice([ i for i in range(1,10)])
     x = np.random.rand(n,d)
     dpy = dadapy.Data(x)
-    dc = dadaC.Data(x)
+    dc = dadac.Data(x)
 
     dpy.compute_distances(300)
     dc.computeNeighbors(300, alg="vp")
