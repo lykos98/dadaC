@@ -1,19 +1,17 @@
-# dadaC
-## NOTE
-This implementation is in progress, currently clenaning up code and working on documentation. 
+# dadac
 
 ## Description
 Code repository for the thesis project *Density-based clustering application to substructures identification in cosmological simulations*, Francesco Tomba, 2023 @ University of Trieste.
 
-`dadaC` is the porting and optimization of the implementation of ADP (Laio et al. 2021) which is present in the python package [`dadaPy`](https://github.com/sissa-data-science/DADApy).
-In particular dadaC implements at the moment:
+`dadac` is the porting and optimization of the implementation of ADP (Laio et al. 2021) which is present in the python package [`dadaPy`](https://github.com/sissa-data-science/DADApy).
+In particular dadac implements at the moment:
 
 - TWO-NN Intrinsic Dimension estimator
 - k-NN search using a kd-tree (or vp-tree with custom callable metric)
 - k*-NN density estimator
 - ADP Heuristics
 
-On the same input dadaC achieves a one to one match on the results, obtaining up to a factor 40 speedup on the whole procedure w.r.t. Python/Cython implementation. 
+On the same input dadac achieves a one to one match on the results, obtaining up to a factor 40 speedup on the whole procedure w.r.t. Python/Cython implementation. 
 
 ## Benchmarks
 
@@ -77,7 +75,7 @@ On Intel Xeon Gold 5118 CPU @ 2.30GHz (4 sockets x 12 cores - 48 Threads, 512GB 
 
 ## Usage
 
-dadaC comes with an example driver file `driver.c`. Data is expected to be a matrix of floats of type `FLOAT_TYPE` (defined at compile time) of dimensions `N x d`.
+dadac comes with an example driver file `driver.c`. Data is expected to be a matrix of floats of type `FLOAT_TYPE` (defined at compile time) of dimensions `N x d`.
 
 It returns a text file where for each point are reported:
 
@@ -86,7 +84,7 @@ It returns a text file where for each point are reported:
 - `rho`: value of the density
 - `is_center`: flag for identifying cluster centers
 
-Once parameters are set `dadaC` can be launched using:
+Once parameters are set `dadac` can be launched using:
 `./driver i=[INPUT_FILE] o=[OUTPUT_FILE] d=[d] t=[t] z=[Z] h=[HALO] k=[k] s=[s] t=[t]`
 
 - `INPUT_FILE `: input file, file path
@@ -102,18 +100,21 @@ Relies on kd-Tree or vantage point tree alogirthms in order to perform neighborh
 
 ## Python interface
 
-dadaC comes also with a python interface build with `ctypes` which leverages the capabilities of the C-compiled library. In order to use it, build the package and then import `dadaC` module from python
+dadac comes also with a python interface build with `ctypes` which leverages the capabilities of the C-compiled library. In order to use it, build the package and then import `dadac` module from python
+
+dadac can be installed with pip on linux systems using:
+
+```
+pip install git+https://github.com/lykos98/dadaC
+```
 
 ## Compiling
 
-dadaC comes with a make file which compiles the executable `driver` and the shared library `bin/libdadac.so` from which ADP methods can be linked to.
-dadaC supports compilation to use `float` or `double` to store data and kNN distances, and `uint32` or `uint64` to store indexes. 
+dadac comes with a make file which compiles the executable `driver` and the shared library `bin/libdadac.so` from which ADP methods can be linked to.
+dadac supports compilation to use `float` or `double` to store data and kNN distances, and `uint32` or `uint64` to store indexes. 
 Add `-DUSE_FLOAT32` or `-DUSE_INT32` to compile with support to 32bit types. By default 64bit ones are used. This feature is important for the application on big datasets, allowing of course some sort of rounding error to happen when processing data. 
-Implementation with 64bit types results are binary equal w.r.t. `dadaPy`.
+Implementation with 64bit types results are binary equal w.r.t. `dadapy`.
 
-
-
-**REQUIRES** Numpy package to properly work
 
 ## TODO
 
