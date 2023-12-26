@@ -8,7 +8,7 @@ VERBOSE=-DVERBOSE
 # /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ 
 # uncomment the following lines to compile against a BLAS implementation 
 
-#BLAS_INCLUDE="/home/francesco/robavaria/OpenBlas"
+#BLAS_INCLUDE="your-blas-impl-path"
 #BLAS_LIB=${BLAS_INCLUDE}
 #LDFLAGS=-lm -fopenmp -lblas  
 #CFLAGS=-O3 -march=native -Wall -Wextra -DUSE_BLAS
