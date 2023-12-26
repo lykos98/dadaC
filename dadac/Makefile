@@ -1,4 +1,4 @@
-LDFLAGS=-lm -fopenmp  
+LDFLAGS=-lm -fopenmp 
 CFLAGS=-O3 -march=native -Wall -Wextra 
 DEBUG=-ggdb
 SRC="src"
@@ -7,10 +7,12 @@ VERBOSE=-DVERBOSE
 # ----------------------------------------------------------------------
 # /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ 
 # uncomment the following lines to compile against a BLAS implementation 
+# you can install libblas from system package manager or set your implementation to openblas, mkl, or anything else
+# e.g.
 
-#BLAS_INCLUDE="your-blas-impl-path"
+#BLAS_INCLUDE="/home/---->/OpenBLAS"
 #BLAS_LIB=${BLAS_INCLUDE}
-#LDFLAGS=-lm -fopenmp -lblas  
+#LDFLAGS=-lm -fopenmp -lopenblas  
 #CFLAGS=-O3 -march=native -Wall -Wextra -DUSE_BLAS
 
 
@@ -42,11 +44,11 @@ driver.o: driver.c
 	${COMPILING_INFO}
 
 bin/libdadac.so: bin/dadac.o bin/kdtree.o bin/kdtreeV2.o bin/heap.o bin/vptree.o bin/vptreeV2.o
-	${CC} -shared bin/dadac.o bin/kdtree.o bin/heap.o bin/vptree.o bin/vptreeV2.o bin/kdtreeV2.o ${DEBUG} ${CFLAGS} ${LDFLAGS} -L${BLAS_LIB} -I${BLAS_INCLUDE} -o bin/libdadac.so 
+	${CC} -shared bin/dadac.o bin/kdtree.o bin/heap.o bin/vptree.o bin/vptreeV2.o bin/kdtreeV2.o ${DEBUG} ${CFLAGS} ${LDFLAGS} -L${BLAS_LIB}  -o bin/libdadac.so 
 	${LINKING_INFO}
 
 bin/%.o : src/%.c
-	${CC} -c $< -o $@ ${CFLAGS} -fopenmp ${DEBUG} -fpic ${VERBOSE}
+	${CC} -c $< -o $@ ${CFLAGS} -fopenmp ${DEBUG} -fpic ${VERBOSE} -I${BLAS_INCLUDE}
 	${COMPILING_INFO}
 
 clean:
