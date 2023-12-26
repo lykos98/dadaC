@@ -7,6 +7,17 @@
 #include <stdlib.h>
 #include <time.h>
 #include "./metrics.c"
+
+#define MIN(x,y) x < y ? x : y
+
+
+#define DEFAULT_SLICE 10000 
+
+#ifdef USE_BLAS
+	#include <cblas.h>
+	#include <sys/sysinfo.h>
+#endif
+
 #define MAX_SERIAL_MERGING 40000
 #define MAX_N_NGBH 1000
 #define PREALLOC_BORDERS 10
@@ -26,6 +37,15 @@ void LinkedList_Insert(LinkedList* L, Node* n)
     ++(L -> count);
     n -> next = L -> head;
     L -> head = n;
+}
+
+int blas_are_in_use()
+{
+	#ifdef USE_BLAS
+		return 1;
+	#else
+		return 0;
+	#endif
 }
 
 /*****************************
@@ -68,6 +88,7 @@ void Clusters_allocate(Clusters * c, int s)
 	    c -> borders                = (border_t**)malloc(nclus*sizeof(border_t*));
 
 	    #pragma omp parallel for
+
 	    for(idx_t i = 0; i < nclus; ++i)
 	    {
 		c -> borders[i]         = c -> __borders_data + i*nclus;
@@ -1966,7 +1987,7 @@ Heap KNN_bruteforce(void* point, void* data, size_t n, idx_t elementSize, idx_t 
 }
 
 int partition_heapNode(heap_node *array, int left, int right, int pivotIndex) {
-    int pivotValue = array[pivotIndex].value;
+    float_t pivotValue = array[pivotIndex].value;
     int storeIndex = left;
     int i;
     /* Move pivot to end */
@@ -1978,7 +1999,7 @@ int partition_heapNode(heap_node *array, int left, int right, int pivotIndex) {
         }
     }
     /* Move pivot to its final place */
-    swapHeapNode(array + storeIndex, array + right);
+    swapHeapNode(array + storeIndex , array + right);
 
     return storeIndex;
 }
@@ -1988,7 +2009,7 @@ int qselect_heapNode(heap_node *array, int left, int right, int n) {
     if(left == right){
         return left;
     }
-    pivotIndex = left + (rand() % (right-left+1)); /* random int left <= x <= right */
+    pivotIndex = left + (rand() % (right-left + 1)); /* random int left <= x <= right */
     pivotIndex = partition_heapNode(array, left, right, pivotIndex);
     /* The pivot is in its final sorted position */
     if(n == pivotIndex){
@@ -2004,53 +2025,18 @@ int quickselect_heapNode(heap_node *array, int array_size, int k){
     return qselect_heapNode(array, 0, array_size-1, k-1);
 }
 
-Datapoint_info* NgbhSearch_bruteforce(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *))
+void KNN_BruteForce(Datapoint_info* points, void* data,size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void*, void*))
 {
 	/*
-	 *
-	 * /!\ Extremely inefficient implementation for euclidean metric
-	 *     currently working on optimized one with the use of blas
-	 *
+	 * TODO: fix when threads are more than points
 	 * */
-
-	METRICS_DATADIMS = dims;
-
-	#ifdef VERBOSE
-		printf("Brute-forcing kNN computation:\n");
-		printf("/!\\ Experimental feature, terribly unoptimized and slow, do not use unless forced to \n");
-		printf("/!\\ If you have any ideas on how to make it faster contact me, for now use sklearn :)\n");
-	#endif
-    Datapoint_info* points = (Datapoint_info*)malloc(n*sizeof(Datapoint_info));
-
-    struct timespec start_tot, finish_tot;
-    double elapsed_tot;
-    printf("KNN search:\n");
-    clock_gettime(CLOCK_MONOTONIC, &start_tot);
-	
-	#ifdef PROGRESS_BAR
-		idx_t progress_count = 0;
-		idx_t step = n/100;
-		printf("Progress 0/%lu -> 0%%\r",(uint64_t)n);
-		fflush(stdout);
-	#endif
-	#pragma omp parallel for
-	for(idx_t j = 0; j < n; ++j)
+	#pragma omp parallel
 	{
-		Heap H;
-		allocateHeap(&H, k);
-		initHeap(&H);
-		points[j].ngbh = H;
-		points[j].array_idx = j;
-
-	}
-
-    #pragma omp parallel
-    {
 
 		idx_t slice_len = n / omp_get_num_threads();
 		heap_node* pvt_working_mem = (heap_node*)malloc(sizeof(heap_node)*n);
 
-	    #pragma omp for 
+		#pragma omp for 
 		for(idx_t slice = 0; slice < n; slice += slice_len)
 		{
 			for(idx_t p = slice; p < slice + slice_len; ++p)
@@ -2087,9 +2073,9 @@ Datapoint_info* NgbhSearch_bruteforce(void* data, size_t n, size_t byteSize, siz
 		}
 
 		idx_t remainder = omp_get_num_threads()*slice_len;
-	    #pragma omp for 
-	    for(idx_t p = remainder; p < n; ++p)
-	    {
+		#pragma omp for 
+		for(idx_t p = remainder; p < n; ++p)
+		{
 
 			//points[p].ngbh = KNN_bruteforce(data + p*dims*byteSize, data,  n, byteSize*dims, k, metric);
 			for(idx_t j = 0; j < n; ++j)
@@ -2119,9 +2105,176 @@ Datapoint_info* NgbhSearch_bruteforce(void* data, size_t n, size_t byteSize, siz
 
 		free(pvt_working_mem);
 
-    }
+	}
 
+}
+
+#ifdef USE_BLAS
+	void __handle_w_blas_d(Datapoint_info* points, double* data,size_t n, size_t dims, size_t k)
+	{
+		struct sysinfo info;
+		sysinfo(&info);
+
+		size_t slice_size = (size_t)((float_t)(info.freeram)*0.9/(float_t)(8*n));
+		slice_size = MIN(n,slice_size);
+		printf("%lu slice size \n",slice_size);
+		float_t* norms_sq = (float_t*)malloc(n*sizeof(double));
+		#pragma omp parallel for
+		for(size_t i = 0; i < n; ++i)
+		{
+			norms_sq[i] = 0.;
+			for(size_t j = 0; j < dims; ++j) norms_sq[i] += data[i*dims+j]*data[i*dims+j];
+		}
+
+		heap_node* working_mem 	= NULL;
+
+		#pragma omp parallel
+		{
+			#pragma omp master
+			{
+				working_mem = (heap_node*)malloc(omp_get_num_threads()*sizeof(heap_node)*n); 
+			}
+		}
+
+		float_t* middle_terms 	= (float_t*)malloc(slice_size*sizeof(float_t)*n); 
+
+		size_t s = 0;
+		for(s = 0; s < n; s+=slice_size)
+		{
+			size_t lower_idx = s; 
+			size_t upper_idx = MIN(n,s + slice_size);
+				#pragma omp parallel
+				{
+					#pragma omp for
+					for(size_t i = lower_idx; i < upper_idx; ++i)
+						for(size_t j = 0; j < n; ++j)
+						{
+							middle_terms[(i%slice_size)*n + j] = norms_sq[i] + norms_sq[j];
+							//middle_terms[(i%DEFAULT_SLICE)*n + j] = 0;
+						}
+				}
+
+				float_t* A = data + dims*lower_idx;
+				cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasTrans,
+									upper_idx - lower_idx,n,dims, -2.0,
+									A, dims, data, dims, 1.0, middle_terms,n);
+
+				//reduce the arrays
+				#pragma omp parallel 
+				{
+					heap_node* my_working_mem = working_mem + omp_get_thread_num()*n;
+					#pragma omp for
+					for(size_t i = lower_idx; i < upper_idx; ++i)
+					{
+						//for(size_t j = 0; j < n; ++j)
+						//{
+						////	my_working_mem[j].value = middle_terms[(i%DEFAULT_SLICE)*n + j];
+						////	my_working_mem[j].array_idx = j;
+						//	insertMaxHeap(&(points[i].ngbh), middle_terms[(i%DEFAULT_SLICE)*n + j],j);
+						//}
+						//HeapSort(&(points[i].ngbh));
+						//copy into the working mem
+						for(size_t j = 0; j < n; ++j)
+						{
+							my_working_mem[j].value = middle_terms[(i%slice_size)*n + j];
+							my_working_mem[j].array_idx = j;
+						}
+
+						Heap H = points[i].ngbh;
+						quickselect_heapNode(my_working_mem, n,  k + 1);
+						//printf("%lu %lf \t ",my_working_mem[k].array_idx, my_working_mem[k].value);
+						qsort(my_working_mem, k, sizeof(heap_node), cmpHeapNodes);
+						//printf("%lu %lf\n",my_working_mem[k].array_idx, my_working_mem[k].value);
+						memcpy(H.data, my_working_mem, k*sizeof(heap_node));
+					}
+				}
+		}
+
+		free(working_mem);
+		free(middle_terms);
+
+		free(norms_sq);	
+
+	}
+#endif
+
+Datapoint_info* NgbhSearch_bruteforce(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *))
+{
+	/*
+	 *
+	 * /!\ Extremely inefficient implementation for euclidean metric
+	 *     currently working on optimized one with the use of blas
+	 *
+	 * */
+
+	METRICS_DATADIMS = dims;
+
+	#ifdef VERBOSE
+		printf("Brute-forcing kNN computation:\n");
+		if(!blas_are_in_use())
+		{
+			printf("/!\\ Naive implementation, terribly unoptimized and slow, do not use unless forced to \n");
+			printf("/!\\ If you want to use euclidean metric follow the instruction to compile and link against\n");
+			printf("/!\\ a CBLAS implementation to drammatically speed up computation\n");
+			if(!metric)
+			{
+				printf("\n");
+				printf("/!\\ Pass a valid function as a metric! Exiting\n");
+				exit(1);
+			}
+
+		}
+		else
+		{
+			if(metric)	
+			{
+				printf("/!\\ CBLAS accelerated implementation, if you want to use euclidean metric \n");
+				printf("/!\\ pass NULL to the function pointer of the metric \n");
+			}
+		}
+	#endif
+    Datapoint_info* points = (Datapoint_info*)malloc(n*sizeof(Datapoint_info));
+
+    struct timespec start_tot, finish_tot;
+    double elapsed_tot;
+    printf("KNN search:\n");
+    clock_gettime(CLOCK_MONOTONIC, &start_tot);
 	
+	#ifdef PROGRESS_BAR
+		idx_t progress_count = 0;
+		idx_t step = n/100;
+		printf("Progress 0/%lu -> 0%%\r",(uint64_t)n);
+		fflush(stdout);
+	#endif
+	#pragma omp parallel for
+	for(idx_t j = 0; j < n; ++j)
+	{
+		Heap H;
+		allocateHeap(&H, k);
+		initHeap(&H);
+		points[j].ngbh = H;
+		points[j].array_idx = j;
+
+	}
+
+	if(metric)
+	{
+		KNN_BruteForce(points, data, n, byteSize, dims, k, metric);
+	}
+	else
+	{
+		#ifdef USE_BLAS
+			__handle_w_blas_d(points, data, n, dims, k);
+		#else
+			KNN_BruteForce(points, data, n, byteSize, dims, k, eud);
+		#endif
+
+	}
+
+
+
+
+
 
 	#ifdef PROGRESS_BAR
 		printf("Progress %lu/%lu -> 100%%\n",(uint64_t)n, (uint64_t)n);

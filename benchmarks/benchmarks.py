@@ -21,7 +21,7 @@ results = []
 ## -----------------------------------------
 ## Change this directory to your saving path
 ## -----------------------------------------
-res_f_name = "gggg"
+res_f_name = ""
 
 ## ------- UTILITY FUNCTIONS ---------------
 def get_example_from_drive():
@@ -142,7 +142,7 @@ def profileAndRun(dataset,dataset_name,k,Z,results, halo = False):
 ## ---------------------------------------------------------------------
 
 
-n  = 10000
+n  = 1000
 x1 = np.random.normal([0,2],1,size=(n,2)) 
 x2 = np.random.normal([2,0],1,size=(n,2)) 
 x  = np.concatenate([x1,x2])

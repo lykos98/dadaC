@@ -156,7 +156,7 @@ struct Options Parser(int argc, char** argv)
 float_t* generateRandomMatrix(idx_t ncols,idx_t nrows)
 {
 	float_t* mat = (float_t*)malloc(sizeof(float_t)*ncols*nrows);
-	for(idx_t i = 0; i < nrows*ncols; ++i) mat[i] = ((float_t)rand())/((float_t)RAND_MAX)*255.;
+	for(idx_t i = 0; i < nrows*ncols; ++i) mat[i] = ((float_t)rand())/((float_t)RAND_MAX);
 	return mat;
 }
 
@@ -177,9 +177,9 @@ int main(){
 	uint32_t data_dims, k;
 
 	//n = 35947;
-	n = 10000;
-	data_dims = 54;
-	k = 100;
+	n = 20000;
+	data_dims = 100;
+	k = 600;
 	//FILE* f = fopen("Bunny.txt","r");
 	//data = (float_t*)malloc(n*data_dims*sizeof(float_t));
 	//for(int i = 0; i < n; ++i)
@@ -207,8 +207,8 @@ int main(){
 	
     //Start timer
 
-	Datapoint_info* particles = NgbhSearch_kdtree(data, n, data_dims, k); 
-	Datapoint_info* pp = NgbhSearch_bruteforce(data,n ,sizeof(float_t),data_dims, k, eud_sq); 
+	Datapoint_info* particles = NgbhSearch_kdtree_V2(data, n, data_dims, k); 
+	Datapoint_info* pp = NgbhSearch_bruteforce(data,n ,sizeof(float_t),data_dims, k, NULL); 
 
 	
 	for(idx_t idx=0; idx < n; ++idx)

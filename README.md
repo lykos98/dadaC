@@ -108,6 +108,8 @@ dadac can be installed with pip on linux systems using:
 pip install git+https://github.com/lykos98/dadaC
 ```
 
+If you want to use it on windows use it under WLS
+
 ## Compiling
 
 dadac comes with a make file which compiles the executable `driver` and the shared library `bin/libdadac.so` from which ADP methods can be linked to.

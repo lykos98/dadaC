@@ -208,6 +208,9 @@ class Data():
         self.__ClustersAllocate = self.lib.Clusters_allocate
         self.__ClustersAllocate.argtypes = [ct.POINTER(Clusters), ct.c_int]
 
+        self.__blas_in_use = self.lib.blas_are_in_use
+        self.__blas_in_use.restypes = ct.c_int32
+
         self.__H2 = self.lib.Heuristic2
         self.__H2.argtypes = [ct.POINTER(Clusters), ct.POINTER(DatapointInfo)]
 
@@ -237,6 +240,21 @@ class Data():
         self.borders           = None
         self.density           = None
         self.densityError      = None
+        self.blas              = self.__blas_in_use() != 0 
+
+    def __is_notebook(self) -> bool:
+        try:
+            shell = get_ipython().__class__.__name__
+            if shell == 'ZMQInteractiveShell':
+                return True   # Jupyter notebook or qtconsole
+            elif shell == "google.colab._shell":
+                return True
+            elif shell == 'TerminalInteractiveShell':
+                return False  # Terminal running IPython
+            else:
+                return False  # Other type (?)
+        except NameError:
+            return False
 
 
 
@@ -249,7 +267,11 @@ class Data():
             alg (str): default "kd" for kdtree else choose "vp" for vptree
         """
         self.k = k
-        with sys_pipes():
+        #with sys_pipes():
+        if self.__is_notebook():
+            with sys_pipes():
+                self.__datapoints = self.__NgbhSearch_kdtree(self.data, self.n, self.dims, self.k)
+        else:
             self.__datapoints = self.__NgbhSearch_kdtree(self.data, self.n, self.dims, self.k)
         #Datapoint_info* NgbhSearch_vpTree(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *));
         self.state["ngbh"] = True
@@ -271,8 +293,12 @@ class Data():
         """
         self.k = k
         #Datapoint_info* NgbhSearch_vpTree(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *));
-        with sys_pipes():
+        if self.__is_notebook():
+            with sys_pipes():
+                self.__datapoints = self.__NgbhSearch_vptree(self.data.ctypes.data, self.n, self.data.itemsize, self.dims, self.k, self.__eud)
+        else:
             self.__datapoints = self.__NgbhSearch_vptree(self.data.ctypes.data, self.n, self.data.itemsize, self.dims, self.k, self.__eud)
+
         self.state["ngbh"] = True
         self.neighbors = None
 
@@ -286,8 +312,11 @@ class Data():
         """
         self.k = k
         #Datapoint_info* NgbhSearch_vpTree(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *));
-        with sys_pipes():
-            self.__datapoints = self.__NgbhSearch_bruteforce(self.data.ctypes.data, self.n, self.data.itemsize, self.dims, self.k, self.__eud_sq)
+        if self.__is_notebook():
+            with sys_pipes():
+                self.__datapoints = self.__NgbhSearch_bruteforce(self.data.ctypes.data, self.n, self.data.itemsize, self.dims, self.k, 0)
+        else:
+            self.__datapoints = self.__NgbhSearch_bruteforce(self.data.ctypes.data, self.n, self.data.itemsize, self.dims, self.k, 0)
         self.state["ngbh"] = True
         self.neighbors = None
 
@@ -306,21 +335,26 @@ class Data():
             return
         if alg == "bf":
             self.k = k
-            print("Falling back to sklearn brute force")
-            t1 = time.monotonic() 
-            nn = NearestNeighbors(n_neighbors=k, n_jobs=-1, p = 2, algorithm="brute").fit(self.data)
-            dist, ngbh = nn.kneighbors(self.data)
-            ngbh = ngbh.astype(np.uint64)
-            print(ngbh.dtype)
-            dist = np.ascontiguousarray(dist.astype(np.float64),dtype = np.float64)
-            ngbh = np.ascontiguousarray(ngbh)
-            
-            self.__datapoints = self.__allocateDatapoints(self.n)
-            self.__importNeighborsAndDistances(self.__datapoints,ngbh,dist,self.n, np.uint64(k))
+            if self.blas:
+                self.computeNeighbors_bruteforce(k)
+            else:
+                print("dadac implementation not compiled with blas support for euclidean metric optimization")
+                print("if you want to use it consider compiling against a blas library implementation")
+                print("--> Falling back to sklearn brute force")
+                t1 = time.monotonic() 
+                nn = NearestNeighbors(n_neighbors=k, n_jobs=-1, p = 2, algorithm="brute").fit(self.data)
+                dist, ngbh = nn.kneighbors(self.data)
+                ngbh = ngbh.astype(np.uint64)
+                print(ngbh.dtype)
+                dist = np.ascontiguousarray(dist.astype(np.float64),dtype = np.float64)
+                ngbh = np.ascontiguousarray(ngbh)
+                
+                self.__datapoints = self.__allocateDatapoints(self.n)
+                self.__importNeighborsAndDistances(self.__datapoints,ngbh,dist,self.n, np.uint64(k))
+                t2 = time.monotonic()
 
             self.state["ngbh"] = True
-            t2 = time.monotonic()
-            print(f"\tTotal time: {t2 - t1 : .2f}s")
+            #print(f"\tTotal time: {t2 - t1 : .2f}s")
             #self.computeNeighbors_bruteforce(k)
             return
     def computeIDtwoNN(self,fraction = 0.9):
@@ -334,7 +368,11 @@ class Data():
 
         if not self.state["ngbh"]:
             raise ValueError("Please compute Neighbors before calling this function")
-        self.id = self.__idEstimate(self.__datapoints,self.n,fraction)
+        if self.__is_notebook():
+            with sys_pipes():
+                self.id = self.__idEstimate(self.__datapoints,self.n,fraction)
+        else:
+            self.id = self.__idEstimate(self.__datapoints,self.n,fraction)
         self.state["id"] = True
 
     def computeDensity(self):
@@ -346,8 +384,12 @@ class Data():
         """
         if not self.state["id"]:
             raise ValueError("Please compute ID before calling this function")
-        with sys_pipes():
+        if self.__is_notebook():
+            with sys_pipes():
+                self.__computeRho(self.__datapoints, self.id, self.n)
+        else:
             self.__computeRho(self.__datapoints, self.id, self.n)
+
         self.state["density"] = True
         self.density = None
         self.densityError = None
@@ -377,7 +419,14 @@ class Data():
 
         self.state["computeHalo"] = halo 
         self.Z = Z
-        with sys_pipes():
+        if self.__is_notebook():
+            with sys_pipes():
+                self.__computeCorrection(self.__datapoints, self.n, self.Z)
+                self.__clusters = self.__H1(self.__datapoints, self.n)
+                self.__ClustersAllocate(ct.pointer(self.__clusters), 1 if self.state["useSparse"] else 0)
+                self.__H2(ct.pointer(self.__clusters), self.__datapoints)
+                self.__H3(ct.pointer(self.__clusters), self.__datapoints, self.Z, 1 if halo else 0 )
+        else:
             self.__computeCorrection(self.__datapoints, self.n, self.Z)
             self.__clusters = self.__H1(self.__datapoints, self.n)
             self.__ClustersAllocate(ct.pointer(self.__clusters), 1 if self.state["useSparse"] else 0)

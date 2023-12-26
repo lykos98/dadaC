@@ -1,8 +1,20 @@
-LDFLAGS=-lm -fopenmp 
-CFLAGS=-O3 -march=native -Wall -Wextra
+LDFLAGS=-lm -fopenmp  
+CFLAGS=-O3 -march=native -Wall -Wextra 
 DEBUG=-ggdb
 SRC="src"
 VERBOSE=-DVERBOSE
+
+# ----------------------------------------------------------------------
+# /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ 
+# uncomment the following lines to compile against a BLAS implementation 
+
+#BLAS_INCLUDE="/home/francesco/robavaria/OpenBlas"
+#BLAS_LIB=${BLAS_INCLUDE}
+#LDFLAGS=-lm -fopenmp -lblas  
+#CFLAGS=-O3 -march=native -Wall -Wextra -DUSE_BLAS
+
+
+
 
 CC=@gcc
 COMPILING_INFO=@echo "[\e[36mCOMPILING\e[0m]: $@"
@@ -30,7 +42,7 @@ driver.o: driver.c
 	${COMPILING_INFO}
 
 bin/libdadac.so: bin/dadac.o bin/kdtree.o bin/kdtreeV2.o bin/heap.o bin/vptree.o bin/vptreeV2.o
-	${CC} -shared bin/dadac.o bin/kdtree.o bin/heap.o bin/vptree.o bin/vptreeV2.o bin/kdtreeV2.o ${DEBUG} ${CFLAGS} ${LDFLAGS} -o bin/libdadac.so 
+	${CC} -shared bin/dadac.o bin/kdtree.o bin/heap.o bin/vptree.o bin/vptreeV2.o bin/kdtreeV2.o ${DEBUG} ${CFLAGS} ${LDFLAGS} -L${BLAS_LIB} -I${BLAS_INCLUDE} -o bin/libdadac.so 
 	${LINKING_INFO}
 
 bin/%.o : src/%.c
