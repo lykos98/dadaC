@@ -9,6 +9,8 @@
 #include "./metrics.c"
 
 #define MIN(x,y) x < y ? x : y
+#define MAX(x,y) x > y ? x : y
+#define DEPS 2.220446049250313e-16
 
 
 #define DEFAULT_SLICE 10000 
@@ -615,6 +617,143 @@ void computeRho(Datapoint_info* dpInfo, const FLOAT_TYPE d, const idx_t points){
 
 
 }
+
+void PAk(Datapoint_info* dpInfo, const FLOAT_TYPE d, const idx_t points)
+{
+    float_t omega = pow(M_PI,d/2.)/tgamma(d/2.0 + 1.0);
+	computeRho(dpInfo,d,points);
+
+	#pragma omp parallel
+	{
+		float_t* vi = (float_t*)malloc(dpInfo[0].ngbh.count*sizeof(float_t));
+		#pragma omp for
+		for(idx_t i = 0; i < points; ++i)
+		{
+			vi[0] = 0.;
+			idx_t kstar = dpInfo[i].kstar;
+			for(idx_t k = 0; k < kstar; ++k)
+			{
+				//vi[k] = omega * pow(dpInfo[i].ngbh.data[k].value/dpInfo[i].ngbh.data[k+1].value,d/2.);
+				vi[k] = omega * (pow(dpInfo[i].ngbh.data[k+1].value,d/2.) - pow(dpInfo[i].ngbh.data[k].value,d/2.));
+			}
+
+			float_t f = dpInfo[i].log_rho + log((double)points);
+			//if(i < 3)
+			//{
+			//	printf("ff %lf \n",f);
+			//	printf("vi %lf %lf %lf\n",vi[0],vi[1],vi[2]);
+			//}
+			float_t a = 0.;
+
+			float_t H00 = 0.;
+			float_t H01 = 0.;
+			float_t H10 = 0.;
+			float_t H11 = 0.;
+
+			float_t gf = 0.;
+			float_t ga = 0.;
+
+			float_t alpha = 0.;
+
+			//1st iteration
+			//
+			gf = kstar;
+			ga = (kstar + 1)*kstar/2.;
+			for(idx_t k = 0; k < kstar; ++k)
+			{
+				idx_t l = k + 1;
+				float_t dg = vi[k]*exp(f+a*l); 
+				gf -= dg;
+				ga -= l*dg;
+
+				H00 -= dg;
+				H10 -= dg*l;
+				H11 -= l*l*dg;
+			}
+
+			H01 = H10;
+
+			float_t dethess = (H00*H11 - H10*H01);
+			float_t H00_inv, H01_inv, H10_inv, H11_inv,detinv;
+			if(dethess > DEPS)
+			{
+				 detinv = 1/dethess;
+				 H00_inv = +detinv*H11;
+				 H11_inv = +detinv*H00;
+				 H01_inv = -detinv*H01;
+				 H10_inv = -detinv*H10;
+			}
+
+			float_t conv_condition = MAX(fabs(gf),fabs(ga)) > 1e-3;
+			idx_t niter = 0;
+			alpha = 0.1;
+			while(conv_condition && niter < 10000)
+			{
+				if(dethess > DEPS)
+				{
+					f -= alpha*(gf*H00_inv + ga*H01_inv);	
+					a -= alpha*(gf*H10_inv + ga*H11_inv);	
+				}
+				else
+				{
+					f = ( -a*kstar*(kstar+1)/2  - (gf-kstar) ) / kstar;
+                  	a = ( -f*kstar - (gf-kstar)) / (kstar*(kstar+1)/2.);
+
+				}
+				H00 = 0.;
+				H01 = 0.;
+				H10 = 0.;
+				H11 = 0.;
+
+				gf = 0.;
+				ga = 0.;
+
+				gf = kstar;
+				ga = (kstar + 1)*kstar/2.;
+				for(idx_t k = 0; k < kstar; ++k)
+				{
+					idx_t l = k + 1;
+					float_t dg = vi[k]*exp(f + a*l); 
+					gf -= dg;
+					ga -= l*dg;
+
+					H00 -= dg;
+					H10 -= l*dg;
+					H11 -= l*l*dg;
+				}
+
+				H01 = H10;
+
+				dethess = (H00*H11 - H10*H01);
+				if(dethess > DEPS)
+				{
+					float_t detinv = 1/dethess;
+					float_t H00_inv = +detinv*H11;
+					float_t H11_inv = +detinv*H00;
+					float_t H01_inv = -detinv*H01;
+					float_t H10_inv = -detinv*H10;
+				}
+
+				if(fabs(gf) < DEPS || fabs(ga) < DEPS)
+				{
+					conv_condition = MAX(fabs(gf),fabs(ga)) > 1e-3;
+				}
+				else
+				{
+					conv_condition = MAX(fabs(gf/f),fabs(ga/a)) > 1e-3;
+				}
+
+				niter++;
+			}
+			dpInfo[i].log_rho =  f - log((double)points);
+			dpInfo[i].log_rho_err = sqrt((float_t)(4*kstar + 2)/(float_t)((kstar-1)*kstar)); 
+		}
+	free(vi);
+
+	}
+		
+}
+
 
 int cmpPP(const void* p1, const void *p2)
 {
@@ -2711,4 +2850,31 @@ void importDensity(Datapoint_info* points, idx_t* kstar, float_t* density, float
 		points[p].g 		  = density[p] - density_err[p]; 
 		points[p].kstar		  = kstar[p]; 
 	}
+}
+
+void exportDensity(Datapoint_info* points, idx_t* kstar, float_t* density, float_t* density_err, idx_t n)
+{
+	for(idx_t p = 0; p < n; ++p)
+	{
+		density[p] 		= 	points[p].log_rho;
+		density_err[p]  =  	points[p].log_rho_err;
+		kstar[p]        =  	points[p].kstar;		  
+	}
+}
+
+void exportNeighborsAndDistances(Datapoint_info* points, idx_t* dist_indices, float_t* dists, idx_t n, idx_t k)
+{
+	for(idx_t i = 0; i < n; ++i)
+	{
+		for(idx_t j = 0; j < k; ++j)
+		{
+			dists[i*k + j] 		 	= points[i].ngbh.data[j].value;
+			dist_indices[i*k + j] 	= points[i].ngbh.data[j].array_idx;
+		}
+	}
+}
+
+void exportClusterAssignment(Datapoint_info* points, int* labels, idx_t n)
+{
+	for(idx_t i = 0; i < n; ++i) labels[i] = points[i].cluster_idx;
 }

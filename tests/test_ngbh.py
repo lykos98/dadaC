@@ -14,11 +14,11 @@ def test_ngbh_kdtree():
     dc = dadac.Data(x)
 
     dpy.compute_distances(300)
-    dc.computeNeighbors(300, alg="kd")
+    dc.compute_distances(300, alg="kd")
 
     n1 = dpy.dist_indices
     dist = dpy.distances
-    n2 , _ = dc.getNeighbors()
+    n2 = dc.dist_indices
     #print(n1.shape)
     #print(n2.shape)
     assert np.all(n1 == n2)
@@ -32,11 +32,11 @@ def test_ngbh_vptree():
     dc = dadac.Data(x)
 
     dpy.compute_distances(300)
-    dc.computeNeighbors(300, alg="vp")
+    dc.compute_distances(300, alg="vp")
 
     n1 = dpy.dist_indices
     dist = dpy.distances
-    n2 , _ = dc.getNeighbors()
+    n2 = dc.dist_indices
     #print(n1.shape)
     #print(n2.shape)
     assert np.all(n1 == n2)

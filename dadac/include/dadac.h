@@ -124,6 +124,8 @@ Datapoint_info* NgbhSearch_kdtree_V2(FLOAT_TYPE* data, size_t n, size_t ndims, s
 Datapoint_info* NgbhSearch_bruteforce(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *));
 void computeRho(Datapoint_info *particles, const FLOAT_TYPE d,
                 const idx_t points);
+
+void PAk(Datapoint_info* dpInfo, const FLOAT_TYPE d, const idx_t points);
 int cmpPP(const void *p1, const void *p2);
 void computeCorrection(Datapoint_info *particles, idx_t n, FLOAT_TYPE Z);
 void KNN_search_kdtree(Datapoint_info *particles, FLOAT_TYPE *data, kd_node *root,

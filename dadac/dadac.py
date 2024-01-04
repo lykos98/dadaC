@@ -35,16 +35,16 @@ class DatapointInfo(ct.Structure):
         ("g", ctFloatType),
         ("ngbh", Heap),
         ("array_idx", ctIdxType),
-        ("log_rho", ctFloatType),
-        ("log_rho_c", ctFloatType),
-        ("log_rho_err", ctFloatType),
+        ("log_den", ctFloatType),
+        ("log_den_c", ctFloatType),
+        ("log_den_err", ctFloatType),
         ("kstar", ctIdxType),
         ("is_center", ct.c_int),
         ("cluster_idx", ct.c_int)
     ]
 
     def __repr__(self):
-        return f"{{ g: {self.g}, ngbh: {self.ngbh}, array_idx: {self.array_idx}, log_rho: {self.log_rho}, log_rho_c: {self.log_rho_c}, log_rho_err: {self.log_rho_err}, kstar: {self.kstar}, isCenter: {self.is_center}, clusterIdx: {self.cluster_idx} }}"
+        return f"{{ g: {self.g}, ngbh: {self.ngbh}, array_idx: {self.array_idx}, log_den: {self.log_den}, log_den_c: {self.log_den_c}, log_den_err: {self.log_den_err}, kstar: {self.kstar}, isCenter: {self.is_center}, clusterIdx: {self.cluster_idx} }}"
 
 class Border_t(ct.Structure):
     _fields_ = [
@@ -169,10 +169,26 @@ class Data():
                                                             ctIdxType,
                                                             ctIdxType
                                                         ]
+        #void exportNeighborsAndDistances(Datapoint_info* points, idx_t* dist_indices, float_t* dists, idx_t n, idx_t k)
+        self.__exportNeighborsAndDistances = self.lib.exportNeighborsAndDistances
+        self.__exportNeighborsAndDistances.argtypes =   [   ct.POINTER(DatapointInfo),
+                                                            np.ctypeslib.ndpointer(ctIdxType),
+                                                            np.ctypeslib.ndpointer(ctFloatType),
+                                                            ctIdxType,
+                                                            ctIdxType
+                                                        ]
 
         #void __importDensity(Datapoint_info* points, idx_t* kstar, float_t* density, float_t* density_err, idx_t n)
         self.__importDensity = self.lib.importDensity
         self.__importDensity.argtypes = [   ct.POINTER(DatapointInfo),
+                                            np.ctypeslib.ndpointer(ctIdxType),
+                                            np.ctypeslib.ndpointer(ctFloatType),
+                                            np.ctypeslib.ndpointer(ctFloatType),
+                                            ctIdxType
+                                        ]
+
+        self.__exportDensity = self.lib.exportDensity
+        self.__exportDensity.argtypes = [   ct.POINTER(DatapointInfo),
                                             np.ctypeslib.ndpointer(ctIdxType),
                                             np.ctypeslib.ndpointer(ctFloatType),
                                             np.ctypeslib.ndpointer(ctFloatType),
@@ -188,6 +204,14 @@ class Data():
                                         np.ctypeslib.ndpointer(ctFloatType),
                                         ctIdxType,
                                         ct.c_uint64 ]
+        #void exportClusterAssignment(Datapoint_info* points, int* labels, idx_t n)
+
+        self.__exportClusterAssignment = self.lib.exportClusterAssignment
+        self.__exportClusterAssignment.argtypes = [ ct.POINTER(DatapointInfo),    
+                                                    np.ctypeslib.ndpointer(np.int32), 
+                                                    ct.c_uint64 ]
+
+
 
 
         self.__idEstimate = self.lib.idEstimate
@@ -197,6 +221,9 @@ class Data():
 
         self.__computeRho = self.lib.computeRho
         self.__computeRho.argtypes = [ct.POINTER(DatapointInfo), ct.c_double, ct.c_uint64]
+
+        self.__PAk = self.lib.PAk
+        self.__PAk.argtypes = [ct.POINTER(DatapointInfo), ct.c_double, ct.c_uint64]
 
         self.__computeCorrection = self.lib.computeCorrection
         self.__computeCorrection.argtypes = [ct.POINTER(DatapointInfo), ctIdxType, ct.c_double]
@@ -235,12 +262,13 @@ class Data():
         self.k              = None
         self.id             = None
 
-        self.clusterAssignment = None
-        self.neighbors         = None
-        self.borders           = None
-        self.density           = None
-        self.densityError      = None
-        self.blas              = self.__blas_in_use() != 0 
+        self.__clusterAssignment = None
+        self.__distances         = None
+        self.__dist_indices      = None
+        self.borders             = None
+        self.__log_den           = None
+        self.__log_den_err       = None
+        self.blas                = self.__blas_in_use() != 0 
 
     def __is_notebook(self) -> bool:
         try:
@@ -320,13 +348,14 @@ class Data():
         self.state["ngbh"] = True
         self.neighbors = None
 
-    def computeNeighbors(self,k : int, alg = "auto"):
+    def compute_distances(self,k : int, alg = "auto"):
         k = k + 1
-        if alg == "auto" and (self.data.shape[1] > 15 or k > self.data.shape[0]//2):
-            alg = "bf"
-        else:
-            alg = "kd"
-
+        if alg == "auto": 
+            if (self.data.shape[1] > 15 or k > self.data.shape[0]//2):
+                alg = "bf"
+            else:
+                alg = "kd"
+        
         if alg == "kd":
             self.computeNeighbors_kdtree(k)
             return
@@ -357,7 +386,7 @@ class Data():
             #print(f"\tTotal time: {t2 - t1 : .2f}s")
             #self.computeNeighbors_bruteforce(k)
             return
-    def computeIDtwoNN(self,fraction = 0.9):
+    def compute_id_2NN(self,fraction = 0.9):
 
         """ Compute the intrinsic dimension of the dataset via the TWO Nearest Neighbors method.
             Ref. paper 
@@ -375,7 +404,7 @@ class Data():
             self.id = self.__idEstimate(self.__datapoints,self.n,fraction)
         self.state["id"] = True
 
-    def computeDensity(self):
+    def compute_density_kstarNN(self):
 
         """Compute density value for each point
 
@@ -394,7 +423,26 @@ class Data():
         self.density = None
         self.densityError = None
 
-    def computeClusteringADP(self,Z : float, halo = True, useSparse = "auto"):
+    def compute_density_PAk(self):
+
+        """Compute density value for each point
+
+        Raises:
+            ValueError: Raises value error if ID is not computed, use `Data.computeIDtwoNN` method
+        """
+        if not self.state["id"]:
+            raise ValueError("Please compute ID before calling this function")
+        if self.__is_notebook():
+            with sys_pipes():
+                self.__PAk(self.__datapoints, self.id, self.n)
+        else:
+            self.__PAk(self.__datapoints, self.id, self.n)
+
+        self.state["density"] = True
+        self.density = None
+        self.densityError = None
+
+    def compute_clustering_ADP(self,Z : float, halo = True, useSparse = "auto"):
 
         """Compute clustering via the Advanced Density Peak method
 
@@ -435,7 +483,7 @@ class Data():
         self.state["clustering"] = True
         self.clusterAssignment = None
 
-    def getClusterAssignment(self) -> list:
+    def __getClusterAssignment(self):
 
 
         """Retrieve cluster assignment
@@ -447,101 +495,83 @@ class Data():
             List of cluster labels
             
         """
-        #if self.clusterAssignment is None:
-        #    if self.state["clustering"]:
-        #        self.clusterAssignment = np.array([int(self.__datapoints[j].cluster_idx) for j in range(self.n)])
-        #        return self.clusterAssignment
-        #    else:
-        #        raise ValueError("Clustering is not computed yet")
-        #else:
-        #    return self.clusterAssignment
-        self.clusterAssignment = np.array([int(self.__datapoints[j].cluster_idx) for j in range(self.n)], dtype = np.int32)
-        return self.clusterAssignment
+        if self.state["clustering"]:
+            self.__clusterAssignment = np.zeros(self.n, np.int32)
+            self.__exportClusterAssignment(self.__datapoints,self.__clusterAssignment,self.n)
+        else:
+            raise ValueError("Clustering is not computed yet")
+
+    @property
+    def cluster_assignment(self):
+        if self.__clusterAssignment is None:
+            self.__getClusterAssignment()
+        return self.__clusterAssignment
+
 
     def getBorders(self):
         raise NotImplemented("It's difficult I have to think about it")
 
-    def getDensity(self) -> list:
+    def __getDensity(self):
 
         """Retrieve list of density values
 
         Raises:
-            ValueError: Raise error if density is not computed, use `Data.computeDensity()` 
-
-        Returns:
-            List of density values
-            
-        """
-        if self.density is None:
-            if self.state["density"]:
-                self.density = np.array([float(self.__datapoints[j].log_rho) for j in range(self.n)])
-                return self.density
-            else:
-                raise ValueError("Density is not computed yet")
-        else:
-            return self.density
-
-    def getKstar(self) -> list:
-
-        """Retrieve list of density values
-
-        Raises:
-            ValueError: Raise error if density is not computed, use `Data.computeDensity()` 
+            ValueError: Raise error if density is not computed,  
 
         Returns:
             List of density values
             
         """
         if self.state["density"]:
-            self.kstar = np.array([int(self.__datapoints[j].kstar) for j in range(self.n)])
-            return self.kstar
+            self.__log_den      = np.zeros(self.n,np.float64)
+            self.__log_den_err  = np.zeros(self.n,np.float64)
+            self.__kstar        = np.zeros(self.n,np.uint64)
+            self.__exportDensity(self.__datapoints,self.__kstar, self.__log_den, self.__log_den_err, self.n)
         else:
-            raise ValueError("Density is not computed yet")
+            raise ValueError("Density is not computed yet use `Data.computeDensity()`")
 
-    def getDensityError(self):
-        """Retrieve list of density error values
+    @property
+    def log_den(self):
+        if self.__log_den is None:
+            self.__getDensity()
+        return self.__log_den
 
-        Raises:
-            ValueError: Raise error if density is not computed, use `Data.computeDensity()` 
+    @property
+    def log_den_err(self):
+        if self.__log_den_err is None:
+            self.__getDensity()
+        return self.__log_den_err
 
-        Returns:
-            List of density error values
-            
-        """
-        if self.densityError is None:
-            if self.state["density"]:
-                self.densityError = np.array([self.__datapoints[j].log_rho_err for j in range(self.n)], dtype=np.float64)
-                return self.densityError
-            else:
-                raise ValueError("Density Error is not computed yet")
-        else:
-            return self.densityError
+    @property
+    def kstar(self):
+        if self.__kstar is None:
+            self.__getDensity()
+        return self.__kstar
+
     
-    def getNeighbors(self) -> list:
-        """Retrieve k Nearest Neighbors of each point and their associated distance
+    @property
+    def distances(self): 
+        if self.__distances is None:
+            self.__distances = np.zeros((self.n,self.k), np.float64)
+            self.__dist_indices = np.zeros((self.n,self.k), np.uint64)
+            self.__exportNeighborsAndDistances(self.__datapoints,self.__dist_indices, self.__distances, self.n, self.k)
+        return self.__distances
 
-        Raises:
-            ValueError: Raise error if neighbors are not computed, use `Data.computeNeighbors(k)` 
+    @property
+    def dist_indices(self): 
+        if self.__dist_indices is None:
+            self.__distances = np.zeros((self.n,self.k), np.float64)
+            self.__dist_indices = np.zeros((self.n,self.k), np.uint64)
+            self.__exportNeighborsAndDistances(self.__datapoints,self.__dist_indices,self.__distances, self.n, self.k)
+        return self.__dist_indices
 
-        Returns:
-            Returns lists of neighbors and distances            
-        """
-        if self.neighbors is None:
-            if self.state["ngbh"]:
-                self.neighbors = (
-                            np.array([[int(self.__datapoints[j].ngbh.data[kk].array_idx) for kk in range(self.k)] for j in range(self.n)]),
-                            np.array([[float(self.__datapoints[j].ngbh.data[kk].value)**(0.5) for kk in range(self.k)] for j in range(self.n)])
-                        )
-                return self.neighbors
-            else:
-                raise ValueError("Ngbh is not computed yet")
-        else:
-            return self.neighbors
 
-    def setRhoErrK(self, rho, err, k):
-        self.__setRhoErrK(self.__datapoints, rho, err, k, self.n)
-        self.state["density"] = True
-        return
+    
+
+    #def setRhoErrK(self, rho, err, k):
+    #    self.__setRhoErrK(self.__datapoints, rho, err, k, self.n)
+    #    self.state["density"] = True
+    #    return
 
     def __del__(self):
         if not self.__datapoints is None:

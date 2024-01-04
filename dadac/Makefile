@@ -10,10 +10,10 @@ VERBOSE=-DVERBOSE
 # you can install libblas from system package manager or set your implementation to openblas, mkl, or anything else
 # e.g.
 
-#BLAS_INCLUDE="/home/---->/OpenBLAS"
-#BLAS_LIB=${BLAS_INCLUDE}
-#LDFLAGS=-lm -fopenmp -lopenblas  
-#CFLAGS=-O3 -march=native -Wall -Wextra -DUSE_BLAS
+BLAS_INCLUDE="/home/francesco/Desktop/dssc/robavaria/OpenBLAS"
+BLAS_LIB=${BLAS_INCLUDE}
+LDFLAGS=-lm -fopenmp -lopenblas  
+CFLAGS=-O3 -march=native -Wall -Wextra -DUSE_BLAS
 
 
 

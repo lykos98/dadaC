@@ -101,14 +101,14 @@ def profileAndRun(dataset,dataset_name,k,Z,results, halo = False):
 
 
     t1 = time.monotonic()
-    dc.computeNeighbors(k)
+    dc.compute_distances(k)
     #n1 = dp.dist_indices
     #n2, _ = dc.getNeighbors()
     #print(n1.shape)
     #print(n2.shape)
 
-    dc.computeIDtwoNN()
-    dc.computeDensity()
+    dc.compute_id_2NN()
+    dc.compute_density_kstarNN()
 
 
     t2 = time.monotonic()
@@ -116,7 +116,7 @@ def profileAndRun(dataset,dataset_name,k,Z,results, halo = False):
 
     t1 = time.monotonic()
 
-    dc.computeClusteringADP(Z = Z, halo = halo)
+    dc.compute_clustering_ADP(Z = Z, halo = halo)
 
     t2 = time.monotonic()
     pres.append(["C", "ADP", f"{t2 - t1: .2f}s"]) 
@@ -125,7 +125,7 @@ def profileAndRun(dataset,dataset_name,k,Z,results, halo = False):
 
     print("\n**** Comparing Results ****")
     c1 = dp.cluster_assignment
-    c2 = dc.getClusterAssignment()
+    c2 = dc.cluster_assignment
     errors = np.where(c1 != c2)[0].shape[0]
     print(f" --> \t Found {errors} errors! \n")
 
@@ -147,7 +147,7 @@ x1 = np.random.normal([0,2],1,size=(n,2))
 x2 = np.random.normal([2,0],1,size=(n,2)) 
 x  = np.concatenate([x1,x2])
 
-profileAndRun(x, "2D Gaussian", k, Z, results)
+#profileAndRun(x, "2D Gaussian", k, Z, results)
 
 ## ---------------------------------------------------------------------
 ##
@@ -160,7 +160,7 @@ x1 = np.random.normal([0,2,0,0,0],1,size=(n,5))
 x2 = np.random.normal([2,0,0,0,0],1,size=(n,5)) 
 x  = np.concatenate([x1,x2])
 
-profileAndRun(x, "5D Gaussian", k, Z, results)
+#profileAndRun(x, "5D Gaussian", k, Z, results)
 
 ## ---------------------------------------------------------------------
 ##

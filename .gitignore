@@ -18,6 +18,7 @@ dadac/bin/*.so
 dadac/bin/*.o
 *nope*
 *run.sh
+*a.out*
 *example.sh
 *bb.txt
 dadac.egg-*

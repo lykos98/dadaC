@@ -242,9 +242,9 @@ int main(int argc, char** argv){
 		free(df);
 	}
 
-	//Datapoint_info* particles = NgbhSearch_kdtree_V2(data, n, opt.data_dims, opt.k); 
+	Datapoint_info* particles = NgbhSearch_kdtree_V2(data, n, opt.data_dims, opt.k); 
 	//Datapoint_info* particles = NgbhSearch_vptree_V2(data, n,sizeof(FLOAT_TYPE), opt.data_dims, opt.k, eud); 
-	Datapoint_info* particles = NgbhSearch_bruteforce(data, n,sizeof(FLOAT_TYPE), opt.data_dims, opt.k, NULL); 
+	//Datapoint_info* particles = NgbhSearch_bruteforce(data, n,sizeof(FLOAT_TYPE), opt.data_dims, opt.k, NULL); 
     /********************************
      * Intrinsic Dimension estimate *
      ********************************/
@@ -254,7 +254,8 @@ int main(int argc, char** argv){
     /***********************
      * Density computation *
      ***********************/
-    computeRho(particles,id,n);
+    //computeRho(particles,id,n);
+    PAk(particles,id,n);
     computeCorrection(particles,n,opt.Z);
 
     /********************
