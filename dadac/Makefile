@@ -10,10 +10,10 @@ VERBOSE=-DVERBOSE
 # you can install libblas from system package manager or set your implementation to openblas, mkl, or anything else
 # e.g.
 
-BLAS_INCLUDE="/home/francesco/Desktop/dssc/robavaria/OpenBLAS"
-BLAS_LIB=${BLAS_INCLUDE}
-LDFLAGS=-lm -fopenmp -lopenblas  
-CFLAGS=-O3 -march=native -Wall -Wextra -DUSE_BLAS
+#BLAS_INCLUDE=""
+#BLAS_LIB=""
+#LDFLAGS += -lyourblas  -L${BLAS_LIB}
+#CFLAGS += -DUSE_BLAS -I${BLAS_INCLUDE}
 
 
 
@@ -44,11 +44,11 @@ driver.o: driver.c
 	${COMPILING_INFO}
 
 bin/libdadac.so: bin/dadac.o bin/kdtree.o bin/kdtreeV2.o bin/heap.o bin/vptree.o bin/vptreeV2.o
-	${CC} -shared bin/dadac.o bin/kdtree.o bin/heap.o bin/vptree.o bin/vptreeV2.o bin/kdtreeV2.o ${DEBUG} ${CFLAGS} ${LDFLAGS} -L${BLAS_LIB}  -o bin/libdadac.so 
+	${CC} -shared bin/dadac.o bin/kdtree.o bin/heap.o bin/vptree.o bin/vptreeV2.o bin/kdtreeV2.o ${DEBUG} ${CFLAGS} ${LDFLAGS}   -o bin/libdadac.so 
 	${LINKING_INFO}
 
 bin/%.o : src/%.c
-	${CC} -c $< -o $@ ${CFLAGS} -fopenmp ${DEBUG} -fpic ${VERBOSE} -I${BLAS_INCLUDE}
+	${CC} -c $< -o $@ ${CFLAGS} -fopenmp ${DEBUG} -fpic ${VERBOSE} 
 	${COMPILING_INFO}
 
 clean:

@@ -1,4 +1,7 @@
 import dadapy
+import sys
+sys.path.append("/home/francesco/Desktop/dssc/robavaria/cc/dadac/")
+
 import dadac
 import numpy as np
 import matplotlib.pyplot as plt
@@ -147,7 +150,7 @@ x1 = np.random.normal([0,2],1,size=(n,2))
 x2 = np.random.normal([2,0],1,size=(n,2)) 
 x  = np.concatenate([x1,x2])
 
-#profileAndRun(x, "2D Gaussian", k, Z, results)
+profileAndRun(x, "2D Gaussian", k, Z, results)
 
 ## ---------------------------------------------------------------------
 ##
@@ -160,7 +163,7 @@ x1 = np.random.normal([0,2,0,0,0],1,size=(n,5))
 x2 = np.random.normal([2,0,0,0,0],1,size=(n,5)) 
 x  = np.concatenate([x1,x2])
 
-#profileAndRun(x, "5D Gaussian", k, Z, results)
+profileAndRun(x, "5D Gaussian", k, Z, results)
 
 ## ---------------------------------------------------------------------
 ##

@@ -674,7 +674,11 @@ void PAk(Datapoint_info* dpInfo, const FLOAT_TYPE d, const idx_t points)
 			H01 = H10;
 
 			float_t dethess = (H00*H11 - H10*H01);
-			float_t H00_inv, H01_inv, H10_inv, H11_inv,detinv;
+			float_t H00_inv = 0.;
+			float_t H01_inv = 0.;
+			float_t H10_inv = 0.;
+			float_t H11_inv = 0.;
+			float_t detinv 	= 0.;
 			if(dethess > DEPS)
 			{
 				 detinv = 1/dethess;
@@ -727,11 +731,11 @@ void PAk(Datapoint_info* dpInfo, const FLOAT_TYPE d, const idx_t points)
 				dethess = (H00*H11 - H10*H01);
 				if(dethess > DEPS)
 				{
-					float_t detinv = 1/dethess;
-					float_t H00_inv = +detinv*H11;
-					float_t H11_inv = +detinv*H00;
-					float_t H01_inv = -detinv*H01;
-					float_t H10_inv = -detinv*H10;
+					 detinv = 1/dethess;
+					 H00_inv = +detinv*H11;
+					 H11_inv = +detinv*H00;
+					 H01_inv = -detinv*H01;
+					 H10_inv = -detinv*H10;
 				}
 
 				if(fabs(gf) < DEPS || fabs(ga) < DEPS)
