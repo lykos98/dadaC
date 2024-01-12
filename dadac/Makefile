@@ -44,7 +44,7 @@ driver.o: driver.c
 	${COMPILING_INFO}
 
 bin/libdadac.so: bin/dadac.o bin/kdtree.o bin/kdtreeV2.o bin/heap.o bin/vptree.o bin/vptreeV2.o
-	${CC} -shared bin/dadac.o bin/kdtree.o bin/heap.o bin/vptree.o bin/vptreeV2.o bin/kdtreeV2.o ${DEBUG} ${CFLAGS} ${LDFLAGS}   -o bin/libdadac.so 
+	${CC} -shared bin/dadac.o bin/kdtree.o bin/heap.o bin/vptree.o bin/vptreeV2.o bin/kdtreeV2.o ${DEBUG} ${CFLAGS} ${LDFLAGS}  -o bin/libdadac.so 
 	${LINKING_INFO}
 
 bin/%.o : src/%.c

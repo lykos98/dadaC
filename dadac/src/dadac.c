@@ -2882,3 +2882,31 @@ void exportClusterAssignment(Datapoint_info* points, int* labels, idx_t n)
 {
 	for(idx_t i = 0; i < n; ++i) labels[i] = points[i].cluster_idx;
 }
+
+void exportBorders(Clusters* clusters, int* border_idx, float_t* border_den, float_t* border_err)
+{
+	idx_t nclus = clusters -> centers.count; 
+	if(clusters->UseSparseBorders)		
+	{
+		for(idx_t i = 0; i < nclus; ++i)		
+			for(idx_t el = 0; el < clusters -> SparseBorders[i].count; ++el)
+			{
+				idx_t j = clusters -> SparseBorders[i].data[el].i;
+				idx_t p = i*nclus + j;
+				border_idx[p] = (int)j;  
+				border_den[p] = clusters -> SparseBorders[i].data[el].density; 
+				border_err[p] = clusters -> SparseBorders[i].data[el].error;
+			}
+	}
+	else
+	{
+		for(idx_t i = 0; i < nclus; ++i)
+			for(idx_t j = 0; j < nclus; ++j)
+			{
+				idx_t p = i*nclus + j;
+				border_idx[p] = (int)clusters -> __borders_data[p].idx;
+				border_den[p] = clusters -> __borders_data[p].density;
+				border_err[p] = clusters -> __borders_data[p].error;
+			}
+	}
+}

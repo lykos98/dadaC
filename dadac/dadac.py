@@ -192,6 +192,13 @@ class _dadac_loader():
                                                     ct.c_uint64 ]
 
 
+        #void exportBorders(Clusters* clusters, idx_t* border_idx, float_t* border_den, float_t* border_err)
+        self._exportBorders = self.lib.exportBorders
+        self._exportBorders.argtypes = [ct.POINTER(Clusters),
+                                        np.ctypeslib.ndpointer(np.int32),
+                                        np.ctypeslib.ndpointer(ctFloatType),
+                                        np.ctypeslib.ndpointer(ctFloatType),
+                                       ]
 
 
         self._idEstimate = self.lib.idEstimate
@@ -244,13 +251,20 @@ class Data(_dadac_loader):
         super().__init__()
         #initialize class
         if self._useFloat32:
+            self._ftype = np.float32
             self.data = data.astype(np.float32)
             self.data = np.ascontiguousarray(self.data, dtype = np.float32)
             ctFloatType = ct.c_float
         else:
             #self.data = np.ascontiguousarray(data, dtype =np.float64)
+            self._ftype = np.float64
             self.data = data.astype(np.float64)
             self.data = np.ascontiguousarray(self.data, dtype = np.float64)
+
+        if self._useInt32:
+            self._itype = np.uint32
+        else:
+            self._itype = np.uint64
         self.state = {
                 "ngbh" : False,
                 "id" : False,
@@ -277,10 +291,16 @@ class Data(_dadac_loader):
         self._clusterAssignment = None
         self._distances         = None
         self._dist_indices      = None
-        self.borders             = None
+        self._log_den_bord      = None
+        self._log_den_bord_err  = None
+        self._border_indices    = None
+        self._N_clusters        = None
+        self._cluster_centers   = None
+
+        self.borders            = None
         self._log_den           = None
         self._log_den_err       = None
-        self.blas                = self._blas_in_use() != 0 
+        self.blas               = self._blas_in_use() != 0 
 
     def _is_notebook(self) -> bool:
         try:
@@ -297,8 +317,6 @@ class Data(_dadac_loader):
                 return False  # Other type (?)
         except NameError:
             return False
-
-
 
     def computeNeighbors_kdtree(self, k : int):
         
@@ -387,19 +405,20 @@ class Data(_dadac_loader):
                 t1 = time.monotonic() 
                 nn = NearestNeighbors(n_neighbors=k, n_jobs=-1, p = 2, algorithm="brute").fit(self.data)
                 dist, ngbh = nn.kneighbors(self.data)
-                ngbh = ngbh.astype(np.uint64)
+                ngbh = ngbh.astype(self._itype)
                 print(ngbh.dtype)
-                dist = np.ascontiguousarray(dist.astype(np.float64),dtype = np.float64)
+                dist = np.ascontiguousarray(dist.astype(self._ftype),dtype = self._ftype)
                 ngbh = np.ascontiguousarray(ngbh)
                 
                 self._datapoints = self._allocateDatapoints(self.n)
-                self._importNeighborsAndDistances(self._datapoints,ngbh,dist,self.n, np.uint64(k))
+                self._importNeighborsAndDistances(self._datapoints,ngbh,dist,self.n, self._itype(k))
                 t2 = time.monotonic()
 
             self.state["ngbh"] = True
             #print(f"\tTotal time: {t2 - t1 : .2f}s")
             #self.computeNeighbors_bruteforce(k)
             return
+
     def compute_id_2NN(self,fraction = 0.9):
 
         """ Compute the intrinsic dimension of the dataset via the TWO Nearest Neighbors method.
@@ -417,6 +436,22 @@ class Data(_dadac_loader):
         else:
             self.id = self._idEstimate(self._datapoints,self.n,fraction)
         self.state["id"] = True
+
+    def import_neighbors_and_distances(self,ngbh,dists):
+        if self._datapoints is None:
+            self._datapoints = self._allocateDatapoints(self.n)
+        k = ngbh.shape[1]
+        self._importNeighborsAndDistances(self._datapoints,ngbh.astype(self._itype),dists.astype(self._ftype),self.n, np.uint64(k))
+
+    def import_density(self, log_den,log_den_err,kstar):
+        if self._datapoints is None:
+            self._datapoints = self._allocateDatapoints(self.n)
+        self.state["density"] = True
+        #void _importDensity(Datapoint_info* points, idx_t* kstar, float_t* density, float_t* density_err, idx_t n)
+        self._log_den = log_den.astype(self._ftype)
+        self._log_den_err = log_den_err.astype(self._ftype)
+        self._kstar = kstar.astype(self._itype)
+        self._importDensity(self._datapoints,self.kstar,self.log_den, self.log_den_err,self.n)
 
     def compute_density_kstarNN(self):
 
@@ -456,7 +491,7 @@ class Data(_dadac_loader):
         self.density = None
         self.densityError = None
 
-    def compute_clustering_ADP(self,Z : float, halo = True, useSparse = "auto"):
+    def compute_clustering_ADP(self,Z : float, halo = False, useSparse = "auto"):
 
         """Compute clustering via the Advanced Density Peak method
 
@@ -522,9 +557,6 @@ class Data(_dadac_loader):
         return self._clusterAssignment
 
 
-    def getBorders(self):
-        raise NotImplemented("It's difficult I have to think about it")
-
     def _getDensity(self):
 
         """Retrieve list of density values
@@ -537,12 +569,63 @@ class Data(_dadac_loader):
             
         """
         if self.state["density"]:
-            self._log_den      = np.zeros(self.n,np.float64)
-            self._log_den_err  = np.zeros(self.n,np.float64)
-            self._kstar        = np.zeros(self.n,np.uint64)
+            self._log_den      = np.zeros(self.n,self._ftype)
+            self._log_den_err  = np.zeros(self.n,self._ftype)
+            self._kstar        = np.zeros(self.n,self._itype)
             self._exportDensity(self._datapoints,self._kstar, self._log_den, self._log_den_err, self.n)
         else:
             raise ValueError("Density is not computed yet use `Data.computeDensity()`")
+
+    def _getNclusters(self):
+        if self.state["clustering"]:
+            self._N_clusters = len(set(self.cluster_assignment))
+        else:
+            raise ValueError("Borders not computed yet use `Data.compute_clustering_[DP,ADP,...]()`")
+
+
+    def _getBorders(self):
+
+        """Retrieve borders 
+
+        Raises:
+            ValueError: Raise error if density is not computed,  
+
+        Returns:
+            List of density values
+            
+        """
+        if self.state["clustering"]:
+            self._log_den_bord      = np.zeros((self.N_clusters,self.N_clusters),self._ftype) 
+            self._log_den_bord_err  = np.zeros((self.N_clusters,self.N_clusters),self._ftype)
+            self._border_indices    = np.zeros((self.N_clusters,self.N_clusters),np.int32) - 1
+            self._exportBorders(self._clusters,self._border_indices, self._log_den_bord, self._log_den_bord_err)
+            #ugly thing to retrieve correct thing in dadapy as border density
+            mm = np.zeros_like(self._log_den_bord)
+            f = np.where(self._border_indices == -1)
+            mm[f] = -1
+            mm += np.eye(self._N_clusters)
+            self._log_den_bord -= mm
+        else:
+            raise ValueError("Borders not computed yet use `Data.compute_clustering_[DP,ADP,...]()`")
+
+    def _getClusterCenters(self):
+        if self.state["clustering"]:
+            self._cluster_centers = [int(self._datapoints[i].array_idx)  for i in range(self.n) if bool(self._datapoints[i].is_center)]
+        else:
+            raise ValueError("Clustering not computed yet use `Data.compute_clustering_[DP,ADP,...]()`")
+
+    @property
+    def cluster_centers(self):
+        if self._cluster_centers is None:
+            self._getClusterCenters()
+        return self._cluster_centers
+
+    @property
+    def N_clusters(self):
+        if self._N_clusters is None:
+            self._getNclusters()
+        return self._N_clusters
+
 
     @property
     def log_den(self):
@@ -566,22 +649,37 @@ class Data(_dadac_loader):
     @property
     def distances(self): 
         if self._distances is None:
-            self._distances = np.zeros((self.n,self.k), np.float64)
-            self._dist_indices = np.zeros((self.n,self.k), np.uint64)
+            self._distances = np.zeros((self.n,self.k), self._ftype)
+            self._dist_indices = np.zeros((self.n,self.k), self._itype)
             self._exportNeighborsAndDistances(self._datapoints,self._dist_indices, self._distances, self.n, self.k)
         return self._distances
 
     @property
     def dist_indices(self): 
         if self._dist_indices is None:
-            self._distances = np.zeros((self.n,self.k), np.float64)
-            self._dist_indices = np.zeros((self.n,self.k), np.uint64)
+            self._distances = np.zeros((self.n,self.k), self._ftype)
+            self._dist_indices = np.zeros((self.n,self.k), self._itype)
             self._exportNeighborsAndDistances(self._datapoints,self._dist_indices,self._distances, self.n, self.k)
         return self._dist_indices
 
-
+    @property
+    def log_den_bord(self):
+        if self._log_den_bord is None:
+            self._getBorders()
+        return self._log_den_bord
     
+    @property
+    def log_den_bord_err(self):
+        if self._log_den_bord_err is None:
+            self._getBorders()
+        return self._log_den_bord_err
 
+    @property
+    def border_indices(self):
+        if self._border_indices is None:
+            self._getBorders()
+        return self._border_indices
+    
     #def setRhoErrK(self, rho, err, k):
     #    self._setRhoErrK(self._datapoints, rho, err, k, self.n)
     #    self.state["density"] = True
