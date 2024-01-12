@@ -23,9 +23,11 @@ COMPILING_INFO=@echo "[\e[36mCOMPILING\e[0m]: $@"
 LINKING_INFO=@echo "[\e[34mLINKING\e[0m]: $@"
 
 
+lib: bin/libdadac.so 
 
 all: driver test
 	@echo "[\e[31mFLAGS\e[0m]: ${CFLAGS}"
+
 
 test: test.o bin/libdadac.so
 	${CC} test.o -L./bin -ldadac ${LDFLAGS} ${DEBUG} -o test
