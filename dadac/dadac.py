@@ -10,28 +10,28 @@ ctFloatType = ct.c_double
 ctIdxType = ct.c_uint64
 
 class HeapNode(ct.Structure):
-    __fields__ = [
+    _fields_ = [
         ("value", ctFloatType),
         ("array_idx", ctIdxType)
     ]
 
 
 class Heap(ct.Structure):
-    __fields__ = [
+    _fields_ = [
         ("N", ctIdxType),
         ("count", ctIdxType),
         ("data", ct.POINTER(HeapNode))
     ]
 
 class luDynamicArray(ct.Structure):
-    __fields__ = [
+    _fields_ = [
         ("data", ct.POINTER(ctIdxType)),
         ("size", ctIdxType),
         ("count", ctIdxType)
     ]
 
 class DatapointInfo(ct.Structure):
-    __fields__ = [
+    _fields_ = [
         ("g", ctFloatType),
         ("ngbh", Heap),
         ("array_idx", ctIdxType),
@@ -47,14 +47,14 @@ class DatapointInfo(ct.Structure):
         return f"{{ g: {self.g}, ngbh: {self.ngbh}, array_idx: {self.array_idx}, log_den: {self.log_den}, log_den_c: {self.log_den_c}, log_den_err: {self.log_den_err}, kstar: {self.kstar}, isCenter: {self.is_center}, clusterIdx: {self.cluster_idx} }}"
 
 class Border_t(ct.Structure):
-    __fields__ = [
+    _fields_ = [
         ("idx", ctIdxType),
         ("density", ctFloatType),
         ("error", ctFloatType)
     ]
 
 class SparseBorder_t(ct.Structure):
-    __fields__ = [
+    _fields_ = [
         ("i", ctIdxType),
         ("j", ctIdxType),
         ("idx", ctIdxType),
@@ -63,14 +63,14 @@ class SparseBorder_t(ct.Structure):
     ]
 
 class AdjList(ct.Structure):
-    __fields__ = [
+    _fields_ = [
         ("count", ctIdxType),
         ("size", ctIdxType),
         ("data", ct.POINTER(SparseBorder_t))
     ]
 
 class Clusters(ct.Structure):
-    __fields__ = [
+    _fields_ = [
         ("UseSparseBorders", ct.c_int),
         ("SparseBorders", ct.POINTER(AdjList)),
         ("centers", luDynamicArray),
