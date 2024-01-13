@@ -314,7 +314,7 @@ class Data(_dadac_loader):
             elif shell == 'TerminalInteractiveShell':
                 return False  # Terminal running IPython
             else:
-                return False  # Other type (?)
+                return True  # Other type (?)
         except NameError:
             return False
 
