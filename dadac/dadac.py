@@ -10,28 +10,28 @@ ctFloatType = ct.c_double
 ctIdxType = ct.c_uint64
 
 class HeapNode(ct.Structure):
-    _fields_ = [
+    __fields__ = [
         ("value", ctFloatType),
         ("array_idx", ctIdxType)
     ]
 
 
 class Heap(ct.Structure):
-    _fields_ = [
+    __fields__ = [
         ("N", ctIdxType),
         ("count", ctIdxType),
         ("data", ct.POINTER(HeapNode))
     ]
 
 class luDynamicArray(ct.Structure):
-    _fields_ = [
+    __fields__ = [
         ("data", ct.POINTER(ctIdxType)),
         ("size", ctIdxType),
         ("count", ctIdxType)
     ]
 
 class DatapointInfo(ct.Structure):
-    _fields_ = [
+    __fields__ = [
         ("g", ctFloatType),
         ("ngbh", Heap),
         ("array_idx", ctIdxType),
@@ -47,14 +47,14 @@ class DatapointInfo(ct.Structure):
         return f"{{ g: {self.g}, ngbh: {self.ngbh}, array_idx: {self.array_idx}, log_den: {self.log_den}, log_den_c: {self.log_den_c}, log_den_err: {self.log_den_err}, kstar: {self.kstar}, isCenter: {self.is_center}, clusterIdx: {self.cluster_idx} }}"
 
 class Border_t(ct.Structure):
-    _fields_ = [
+    __fields__ = [
         ("idx", ctIdxType),
         ("density", ctFloatType),
         ("error", ctFloatType)
     ]
 
 class SparseBorder_t(ct.Structure):
-    _fields_ = [
+    __fields__ = [
         ("i", ctIdxType),
         ("j", ctIdxType),
         ("idx", ctIdxType),
@@ -63,14 +63,14 @@ class SparseBorder_t(ct.Structure):
     ]
 
 class AdjList(ct.Structure):
-    _fields_ = [
+    __fields__ = [
         ("count", ctIdxType),
         ("size", ctIdxType),
         ("data", ct.POINTER(SparseBorder_t))
     ]
 
 class Clusters(ct.Structure):
-    _fields_ = [
+    __fields__ = [
         ("UseSparseBorders", ct.c_int),
         ("SparseBorders", ct.POINTER(AdjList)),
         ("centers", luDynamicArray),
@@ -304,7 +304,7 @@ class Data(_dadac_loader):
 
     def _is_notebook(self) -> bool:
         try:
-            shell = get_ipython()._class_._name_
+            shell = get_ipython().__class__.__name__
             if shell == 'ZMQInteractiveShell':
                 print("You are running in a notebook maybe the timing output will break, but everything should be fine ")
                 return True   # Jupyter notebook or qtconsole
