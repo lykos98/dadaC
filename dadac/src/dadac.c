@@ -35,6 +35,9 @@ const border_t border_null = {.density = -1.0, .error = 0, .idx = NOBORDER};
 const SparseBorder_t SparseBorder_null = {.density = -1.0, .error = 0, .idx = NOBORDER, .i = NOBORDER, .j = NOBORDER};
 
 void LinkedList_Insert(LinkedList* L, Node* n)
+/*
+ * DELETE
+ */
 {
     ++(L -> count);
     n -> next = L -> head;
@@ -43,6 +46,11 @@ void LinkedList_Insert(LinkedList* L, Node* n)
 
 int blas_are_in_use()
 {
+	/*
+	 * Helper function for retrieving if the code is compiled with
+	 * a BLAS implementation.
+	 * Usefull only for integration in python
+	 */
 	#ifdef USE_BLAS
 		return 1;
 	#else
@@ -50,17 +58,13 @@ int blas_are_in_use()
 	#endif
 }
 
-/*****************************
- * Clusters object functions *
- *****************************/
+/* Clustering part */
 
 void Clusters_allocate(Clusters * c, int s)
 {
-
-    /*************************************
-     * allocate additional resources and *
-     * pointers for Clusters object      *
-     *************************************/
+	/*
+	 * Helper function for handling allocation of resources 
+	 */ 
     if(c -> centers.count == 0)
     {
         printf("Provide a valid cluster centers list\n");
@@ -102,52 +106,12 @@ void Clusters_allocate(Clusters * c, int s)
     }
 }
 
-void old_Clusters_allocate(Clusters * c)
-{
-    /*************************************
-     * allocate additional resources and *
-     * pointers for Clusters object      *
-     *************************************/
-    if(c -> centers.count == 0)
-    {
-        printf("Provide a valid cluster centers list\n");
-        return;
-    }
-
-    idx_t nclus = c -> centers.count;
-    
-    if(nclus > 10)
-    {
-	    c -> UseSparseBorders = 1;
-	    c -> SparseBorders = (AdjList_t*)malloc(nclus*sizeof(AdjList_t));
-	    for(idx_t i = 0; i < nclus; ++i)
-	    {
-		    c -> SparseBorders[i].count = 0;
-		    c -> SparseBorders[i].size  = PREALLOC_BORDERS;
-		    c -> SparseBorders[i].data  = (SparseBorder_t*)malloc(PREALLOC_BORDERS*sizeof(SparseBorder_t));
-	    }
-
-    }
-    else
-    {
-	    c -> UseSparseBorders = 0;
-	    c -> __borders_data         = (border_t*)malloc(nclus*nclus*sizeof(border_t)); 
-	    c -> borders                = (border_t**)malloc(nclus*sizeof(border_t*));
-
-	    #pragma omp parallel for
-	    for(idx_t i = 0; i < nclus; ++i)
-	    {
-		c -> borders[i]         = c -> __borders_data + i*nclus;
-		for(idx_t j = 0; j < nclus; ++j)
-		{
-		    c -> borders[i][j] = border_null;
-		}
-	    }
-    }
-}
 
 void AdjList_Insert(AdjList_t* l, SparseBorder_t b)
 {
+	/*
+	 * Handling of sparse border implementation as an adjecency list
+	 */
 	if(l -> count < l -> size)
 	{
 		l -> data[l -> count] = b;
@@ -164,6 +128,9 @@ void AdjList_Insert(AdjList_t* l, SparseBorder_t b)
 
 void AdjList_reset(AdjList_t* l)
 {
+	/*
+	 * Handling of sparse border implementation as an adjecency list
+	 */
 	free(l -> data);
 	l -> count = 0;
 	l -> size  = 0;
@@ -172,6 +139,9 @@ void AdjList_reset(AdjList_t* l)
 
 void Clusters_Reset(Clusters * c)
 {
+	/* 
+	 * Handling reset of Clusters object 
+	 */
 	if(c -> UseSparseBorders)
 	{
 		for(idx_t i = 0; i < c -> centers.count; ++i)
@@ -199,6 +169,10 @@ void Clusters_free(Clusters * c)
 
 void SparseBorder_Insert(Clusters *c, SparseBorder_t b)
 {
+	/*
+	 * Insert a border element in the sparse implementation
+	 */
+
 	idx_t i = b.i;
 	AdjList_t l = c -> SparseBorders[i];
 	int check = 1;
@@ -220,6 +194,12 @@ void SparseBorder_Insert(Clusters *c, SparseBorder_t b)
 
 SparseBorder_t SparseBorder_get(Clusters* c, idx_t i, idx_t j)
 {
+	/*
+	 * Get a border element in the sparse implementation
+	 * - i,j: cluster to search for borders
+	 * return border_null if not found
+	 */
+
 	SparseBorder_t b = SparseBorder_null;
 	AdjList_t l = c -> SparseBorders[i];
 	for(idx_t el = 0; el < l.count; ++el)
@@ -278,152 +258,6 @@ void DynamicArray_Init(lu_dynamicArray * a)
 }
 
 
-/*******************
- * Clustering part *
- *******************/
-void KNN_search_kdTreeV2(Datapoint_info * dpInfo,kdNodeV2* kdNodeArray, kdNodeV2* root, idx_t n, idx_t k)
-{
-    struct timespec start_tot, finish_tot;
-    double elapsed_tot;
-    printf("KNN search:\n");
-    clock_gettime(CLOCK_MONOTONIC, &start_tot);
-	
-	#ifdef PROGRESS_BAR
-		idx_t progress_count = 0;
-		idx_t step = n/100;
-		printf("Progress 0/%lu -> 0%%\r",(uint64_t)n);
-		fflush(stdout);
-	#endif
-    
-    #pragma omp parallel
-    {
-
-	    #pragma omp for schedule(dynamic)
-	    for(int p = 0; p < n; ++p)
-	    {
-			idx_t idx = kdNodeArray[p].array_idx;
-			dpInfo[idx].ngbh = KNN_kdTreeV2(kdNodeArray[p].data, root, k);
-			dpInfo[idx].cluster_idx = -1;
-			dpInfo[idx].is_center = 0;
-			dpInfo[idx].array_idx = idx;
-
-			#ifdef PROGRESS_BAR
-				idx_t aa;
-
-				#pragma omp atomic capture
-				aa = ++progress_count;
-
-				if(aa % step == 0 )
-				{
-					printf("Progress %lu/%lu -> %u%%\r",(uint64_t)aa, (uint64_t)n, (uint32_t)((100*aa)/n) );
-					fflush(stdout);
-				}
-			#endif
-		}
-    }
-
-	
-
-	#ifdef PROGRESS_BAR
-		printf("Progress %lu/%lu -> 100%%\n",(uint64_t)n, (uint64_t)n);
-	#endif
-    //printf("Progress %lu/%lu\n",(uint64_t)progress_count, (uint64_t)n);
-
-    clock_gettime(CLOCK_MONOTONIC, &finish_tot);
-    elapsed_tot = (finish_tot.tv_sec - start_tot.tv_sec);
-    elapsed_tot += (finish_tot.tv_nsec - start_tot.tv_nsec) / 1000000000.0;
-    printf("\tTotal time: %.3lfs\n\n", elapsed_tot);
-    return;
-
-}
-
-
-void KNN_search_kdtree(Datapoint_info * dpInfo, FLOAT_TYPE * data, kd_node* root, idx_t n, idx_t k)
-{
-    struct timespec start_tot, finish_tot;
-    double elapsed_tot;
-    printf("KNN search:\n");
-    clock_gettime(CLOCK_MONOTONIC, &start_tot);
-	
-	#ifdef PROGRESS_BAR
-		idx_t progress_count = 0;
-		idx_t step = n/100;
-		printf("Progress 0/%lu -> 0%%\r",(uint64_t)n);
-		fflush(stdout);
-	#endif
-
-	/*		
-	heap_node* preallocatedHeaps = (heap_node*)malloc(k*n*sizeof(heap_node));
-    #pragma omp parallel
-    {
-
-	    #pragma omp for schedule(dynamic)
-	    for(int p = 0; p < n; ++p)
-	    {
-		Heap H;
-		H.count = 0;
-		H.N = k;
-		H.data = preallocatedHeaps + (k*p);
-
-		KNN_sub_tree_search(data + data_dims*p, root, &H);
-		HeapSort(&H);
-		dpInfo[p].ngbh = H;
-		dpInfo[p].array_idx = p;
-
-		#ifdef PROGRESS_BAR
-			idx_t aa;
-
-			#pragma omp atomic capture
-			aa = ++progress_count;
-
-			if(aa % step == 0 )
-			{
-				printf("Progress %lu/%lu -> %u%%\r",(uint64_t)aa, (uint64_t)n, (uint32_t)((100*aa)/n) );
-				fflush(stdout);
-			}
-		#endif
-		}
-    }
-	*/
-    
-    #pragma omp parallel
-    {
-
-	    #pragma omp for schedule(dynamic)
-	    for(int p = 0; p < n; ++p)
-	    {
-		dpInfo[p].ngbh = KNN(data + data_dims*p, root, k);
-		dpInfo[p].array_idx = p;
-
-		#ifdef PROGRESS_BAR
-			idx_t aa;
-
-			#pragma omp atomic capture
-			aa = ++progress_count;
-
-			if(aa % step == 0 )
-			{
-				printf("Progress %lu/%lu -> %u%%\r",(uint64_t)aa, (uint64_t)n, (uint32_t)((100*aa)/n) );
-				fflush(stdout);
-			}
-		#endif
-		}
-    }
-
-	
-
-	#ifdef PROGRESS_BAR
-		printf("Progress %lu/%lu -> 100%%\n",(uint64_t)n, (uint64_t)n);
-	#endif
-    //printf("Progress %lu/%lu\n",(uint64_t)progress_count, (uint64_t)n);
-
-    clock_gettime(CLOCK_MONOTONIC, &finish_tot);
-    elapsed_tot = (finish_tot.tv_sec - start_tot.tv_sec);
-    elapsed_tot += (finish_tot.tv_nsec - start_tot.tv_nsec) / 1000000000.0;
-    printf("\tTotal time: %.3lfs\n\n", elapsed_tot);
-    return;
-
-}
 
 int cmp(const void * a, const void * b){
     FLOAT_TYPE aa = *((FLOAT_TYPE*)a);
@@ -448,14 +282,14 @@ FLOAT_TYPE avg(const FLOAT_TYPE * x, const idx_t n)
 FLOAT_TYPE mEst2(FLOAT_TYPE * x, FLOAT_TYPE *y, idx_t n)
 {
 
-    /********************************************
-     * Estimate the m coefficient of a straight *
-     * line passing through the origin          *
-     * params:                                  *
-     * - x: x values of the points              *
-     * - y: y values of the points              *
-     * - n: size of the arrays                  *
-     ********************************************/
+    /*
+     * Estimate the m coefficient of a straight 
+     * line passing through the origin          
+     * params:                                  
+     * - x: x values of the points              
+     * - y: y values of the points              
+     * - n: size of the arrays                  
+     */
      
 
     //FLOAT_TYPE x_avg, y_avg;
@@ -500,17 +334,17 @@ FLOAT_TYPE mEst(FLOAT_TYPE * x, FLOAT_TYPE *y, idx_t n)
 FLOAT_TYPE idEstimate(Datapoint_info* dpInfo, idx_t n,FLOAT_TYPE fraction)
 {
 
-    /*********************************************************************************************
-     * Estimation of the intrinsic dimension of a dataset                                        *
-     * args:                                                                                     *
-     * - dpInfo: array of structs                                                             *
-     * - n: number of dpInfo                                                                  *
-     * Estimates the id via 2NN method. Computation of the log ratio of the                      *
-     * distances of the first 2 neighbors of each point. Then compute the empirical distribution *
-     * of these log ratii                                                                        *
-     * The intrinsic dimension is found by fitting with a straight line passing through the      *
-     * origin                                                                                    *
-     *********************************************************************************************/
+    /*
+     * Estimation of the intrinsic dimension of a dataset                                       
+     * args:                                                                                    
+     * - dpInfo: array of structs                                                             
+     * - n: number of dpInfo                                                                  
+     * Estimates the id via 2NN method. Computation of the log ratio of the                      
+     * distances of the first 2 neighbors of each point. Then compute the empirical distribution 
+     * of these log ratii                                                                        
+     * The intrinsic dimension is found by fitting with a straight line passing through the      
+     * origin                                                                                    
+     */
 
     struct timespec start_tot, finish_tot;
     double elapsed_tot;
@@ -547,13 +381,13 @@ FLOAT_TYPE idEstimate(Datapoint_info* dpInfo, idx_t n,FLOAT_TYPE fraction)
 
 void computeRho(Datapoint_info* dpInfo, const FLOAT_TYPE d, const idx_t points){
 
-    /****************************************************
-     * Point density computation:                       *
-     * args:                                            *
-     * -   paricles: array of structs                   *
-     * -   d       : intrinsic dimension of the dataset *
-     * -   points  : number of points in the dataset    *
-     ****************************************************/
+    /*
+     * Point density computation:                       
+     * args:                                            
+     * -   paricles: array of structs                   
+     * -   d       : intrinsic dimension of the dataset 
+     * -   points  : number of points in the dataset    
+     */
 
     struct timespec start_tot, finish_tot;
     double elapsed_tot;
@@ -761,10 +595,10 @@ void PAk(Datapoint_info* dpInfo, const FLOAT_TYPE d, const idx_t points)
 
 int cmpPP(const void* p1, const void *p2)
 {
-    /***********************************************
-     * Utility function to perform quicksort then  *
-     * when clustering assignment is performed     *
-     ***********************************************/
+    /*
+     * Utility function to perform quicksort then  
+     * when clustering assignment is performed    
+     */
     Datapoint_info* pp1 = *(Datapoint_info**)p1;
     Datapoint_info* pp2 = *(Datapoint_info**)p2;
     return 2*(pp1 -> g < pp2 -> g) - 1;
@@ -772,10 +606,10 @@ int cmpPP(const void* p1, const void *p2)
 
 void computeCorrection(Datapoint_info* dpInfo, idx_t n, FLOAT_TYPE Z)
 {
-    /*****************************************************************************
-     * Utility function, find the minimum value of the density of the datapoints *
-     * and shift them up in order to further work with values greater than 0     *
-     *****************************************************************************/
+    /*
+     * Utility function, find the minimum value of the density of the datapoints
+     * and shift them up in order to further work with values greater than 0     
+     */
     FLOAT_TYPE min_log_rho = 999999.9;
     
 
@@ -843,11 +677,9 @@ Clusters Heuristic1(Datapoint_info* dpInfo, idx_t n)
     for(idx_t i = 0; i < n; ++i)
     {   
         /*
-
-        Find the centers of the clusters as the points of higher density in their neighborhoods
-        A point is tagged as a putative center if it is the point of higer density of its neighborhood 
-        
-        */
+         * Find the centers of the clusters as the points of higher density in their neighborhoods
+         * A point is tagged as a putative center if it is the point of higer density of its neighborhood 
+         */
 
         dpInfo_ptrs[i] = dpInfo + i;
         idx_t maxk = dpInfo[i].kstar + 1;
@@ -1084,11 +916,11 @@ Clusters Heuristic1(Datapoint_info* dpInfo, idx_t n)
     //idx_t nclusters = 0;
 
 
-    /*****************************************************************************
-     * Sort all the dpInfo based on g and then perform the cluster assignment *
-     * in asceding order                                                         *
-     * UPDATE: dpInfo already sorted                                          *
-     *****************************************************************************/
+    /*
+     * Sort all the dpInfo based on g and then perform the cluster assignment
+     * in asceding order                                                     
+     * UPDATE: dpInfo already sorted                                          
+     */
                                                                                 
 
     //qsort(dpInfo_ptrs, n, sizeof(Datapoint_info*), cmpPP);
@@ -1568,49 +1400,49 @@ void Heuristic3_sparse(Clusters* cluster, Datapoint_info* dpInfo, FLOAT_TYPE Z, 
         //printf("Found: %lu, %lu which now is %lu, %lu\n",merging_table[m].source, merging_table[m].target, src,trg);
 
         //int re_check = ( (src != merging_table[m].source) || (trg != merging_table[m].target) );
-	//if(re_check)
-	{
-		idx_t new_src = (src < trg) ? src : trg;
-		idx_t new_trg = (src < trg) ? trg : src;
+		//if(re_check)
+		{
+			idx_t new_src = (src < trg) ? src : trg;
+			idx_t new_trg = (src < trg) ? trg : src;
 
-                //pick who am I
+					//pick who am I
 
-                FLOAT_TYPE dens1           = dpInfo[cluster->centers.data[new_src]].log_rho_c;
-                FLOAT_TYPE dens1_err       = dpInfo[cluster->centers.data[new_src]].log_rho_err;
-                FLOAT_TYPE dens2           = dpInfo[cluster->centers.data[new_trg]].log_rho_c;
-                FLOAT_TYPE dens2_err       = dpInfo[cluster->centers.data[new_trg]].log_rho_err;
+					FLOAT_TYPE dens1           = dpInfo[cluster->centers.data[new_src]].log_rho_c;
+					FLOAT_TYPE dens1_err       = dpInfo[cluster->centers.data[new_src]].log_rho_err;
+					FLOAT_TYPE dens2           = dpInfo[cluster->centers.data[new_trg]].log_rho_c;
+					FLOAT_TYPE dens2_err       = dpInfo[cluster->centers.data[new_trg]].log_rho_err;
 
-		//borders get
-		SparseBorder_t b 	   = SparseBorder_get(cluster, new_src, new_trg);
-                FLOAT_TYPE dens_border     = b.density;
-                FLOAT_TYPE dens_border_err = b.error;
+					//borders get
+					SparseBorder_t b 	   	   = SparseBorder_get(cluster, new_src, new_trg);
+					FLOAT_TYPE dens_border     = b.density;
+					FLOAT_TYPE dens_border_err = b.error;
 
-                int i_have_to_merge = is_a_merging(dens1,dens1_err,dens2,dens2_err,dens_border,dens_border_err,Z);            
-                switch (i_have_to_merge && src != trg)
-                {
-                case 1:
-                    {
-                        int side = merging_roles(dens1,dens1_err,dens2,dens2_err,dens_border,dens_border_err);
-                        if(!side)
-                        {
-                            idx_t tmp;
-                            tmp = new_src;
-                            new_src = new_trg;
-                            new_trg = tmp;
-                        }
+					int i_have_to_merge = is_a_merging(dens1,dens1_err,dens2,dens2_err,dens_border,dens_border_err,Z);            
+					switch (i_have_to_merge && src != trg)
+					{
+					case 1:
+						{
+							int side = merging_roles(dens1,dens1_err,dens2,dens2_err,dens_border,dens_border_err);
+							if(!side)
+							{
+								idx_t tmp;
+								tmp = new_src;
+								new_src = new_trg;
+								new_trg = tmp;
+							}
 
-                        //borders[new_src][new_trg] = border_null;
-                        //borders[new_trg][new_src] = border_null;
-                        //printf("Merging %lu into %lu\n",new_src,new_trg);
-                        fix_SparseBorders_A_into_B(new_src,new_trg,cluster);
-                        Merge_A_into_B ( surviving_clusters, new_src, new_trg, nclus );	  
-                    }
-                    break;
-                
-                default:
-                    break;
-                }
-	}
+							//borders[new_src][new_trg] = border_null;
+							//borders[new_trg][new_src] = border_null;
+							//printf("Merging %lu into %lu\n",new_src,new_trg);
+							fix_SparseBorders_A_into_B(new_src,new_trg,cluster);
+							Merge_A_into_B ( surviving_clusters, new_src, new_trg, nclus );	  
+						}
+						break;
+					
+					default:
+						break;
+					}
+		}
         
         #undef src
         #undef trg
@@ -1708,7 +1540,7 @@ void Heuristic3_sparse(Clusters* cluster, Datapoint_info* dpInfo, FLOAT_TYPE Z, 
 
 
     cluster -> centers = tmp_centers;
-    /**
+    /*
      * Fix center assignment
     */
     for(idx_t i = 0; i < cluster -> centers.count; ++i)
@@ -1876,48 +1708,50 @@ void Heuristic3_dense(Clusters* cluster, Datapoint_info* dpInfo, FLOAT_TYPE Z, i
         #define trg surviving_clusters[merging_table[m].target]
         //printf("Found: %lu, %lu which now is %lu, %lu\n",merging_table[m].source, merging_table[m].target, src,trg);
 
+		/* Not neede anymore */
+
         //int re_check = ( (src != merging_table[m].source) || (trg != merging_table[m].target) );
-	//if(re_check)
-	{
-		idx_t new_src = (src < trg) ? src : trg;
-		idx_t new_trg = (src < trg) ? trg : src;
+		//if(re_check)
+		{
+			idx_t new_src = (src < trg) ? src : trg;
+			idx_t new_trg = (src < trg) ? trg : src;
 
-                //pick who am I
+					//pick who am I
 
-                FLOAT_TYPE dens1           = dpInfo[cluster->centers.data[new_src]].log_rho_c;
-                FLOAT_TYPE dens1_err       = dpInfo[cluster->centers.data[new_src]].log_rho_err;
-                FLOAT_TYPE dens2           = dpInfo[cluster->centers.data[new_trg]].log_rho_c;
-                FLOAT_TYPE dens2_err       = dpInfo[cluster->centers.data[new_trg]].log_rho_err;
+					FLOAT_TYPE dens1           = dpInfo[cluster->centers.data[new_src]].log_rho_c;
+					FLOAT_TYPE dens1_err       = dpInfo[cluster->centers.data[new_src]].log_rho_err;
+					FLOAT_TYPE dens2           = dpInfo[cluster->centers.data[new_trg]].log_rho_c;
+					FLOAT_TYPE dens2_err       = dpInfo[cluster->centers.data[new_trg]].log_rho_err;
 
-                FLOAT_TYPE dens_border     = borders[new_src][new_trg].density;
-                FLOAT_TYPE dens_border_err = borders[new_src][new_trg].error;
+					FLOAT_TYPE dens_border     = borders[new_src][new_trg].density;
+					FLOAT_TYPE dens_border_err = borders[new_src][new_trg].error;
 
-                int i_have_to_merge = is_a_merging(dens1,dens1_err,dens2,dens2_err,dens_border,dens_border_err,Z);            
-                switch (i_have_to_merge && src != trg)
-                {
-                case 1:
-                    {
-                        int side = merging_roles(dens1,dens1_err,dens2,dens2_err,dens_border,dens_border_err);
-                        if(!side)
-                        {
-                            idx_t tmp;
-                            tmp = new_src;
-                            new_src = new_trg;
-                            new_trg = tmp;
-                        }
+					int i_have_to_merge = is_a_merging(dens1,dens1_err,dens2,dens2_err,dens_border,dens_border_err,Z);            
+					switch (i_have_to_merge && src != trg)
+					{
+					case 1:
+						{
+							int side = merging_roles(dens1,dens1_err,dens2,dens2_err,dens_border,dens_border_err);
+							if(!side)
+							{
+								idx_t tmp;
+								tmp = new_src;
+								new_src = new_trg;
+								new_trg = tmp;
+							}
 
-                        borders[new_src][new_trg] = border_null;
-                        borders[new_trg][new_src] = border_null;
-                        //printf("Merging %lu into %lu\n",new_src,new_trg);
-                        fix_borders_A_into_B(new_src,new_trg,borders,nclus);
-                        Merge_A_into_B ( surviving_clusters, new_src, new_trg, nclus );	  
-                    }
-                    break;
-                
-                default:
-                    break;
-                }
-	}
+							borders[new_src][new_trg] = border_null;
+							borders[new_trg][new_src] = border_null;
+							//printf("Merging %lu into %lu\n",new_src,new_trg);
+							fix_borders_A_into_B(new_src,new_trg,borders,nclus);
+							Merge_A_into_B ( surviving_clusters, new_src, new_trg, nclus );	  
+						}
+						break;
+					
+					default:
+						break;
+					}
+		}
         
         #undef src
         #undef trg
@@ -1959,7 +1793,7 @@ void Heuristic3_dense(Clusters* cluster, Datapoint_info* dpInfo, FLOAT_TYPE Z, i
         }
     }
 
-    //fill the rest of old_to_new
+    /*fill the rest of old_to_new*/
     for(idx_t i = 0; i < nclus; ++i)
     {
         if(surviving_clusters[i] != i){
@@ -2094,6 +1928,9 @@ void Heuristic3_dense(Clusters* cluster, Datapoint_info* dpInfo, FLOAT_TYPE Z, i
 
 void Heuristic3(Clusters* cluster, Datapoint_info* dpInfo, FLOAT_TYPE Z, int halo)
 {
+	/*
+	 * Wapper for dense and sparse implementation
+	 */
 	if(cluster -> UseSparseBorders)
 	{
 		Heuristic3_sparse(cluster, dpInfo,  Z,  halo);
@@ -2113,21 +1950,139 @@ void computeLevel(kd_node* root, idx_t prev_lvl)
 	return;
 }
 
-Heap KNN_bruteforce(void* point, void* data, size_t n, idx_t elementSize, idx_t k, float_t (*metric)(void*, void*))
+void KNN_search_kdTreeV2(Datapoint_info * dpInfo,kdNodeV2* kdNodeArray, kdNodeV2* root, idx_t n, idx_t k)
 {
-    Heap H;
-    allocateHeap(&H,k);
-    initHeap(&H);
-	for(idx_t j = 0; j < n; ++j)
-	{
-		float_t distance = metric(point, data + elementSize*j);
-		insertMaxHeap_InsertionSort(&H, distance, j);
-		//insertMaxHeap(&H, distance, j);
-	}
-	//HeapSort(&H);
-	//for(size_t i = 0; i < H.count; ++i) H.data[i].value = H.data[i].value*H.data[i].value;
-    return H;
+	/*
+	 * Helper function for KNN serch using KDtree
+	 *
+	 * Datapoint_info * dpInfo 	: array of datapoints information structs to store the neighborhood on 
+	 * FLOAT_TYPE * data 		: array of data 
+	 * kdNodeV2* kdNodeArray  	: array of the nodes of the KDtree
+	 * kdNodeV2* root 			: root of the KDtree 
+	 * idx_t n 					: number of elements in the dataset 
+	 * idx_t k 					: number of neighbors to retrieve
+	 */
+    struct timespec start_tot, finish_tot;
+    double elapsed_tot;
+    printf("KNN search:\n");
+    clock_gettime(CLOCK_MONOTONIC, &start_tot);
+	
+	#ifdef PROGRESS_BAR
+		idx_t progress_count = 0;
+		idx_t step = n/100;
+		printf("Progress 0/%lu -> 0%%\r",(uint64_t)n);
+		fflush(stdout);
+	#endif
+    
+    #pragma omp parallel
+    {
+
+	    #pragma omp for schedule(dynamic)
+	    for(int p = 0; p < n; ++p)
+	    {
+			idx_t idx = kdNodeArray[p].array_idx;
+			dpInfo[idx].ngbh = KNN_kdTreeV2(kdNodeArray[p].data, root, k);
+			dpInfo[idx].cluster_idx = -1;
+			dpInfo[idx].is_center = 0;
+			dpInfo[idx].array_idx = idx;
+
+			#ifdef PROGRESS_BAR
+				idx_t aa;
+
+				#pragma omp atomic capture
+				aa = ++progress_count;
+
+				if(aa % step == 0 )
+				{
+					printf("Progress %lu/%lu -> %u%%\r",(uint64_t)aa, (uint64_t)n, (uint32_t)((100*aa)/n) );
+					fflush(stdout);
+				}
+			#endif
+		}
+    }
+
+	
+
+	#ifdef PROGRESS_BAR
+		printf("Progress %lu/%lu -> 100%%\n",(uint64_t)n, (uint64_t)n);
+	#endif
+    //printf("Progress %lu/%lu\n",(uint64_t)progress_count, (uint64_t)n);
+
+    clock_gettime(CLOCK_MONOTONIC, &finish_tot);
+    elapsed_tot = (finish_tot.tv_sec - start_tot.tv_sec);
+    elapsed_tot += (finish_tot.tv_nsec - start_tot.tv_nsec) / 1000000000.0;
+    printf("\tTotal time: %.3lfs\n\n", elapsed_tot);
+    return;
+
 }
+
+
+void KNN_search_kdtree(Datapoint_info * dpInfo, FLOAT_TYPE * data, kd_node* root, idx_t n, idx_t k)
+{
+	/*
+	 * Helper function for KNN serch using KDtree
+	 *
+	 * Datapoint_info * dpInfo 	: array of datapoints information structs to store the neighborhood on 
+	 * FLOAT_TYPE * data 		: array of data 
+	 * kd_node* root 			: root of the KDtree 
+	 * idx_t n 					: number of elements in the dataset 
+	 * idx_t k 					: number of neighbors to retrieve
+	 */
+    struct timespec start_tot, finish_tot;
+    double elapsed_tot;
+    printf("KNN search:\n");
+    clock_gettime(CLOCK_MONOTONIC, &start_tot);
+	
+	#ifdef PROGRESS_BAR
+		idx_t progress_count = 0;
+		idx_t step = n/100;
+		printf("Progress 0/%lu -> 0%%\r",(uint64_t)n);
+		fflush(stdout);
+	#endif
+
+    #pragma omp parallel
+    {
+
+	    #pragma omp for schedule(dynamic)
+	    for(int p = 0; p < n; ++p)
+	    {
+		dpInfo[p].ngbh = KNN(data + data_dims*p, root, k);
+		dpInfo[p].array_idx = p;
+
+		#ifdef PROGRESS_BAR
+			idx_t aa;
+
+			#pragma omp atomic capture
+			aa = ++progress_count;
+
+			if(aa % step == 0 )
+			{
+				printf("Progress %lu/%lu -> %u%%\r",(uint64_t)aa, (uint64_t)n, (uint32_t)((100*aa)/n) );
+				fflush(stdout);
+			}
+		#endif
+		}
+    }
+	
+	#ifdef PROGRESS_BAR
+		printf("Progress %lu/%lu -> 100%%\n",(uint64_t)n, (uint64_t)n);
+	#endif
+    //printf("Progress %lu/%lu\n",(uint64_t)progress_count, (uint64_t)n);
+
+    clock_gettime(CLOCK_MONOTONIC, &finish_tot);
+    elapsed_tot = (finish_tot.tv_sec - start_tot.tv_sec);
+    elapsed_tot += (finish_tot.tv_nsec - start_tot.tv_nsec) / 1000000000.0;
+    printf("\tTotal time: %.3lfs\n\n", elapsed_tot);
+    return;
+
+}
+
+
+/*
+ * Standard partition function 
+ * and quick select method used for KNN_bruteforce
+ *
+ */
 
 int partition_heapNode(heap_node *array, int left, int right, int pivotIndex) {
     float_t pivotValue = array[pivotIndex].value;
@@ -2167,6 +2122,7 @@ int qselect_heapNode(heap_node *array, int left, int right, int n) {
 int quickselect_heapNode(heap_node *array, int array_size, int k){
     return qselect_heapNode(array, 0, array_size-1, k-1);
 }
+
 
 void KNN_BruteForce(Datapoint_info* points, void* data,size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void*, void*))
 {
@@ -2255,6 +2211,15 @@ void KNN_BruteForce(Datapoint_info* points, void* data,size_t n, size_t byteSize
 #ifdef USE_BLAS
 	void __handle_w_blas_d(Datapoint_info* points, double* data,size_t n, size_t dims, size_t k)
 	{
+		/*
+		 * A way to speed up (drammatically) euclidean metric computation, when dealing with high dimensional data
+		 * The trick is to compute ||xi - xj||^2 as ||xi||^2 + ||xj||^2 - 2*<xi|xj>
+		 * ||xi|| and ||xj|| can be computed upfront, then <xi|xj> can be computed as the product 
+		 * of the matrix  X^T @ X
+		 *
+		 * Actually a slice of the dataset Y is computed against the whole dataset and then the "all-to-all" distances are 
+		 * reduced to the first k ones 
+		 */
 		struct sysinfo info;
 		sysinfo(&info);
 
@@ -2302,13 +2267,14 @@ void KNN_BruteForce(Datapoint_info* points, void* data,size_t n, size_t byteSize
 									upper_idx - lower_idx,n,dims, -2.0,
 									A, dims, data, dims, 1.0, middle_terms,n);
 
-				//reduce the arrays
 				#pragma omp parallel 
 				{
 					heap_node* my_working_mem = working_mem + omp_get_thread_num()*n;
 					#pragma omp for
 					for(size_t i = lower_idx; i < upper_idx; ++i)
 					{
+						/*alternative version, trying to understand what is faster*/
+
 						//for(size_t j = 0; j < n; ++j)
 						//{
 						////	my_working_mem[j].value = middle_terms[(i%DEFAULT_SLICE)*n + j];
@@ -2343,13 +2309,6 @@ void KNN_BruteForce(Datapoint_info* points, void* data,size_t n, size_t byteSize
 
 Datapoint_info* NgbhSearch_bruteforce(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *))
 {
-	/*
-	 *
-	 * /!\ Extremely inefficient implementation for euclidean metric
-	 *     currently working on optimized one with the use of blas
-	 *
-	 * */
-
 	METRICS_DATADIMS = dims;
 
 	#ifdef VERBOSE
@@ -2414,11 +2373,6 @@ Datapoint_info* NgbhSearch_bruteforce(void* data, size_t n, size_t byteSize, siz
 
 	}
 
-
-
-
-
-
 	#ifdef PROGRESS_BAR
 		printf("Progress %lu/%lu -> 100%%\n",(uint64_t)n, (uint64_t)n);
 	#endif
@@ -2434,6 +2388,15 @@ Datapoint_info* NgbhSearch_bruteforce(void* data, size_t n, size_t byteSize, siz
 
 Datapoint_info* NgbhSearch_kdtree(FLOAT_TYPE* data, size_t n, size_t ndims, size_t k)
 {
+	/*
+	 * Neighborhood search using a KDtree
+	 *
+	 * FLOAT_TYPE* data : dataset as a matrix of float or double
+	 * size_t n 		: number of elements in the dataset 
+	 * size_t ndims 	: lenght of each vector in the dataset
+	 * size_t k 		: number of neighbors to retrieve
+	 *
+	 */
     struct timespec start, finish;
     double elapsed;
 
@@ -2468,10 +2431,6 @@ Datapoint_info* NgbhSearch_kdtree(FLOAT_TYPE* data, size_t n, size_t ndims, size
     /**************
      * KNN search *
      **************/
-	//int lvls[25] = {0};
-	//computeLevel(root, 0);
-	//for(int i = 0; i < n; ++i) lvls[kd_ptrs[i]->level]++;
-	//for(int i = 0; i < 25; ++i) printf("lvl %d counts %d\n", i, lvls[i]);
     KNN_search_kdtree(points,data, root, n, k);
 
     free(kd_ptrs);
@@ -2482,6 +2441,15 @@ Datapoint_info* NgbhSearch_kdtree(FLOAT_TYPE* data, size_t n, size_t ndims, size
 
 Datapoint_info* NgbhSearch_kdtree_V2(FLOAT_TYPE* data, size_t n, size_t ndims, size_t k)
 {
+	/*
+	 * Neighborhood search using a KDtree
+	 *
+	 * FLOAT_TYPE* data : dataset as a matrix of float or double
+	 * size_t n 		: number of elements in the dataset 
+	 * size_t ndims 	: lenght of each vector in the dataset
+	 * size_t k 		: number of neighbors to retrieve
+	 *
+	 */
     struct timespec start, finish;
     double elapsed;
 
@@ -2520,10 +2488,6 @@ Datapoint_info* NgbhSearch_kdtree_V2(FLOAT_TYPE* data, size_t n, size_t ndims, s
     /**************
      * KNN search *
      **************/
-	//int lvls[25] = {0};
-	//computeLevel(root, 0);
-	//for(int i = 0; i < n; ++i) lvls[kd_ptrs[i]->level]++;
-	//for(int i = 0; i < 25; ++i) printf("lvl %d counts %d\n", i, lvls[i]);
 	KNN_search_kdTreeV2(points,kdNode_array,root,n,k);
 
 	#ifdef SWMEM
@@ -2557,6 +2521,16 @@ int FloatAndUintSize()
 
 void KNN_search_vpTree(Datapoint_info* dpInfo, vpTreeNode* vpNodeArray,vpTreeNode* root,idx_t k,size_t n, float_t (*metric)(void*, void*))
 {	
+	/*
+	 * Helper function for performing KNN search
+	 *
+	 * Datapoint_info* dpInfo 		: array of datapoints to store the neighborhood on 
+	 * vpTreeNodeV2* vpNodeArray 	: array of nodes in the tree
+	 * vpTreeNodeV2* root 			: root of the tree
+	 * idx_t k 						: number of neighbors to retrieve
+	 * size_t n 					: number of elements in the dataset 
+	 * float_t (*metric)(void*, void*)) : distance function
+	 */
     struct timespec start_tot, finish_tot;
     double elapsed_tot;
     printf("KNN search:\n");
@@ -2608,10 +2582,6 @@ void KNN_search_vpTree(Datapoint_info* dpInfo, vpTreeNode* vpNodeArray,vpTreeNod
 			free(stack.data);
 		#endif
 	}
-	
-
-    
-	
 	#ifdef PROGRESS_BAR
 		printf("Progress %lu/%lu -> 100%%\n",(uint64_t)n, (uint64_t)n);
 	#endif
@@ -2627,7 +2597,15 @@ void KNN_search_vpTree(Datapoint_info* dpInfo, vpTreeNode* vpNodeArray,vpTreeNod
 
 Datapoint_info* NgbhSearch_vptree(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *))
 {
-
+	/*
+	 * Neighborhood search using vantage-point tree
+	 * - void* data 	 : the dataset, in general a collection of elements					 
+	 * - size_t n 		 : number of points in the dataset
+	 * - size_t byteSize : number of bytes for each element in the vector representing a datapooint 
+	 * - size_t dims 	 : lenght of each datapoint in terms of elements 
+	 * - size_t k 		 : number of neighbors to search for 
+	 * - float_t (*metric)(void *, void *)) : distance function between two elements in the dataset MUST satisy triangle inequality 
+	 */
     struct timespec start, finish;
     double elapsed;
 	METRICS_DATADIMS = (uint32_t)dims;
@@ -2660,7 +2638,6 @@ Datapoint_info* NgbhSearch_vptree(void* data, size_t n, size_t byteSize, size_t 
 	KNN_search_vpTree(points, vpNodeArray, root, k, n, metric);
 	
 
-	//printf("NODE STRAMBO: %lf %p %lu\n", vpNodeArray[1516].mu, vpNodeArray[1516].inside, vpNodeArray[1516].parent -> array_idx);
     free(vpPtrArray);
     free(vpNodeArray);
 	return points;
@@ -2668,6 +2645,16 @@ Datapoint_info* NgbhSearch_vptree(void* data, size_t n, size_t byteSize, size_t 
 
 void KNN_search_vpTree_V2(Datapoint_info* dpInfo, vpTreeNodeV2* vpNodeArray,vpTreeNodeV2* root,idx_t k,size_t n, float_t (*metric)(void*, void*))
 {	
+	/*
+	 * Helper function for performing KNN search
+	 *
+	 * Datapoint_info* dpInfo 		: array of datapoints to store the neighborhood on 
+	 * vpTreeNodeV2* vpNodeArray 	: array of nodes in the tree
+	 * vpTreeNodeV2* root 			: root of the tree
+	 * idx_t k 						: number of neighbors to retrieve
+	 * size_t n 					: number of elements in the dataset 
+	 * float_t (*metric)(void*, void*)) : distance function
+	 */
     struct timespec start_tot, finish_tot;
     double elapsed_tot;
     printf("KNN search:\n");
@@ -2706,9 +2693,6 @@ void KNN_search_vpTree_V2(Datapoint_info* dpInfo, vpTreeNodeV2* vpNodeArray,vpTr
 		}
 	}
 	
-
-    
-	
 	#ifdef PROGRESS_BAR
 		printf("Progress %lu/%lu -> 100%%\n",(uint64_t)n, (uint64_t)n);
 	#endif
@@ -2723,6 +2707,15 @@ void KNN_search_vpTree_V2(Datapoint_info* dpInfo, vpTreeNodeV2* vpNodeArray,vpTr
 
 Datapoint_info* NgbhSearch_vptree_V2(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *))
 {
+	/*
+	 * Neighborhood search using vantage-point tree
+	 * - void* data 	 : the dataset, in general a collection of elements					 
+	 * - size_t n 		 : number of points in the dataset
+	 * - size_t byteSize : number of bytes for each element in the vector representing a datapooint 
+	 * - size_t dims 	 : lenght of each datapoint in terms of elements 
+	 * - size_t k 		 : number of neighbors to search for 
+	 * - float_t (*metric)(void *, void *)) : distance function between two elements in the dataset MUST satisy triangle inequality 
+	 */
 
     struct timespec start, finish;
     double elapsed;
@@ -2754,13 +2747,6 @@ Datapoint_info* NgbhSearch_vptree_V2(void* data, size_t n, size_t byteSize, size
 
     Datapoint_info* points = (Datapoint_info*)malloc(n*sizeof(Datapoint_info));
 
-    /**************
-     * KNN search *
-     **************/
-
-
-
-	
 	KNN_search_vpTree_V2(points, vpNodeArray, root, k, n, metric);
 	
 	#ifdef SWMEM

@@ -23,4 +23,5 @@ dadac/bin/*.o
 *bb.txt
 dadac.egg-*
 build/*
+*.pytest*
 *src/clustering\ copy.c
