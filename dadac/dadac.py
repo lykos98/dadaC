@@ -301,6 +301,7 @@ class Data(_dadac_loader):
         self._log_den           = None
         self._log_den_err       = None
         self.blas               = self._blas_in_use() != 0 
+        self._running_in_notebook = self._is_notebook()
 
     def _is_notebook(self) -> bool:
         try:
@@ -328,7 +329,7 @@ class Data(_dadac_loader):
         """
         self.k = k
         #with sys_pipes():
-        if self._is_notebook():
+        if self._running_in_notebook:
             with sys_pipes():
                 self._datapoints = self._NgbhSearch_kdtree(self.data, self.n, self.dims, self.k)
         else:
@@ -353,7 +354,7 @@ class Data(_dadac_loader):
         """
         self.k = k
         #Datapoint_info* NgbhSearch_vpTree(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *));
-        if self._is_notebook():
+        if self._running_in_notebook:
             with sys_pipes():
                 self._datapoints = self._NgbhSearch_vptree(self.data.ctypes.data, self.n, self.data.itemsize, self.dims, self.k, self._eud)
         else:
@@ -372,7 +373,7 @@ class Data(_dadac_loader):
         """
         self.k = k
         #Datapoint_info* NgbhSearch_vpTree(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *));
-        if self._is_notebook():
+        if self._running_in_notebook:
             with sys_pipes():
                 self._datapoints = self._NgbhSearch_bruteforce(self.data.ctypes.data, self.n, self.data.itemsize, self.dims, self.k, 0)
         else:
@@ -430,18 +431,22 @@ class Data(_dadac_loader):
 
         if not self.state["ngbh"]:
             raise ValueError("Please compute Neighbors before calling this function")
-        if self._is_notebook():
+        if self._running_in_notebook:
             with sys_pipes():
                 self.id = self._idEstimate(self._datapoints,self.n,fraction)
         else:
             self.id = self._idEstimate(self._datapoints,self.n,fraction)
         self.state["id"] = True
 
-    def import_neighbors_and_distances(self,ngbh,dists):
+    def import_neighbors_and_distances(self,ngbh,dists,dists_are_sq = False):
         if self._datapoints is None:
             self._datapoints = self._allocateDatapoints(self.n)
         k = ngbh.shape[1]
-        self._importNeighborsAndDistances(self._datapoints,ngbh.astype(self._itype),dists.astype(self._ftype),self.n, np.uint64(k))
+        if dists_are_sq:
+            self._importNeighborsAndDistances(self._datapoints,ngbh.astype(self._itype),dists.astype(self._ftype),self.n, np.uint64(k))
+        else:
+            dists = dists**2
+            self._importNeighborsAndDistances(self._datapoints,ngbh.astype(self._itype),dists.astype(self._ftype),self.n, np.uint64(k))
 
     def import_density(self, log_den,log_den_err,kstar):
         if self._datapoints is None:
@@ -462,7 +467,7 @@ class Data(_dadac_loader):
         """
         if not self.state["id"]:
             raise ValueError("Please compute ID before calling this function")
-        if self._is_notebook():
+        if self._running_in_notebook:
             with sys_pipes():
                 self._computeRho(self._datapoints, self.id, self.n)
         else:
@@ -481,7 +486,7 @@ class Data(_dadac_loader):
         """
         if not self.state["id"]:
             raise ValueError("Please compute ID before calling this function")
-        if self._is_notebook():
+        if self._running_in_notebook:
             with sys_pipes():
                 self._PAk(self._datapoints, self.id, self.n)
         else:
@@ -522,7 +527,7 @@ class Data(_dadac_loader):
             self._border_indices = None
             self._log_den_bord = None
             self._log_den_bord_err = None
-        if self._is_notebook():
+        if self._running_in_notebook:
             with sys_pipes():
                 self._computeCorrection(self._datapoints, self.n, self.Z)
                 self._clusters = self._H1(self._datapoints, self.n)
@@ -658,6 +663,7 @@ class Data(_dadac_loader):
             self._distances = np.zeros((self.n,self.k), self._ftype)
             self._dist_indices = np.zeros((self.n,self.k), self._itype)
             self._exportNeighborsAndDistances(self._datapoints,self._dist_indices, self._distances, self.n, self.k)
+            self._distances = np.sqrt(self._distances)
         return self._distances
 
     @property
@@ -666,6 +672,7 @@ class Data(_dadac_loader):
             self._distances = np.zeros((self.n,self.k), self._ftype)
             self._dist_indices = np.zeros((self.n,self.k), self._itype)
             self._exportNeighborsAndDistances(self._datapoints,self._dist_indices,self._distances, self.n, self.k)
+            self._distances = np.sqrt(self._distances)
         return self._dist_indices
 
     @property

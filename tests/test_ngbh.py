@@ -1,46 +1,35 @@
-import dadapy
 import numpy as np
 import sys, os
 #sys.path.append(os.path.join(__file__,"./.."))
 #sys.path.append("./..")
+from sklearn.neighbors import NearestNeighbors
 import dadac
+x = np.loadtxt(os.path.join(os.path.dirname(__file__), "gt/Fig2.dat"))
+nn = NearestNeighbors(n_neighbors=301, n_jobs=-1)
+nn.fit(x)
+
+gt_nn_dist, gt_nn_idx = nn.kneighbors(x) 
+
 
 def test_ngbh_kdtree():
-    n = 10000
-    k = 300
-    d = np.random.choice([ i for i in range(1,10)])
-    x = np.random.rand(n,d)
-    dpy = dadapy.Data(x)
     dc = dadac.Data(x)
-
-    dpy.compute_distances(300)
     dc.compute_distances(300, alg="kd")
-
-    n1 = dpy.dist_indices
-    dist = dpy.distances
     n2 = dc.dist_indices
-    #print(n1.shape)
-    #print(n2.shape)
-    assert np.all(n1 == n2)
+    d2 = dc.distances
+    
+    assert np.all(n2 == gt_nn_idx)
+    assert np.all(np.isclose(d2,gt_nn_dist))
 
 def test_ngbh_vptree():
-    n = 10000
-    k = 300
-    d = np.random.choice([ i for i in range(1,10)])
-    x = np.random.rand(n,d)
-    dpy = dadapy.Data(x)
     dc = dadac.Data(x)
-
-    dpy.compute_distances(300)
     dc.compute_distances(300, alg="vp")
-
-    n1 = dpy.dist_indices
-    dist = dpy.distances
     n2 = dc.dist_indices
-    #print(n1.shape)
-    #print(n2.shape)
-    assert np.all(n1 == n2)
+    d2 = dc.distances
+
+    assert np.all(n2 == gt_nn_idx)
+    assert np.all(np.isclose(d2,gt_nn_dist))
 
 if __name__ == "__main__":
     test_ngbh_kdtree()
+    test_ngbh_vptree()
 
