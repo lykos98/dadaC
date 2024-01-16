@@ -516,6 +516,12 @@ class Data(_dadac_loader):
 
         self.state["computeHalo"] = halo 
         self.Z = Z
+        if self.state["clustering"]:
+            self._freeClusters(self._clusters)
+            self._clusterAssignment = None
+            self._border_indices = None
+            self._log_den_bord = None
+            self._log_den_bord_err = None
         if self._is_notebook():
             with sys_pipes():
                 self._computeCorrection(self._datapoints, self.n, self.Z)

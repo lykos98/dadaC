@@ -2,6 +2,7 @@
 #include "../include/dadac.h"
 #include <math.h>
 #include <omp.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -131,7 +132,7 @@ void AdjList_reset(AdjList_t* l)
 	/*
 	 * Handling of sparse border implementation as an adjecency list
 	 */
-	free(l -> data);
+	if(l -> data) free(l -> data);
 	l -> count = 0;
 	l -> size  = 0;
 	l -> data  = NULL;
@@ -154,10 +155,10 @@ void Clusters_Reset(Clusters * c)
 	}
 	else
 	{
-		free(c -> __borders_data);
-		free(c -> borders);
+		if(c -> __borders_data)  free(c -> __borders_data);
+		if(c -> borders) free(c -> borders);
 	}
-    free(c -> centers.data);
+	if(c -> centers.data) free(c -> centers.data);
 }
 
 void Clusters_free(Clusters * c)
@@ -2896,3 +2897,25 @@ void exportBorders(Clusters* clusters, int* border_idx, float_t* border_den, flo
 			}
 	}
 }
+
+void resetDatapoints(Datapoint_info* dp, size_t n)
+{
+	for(size_t i = 0; i < n; ++i)	
+	{
+		dp[i].cluster_idx = -1;
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
