@@ -242,27 +242,27 @@ int main(int argc, char** argv){
 		free(df);
 	}
 
-	Datapoint_info* particles = NgbhSearch_kdtree_V2(data, n, opt.data_dims, opt.k); 
+	Datapoint_info* particles = NgbhSearch_kdtree_V2(data, n, opt.data_dims, opt.k, VERBOSE_TRUE); 
 	//Datapoint_info* particles = NgbhSearch_vptree_V2(data, n,sizeof(FLOAT_TYPE), opt.data_dims, opt.k, eud); 
 	//Datapoint_info* particles = NgbhSearch_bruteforce(data, n,sizeof(FLOAT_TYPE), opt.data_dims, opt.k, NULL); 
     /********************************
      * Intrinsic Dimension estimate *
      ********************************/
 
-    double id = idEstimate(particles, n,0.9);
+    double id = idEstimate(particles, n,0.9, VERBOSE_TRUE);
 
     /***********************
      * Density computation *
      ***********************/
     //computeRho(particles,id,n);
-    PAk(particles,id,n);
+    PAk(particles,id,n, VERBOSE_TRUE);
     computeCorrection(particles,n,opt.Z);
 
     /********************
      * First clustering *
      ********************/
 
-    Clusters c = Heuristic1(particles, n);
+    Clusters c = Heuristic1(particles, n, VERBOSE_TRUE);
 
     /***************************************************************************************
      * Allocate borders and other things to store clustering info                          *
@@ -274,14 +274,14 @@ int main(int argc, char** argv){
     // sprintf(aux_fname, "%s_int", argv[2]);
     // write_point_info(aux_fname,particles,n);
 
-    Heuristic2(&c, particles);
+    Heuristic2(&c, particles, VERBOSE_TRUE);
 
     //sprintf(aux_fname, "%s_bord_int", argv[2]);
     //write_border_idx(aux_fname,&c);
 
     c.n = n;
     
-    Heuristic3(&c, particles, opt.Z, opt.halo);
+    Heuristic3(&c, particles, opt.Z, opt.halo, VERBOSE_TRUE);
 
 	write_point_info(opt.outputFile, particles, n);
 	free(data);

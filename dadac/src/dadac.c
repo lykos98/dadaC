@@ -13,6 +13,8 @@
 #define MAX(x,y) x > y ? x : y
 #define DEPS 2.220446049250313e-16
 
+int verbose = VERBOSE_TRUE;
+
 
 #define DEFAULT_SLICE 10000 
 
@@ -324,7 +326,7 @@ float_t mEst(float_t * x, float_t *y, idx_t n)
     return num/den;
 }
 
-float_t idEstimate(Datapoint_info* dpInfo, idx_t n,float_t fraction)
+float_t idEstimate(Datapoint_info* dpInfo, idx_t n,float_t fraction, int verbose)
 {
 
     /*
@@ -342,8 +344,11 @@ float_t idEstimate(Datapoint_info* dpInfo, idx_t n,float_t fraction)
     struct timespec start_tot, finish_tot;
     double elapsed_tot;
 
-    printf("ID estimation:\n");
-    clock_gettime(CLOCK_MONOTONIC, &start_tot);
+	if(verbose)
+	{
+		printf("ID estimation:\n");
+		clock_gettime(CLOCK_MONOTONIC, &start_tot);
+	}
 
     //float_t fraction = 0.7;
     float_t* r = (float_t*)malloc(n*sizeof(float_t));
@@ -362,17 +367,20 @@ float_t idEstimate(Datapoint_info* dpInfo, idx_t n,float_t fraction)
     free(r);
     free(Pemp);
 
-    clock_gettime(CLOCK_MONOTONIC, &finish_tot);
-    elapsed_tot = (finish_tot.tv_sec - start_tot.tv_sec);
-    elapsed_tot += (finish_tot.tv_nsec - start_tot.tv_nsec) / 1000000000.0;
-    printf("\tID value: %.6lf\n", d);
-    printf("\tTotal time: %.3lfs\n\n", elapsed_tot);
+	if(verbose)
+	{
+		clock_gettime(CLOCK_MONOTONIC, &finish_tot);
+		elapsed_tot = (finish_tot.tv_sec - start_tot.tv_sec);
+		elapsed_tot += (finish_tot.tv_nsec - start_tot.tv_nsec) / 1000000000.0;
+		printf("\tID value: %.6lf\n", d);
+		printf("\tTotal time: %.3lfs\n\n", elapsed_tot);
+	}
 
     return d;
 
 }
 
-void computeRho(Datapoint_info* dpInfo, const float_t d, const idx_t points){
+void computeRho(Datapoint_info* dpInfo, const float_t d, const idx_t points, int verbose){
 
     /*
      * Point density computation:                       
@@ -385,8 +393,11 @@ void computeRho(Datapoint_info* dpInfo, const float_t d, const idx_t points){
     struct timespec start_tot, finish_tot;
     double elapsed_tot;
 
-    printf("Density and k* estimation:\n");
-    clock_gettime(CLOCK_MONOTONIC, &start_tot);
+	if(verbose)
+	{
+		printf("Density and k* estimation:\n");
+		clock_gettime(CLOCK_MONOTONIC, &start_tot);
+	}
 
     idx_t kMAX = dpInfo[0].ngbh.N - 1;   
 
@@ -435,17 +446,20 @@ void computeRho(Datapoint_info* dpInfo, const float_t d, const idx_t points){
         dpInfo[i].g = dpInfo[i].log_rho - dpInfo[i].log_rho_err;
     }
 
-    clock_gettime(CLOCK_MONOTONIC, &finish_tot);
-    elapsed_tot = (finish_tot.tv_sec - start_tot.tv_sec);
-    elapsed_tot += (finish_tot.tv_nsec - start_tot.tv_nsec) / 1000000000.0;
-    printf("\tTotal time: %.3lfs\n\n", elapsed_tot);
+	if(verbose)
+	{
+		clock_gettime(CLOCK_MONOTONIC, &finish_tot);
+		elapsed_tot = (finish_tot.tv_sec - start_tot.tv_sec);
+		elapsed_tot += (finish_tot.tv_nsec - start_tot.tv_nsec) / 1000000000.0;
+		printf("\tTotal time: %.3lfs\n\n", elapsed_tot);
+	}
 
     return;
 
 
 }
 
-void PAk(Datapoint_info* dpInfo, const float_t d, const idx_t n)
+void PAk(Datapoint_info* dpInfo, const float_t d, const idx_t n, int verbose)
 {
 	/*
 	 * /!\ Work in progress
@@ -453,13 +467,13 @@ void PAk(Datapoint_info* dpInfo, const float_t d, const idx_t n)
 	 * from the paper https://pubs.acs.org/doi/10.1021/acs.jctc.7b00916 
 	 *
 	 * args:
-	 * Datapoint_info* dpInfo : array of objects to store density to 
-	 * const float_t d 		  : intrinsic dimension estimator  
-	 * const idx_t n 	  	  : number of points in the dataset
+	 * - Datapoint_info* dpInfo : array of objects to store density to 
+	 * - const float_t d 		: intrinsic dimension estimator  
+	 * - const idx_t n 	  	  	: number of points in the dataset
 	 */
 
     float_t omega = pow(M_PI,d/2.)/tgamma(d/2.0 + 1.0);
-	computeRho(dpInfo,d,n);
+	computeRho(dpInfo,d,n,verbose);
 
 	#pragma omp parallel
 	{
@@ -637,7 +651,7 @@ void computeCorrection(Datapoint_info* dpInfo, idx_t n, float_t Z)
     //printf("%lf\n",min_log_rho);
 }
 
-Clusters Heuristic1(Datapoint_info* dpInfo, idx_t n)
+Clusters Heuristic1(Datapoint_info* dpInfo, idx_t n, int verbose)
 {
     /*
      * Heurisitc 1, from paper of Errico, Facco, Laio & Rodriguez 
@@ -652,8 +666,11 @@ Clusters Heuristic1(Datapoint_info* dpInfo, idx_t n)
     struct timespec start_tot, finish_tot;
     double elapsed_tot;
 
-    printf("H1: Preliminary cluster assignment\n");
-    clock_gettime(CLOCK_MONOTONIC, &start_tot);
+	if(verbose)
+	{
+		printf("H1: Preliminary cluster assignment\n");
+		clock_gettime(CLOCK_MONOTONIC, &start_tot);
+	}
 
     //idx_t ncenters = 0;
     //idx_t putativeCenters = n;
@@ -669,9 +686,11 @@ Clusters Heuristic1(Datapoint_info* dpInfo, idx_t n)
     double elapsed;
 
 
-    #ifdef VERBOSE
-        clock_gettime(CLOCK_MONOTONIC, &start);
-    #endif
+    if(verbose)
+	{
+		clock_gettime(CLOCK_MONOTONIC, &start);
+	}
+
 
     for(idx_t i = 0; i < n; ++i)
     {   
@@ -703,13 +722,15 @@ Clusters Heuristic1(Datapoint_info* dpInfo, idx_t n)
 
     }
 
-    #ifdef VERBOSE
-        clock_gettime(CLOCK_MONOTONIC, &finish);
-        elapsed = (finish.tv_sec - start.tv_sec);
-        elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
-        printf("\tFinding putative centers: %.3lfs\n",elapsed);
-        clock_gettime(CLOCK_MONOTONIC, &start);
-    #endif
+    if(verbose)
+	{
+		clock_gettime(CLOCK_MONOTONIC, &finish);
+		elapsed = (finish.tv_sec - start.tv_sec);
+		elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+		printf("\tFinding putative centers: %.3lfs\n",elapsed);
+		clock_gettime(CLOCK_MONOTONIC, &start);
+	}
+
 	qsort(dpInfo_ptrs, n, sizeof(Datapoint_info*), cmpPP);
 
 
@@ -839,35 +860,35 @@ Clusters Heuristic1(Datapoint_info* dpInfo, idx_t n)
 	
     #pragma omp parallel shared(to_remove_mask)
     {
-        #pragma omp for
-        for(idx_t p = 0; p < n; ++p)
-        {
-        	Datapoint_info pp = *(dpInfo_ptrs[p]);
+		#pragma omp for
+		for(idx_t p = 0; p < n; ++p)
+		{
+			Datapoint_info pp = *(dpInfo_ptrs[p]);
 			int flag = 0;
 			idx_t ppp = 0;
-			
-        	for(idx_t j = 1; j < pp.kstar + 1; ++j)
+
+			for(idx_t j = 1; j < pp.kstar + 1; ++j)
 			{
 				idx_t jidx = pp.ngbh.data[j].array_idx; 
 				if(dpInfo[jidx].is_center && pp.g > dpInfo[jidx].g)
 				{
-					
+
 					#pragma omp critical 
 					{
 						ppp = to_remove_mask[jidx];
 						flag = ppp != MY_SIZE_MAX;							
 						to_remove_mask[jidx] = flag ? (pp.g > dpInfo[ppp].g ? pp.array_idx : ppp) : pp.array_idx; 
 					}
-					
+
 
 					/* Alternative
-					 * not sure if it works
-					 
+					* not sure if it works
+
 					#pragma omp atomic read 
 					ppp = to_remove_mask[jidx];
 
 					flag = ppp != MY_SIZE_MAX;							
-					
+
 					#pragma omp atomic write
 					to_remove_mask[jidx] = flag ? (pp.g > dpInfo[ppp].g ? pp.array_idx : ppp) : pp.array_idx; 
 
@@ -906,12 +927,14 @@ Clusters Heuristic1(Datapoint_info* dpInfo, idx_t n)
                     
                 }
                 break;
+
             case 0:
                 {
                     DynamicArray_pushBack(&actualCenters,i);
                     dpInfo[i].cluster_idx = actualCenters.count - 1;
                 }
                 break;
+
             default:
                 break;
         }
@@ -921,14 +944,14 @@ Clusters Heuristic1(Datapoint_info* dpInfo, idx_t n)
 
 	#endif
 
-    #ifdef VERBOSE
-        clock_gettime(CLOCK_MONOTONIC, &finish);
-        elapsed = (finish.tv_sec - start.tv_sec);
-        elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
-        printf("\tFinding actual centers:   %.3lfs\n",elapsed);
-
-        clock_gettime(CLOCK_MONOTONIC, &start);
-    #endif
+    if(verbose)
+	{
+		clock_gettime(CLOCK_MONOTONIC, &finish);
+		elapsed = (finish.tv_sec - start.tv_sec);
+		elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+		printf("\tFinding actual centers:   %.3lfs\n",elapsed);
+		clock_gettime(CLOCK_MONOTONIC, &start);
+	}
 
 
     /*
@@ -985,14 +1008,14 @@ Clusters Heuristic1(Datapoint_info* dpInfo, idx_t n)
         }
     }
 
-    #ifdef VERBOSE
-        clock_gettime(CLOCK_MONOTONIC, &finish);
-        elapsed = (finish.tv_sec - start.tv_sec);
-        elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
-        printf("\tTentative clustering:     %.3lfs\n",elapsed);
-
-        clock_gettime(CLOCK_MONOTONIC, &start);
-    #endif
+    if(verbose)
+	{
+		clock_gettime(CLOCK_MONOTONIC, &finish);
+		elapsed = (finish.tv_sec - start.tv_sec);
+		elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+		printf("\tTentative clustering:     %.3lfs\n",elapsed);
+		clock_gettime(CLOCK_MONOTONIC, &start);
+	}
 
     free(dpInfo_ptrs);
     free(max_rho.data);
@@ -1004,27 +1027,31 @@ Clusters Heuristic1(Datapoint_info* dpInfo, idx_t n)
     c_all.centers = actualCenters;
 
 
-    #ifdef VERBOSE
-        clock_gettime(CLOCK_MONOTONIC, &finish);
-        elapsed = (finish.tv_sec - start.tv_sec);
-        elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
-        printf("\tFinalizing clustering:    %.3lfs\n",elapsed);
-        printf("\n");
-    #endif
+    if(verbose)
+	{
+		clock_gettime(CLOCK_MONOTONIC, &finish);
+		elapsed = (finish.tv_sec - start.tv_sec);
+		elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+		printf("\tFinalizing clustering:    %.3lfs\n",elapsed);
+		printf("\n");
+	}
 
     clock_gettime(CLOCK_MONOTONIC, &finish_tot);
     elapsed_tot = (finish_tot.tv_sec - start_tot.tv_sec);
     elapsed_tot += (finish_tot.tv_nsec - start_tot.tv_nsec) / 1000000000.0;
 
 
-    printf("\tFound %lu clusters\n",(uint64_t)actualCenters.count);
-    printf("\tTotal time: %.3lfs\n\n", elapsed_tot);
+	if(verbose)
+	{
+		printf("\tFound %lu clusters\n",(uint64_t)actualCenters.count);
+		printf("\tTotal time: %.3lfs\n\n", elapsed_tot);
+	}
 
     c_all.n = n;
     return c_all;
 }
 
-void Heuristic2(Clusters* cluster, Datapoint_info* dpInfo)
+void Heuristic2(Clusters* cluster, Datapoint_info* dpInfo, int verbose)
 {
     /*
      * Heurisitc 2, from paper of Errico, Facco, Laio & Rodriguez 
@@ -1042,8 +1069,11 @@ void Heuristic2(Clusters* cluster, Datapoint_info* dpInfo)
     double elapsed_tot;
     idx_t n = cluster -> n;
 
-    printf("H2: Finding border points\n");
-    clock_gettime(CLOCK_MONOTONIC, &start_tot);
+	if(verbose)
+	{
+		printf("H2: Finding border points\n");
+		clock_gettime(CLOCK_MONOTONIC, &start_tot);
+	}
 
 
     idx_t nclus = cluster->centers.count; 
@@ -1157,10 +1187,13 @@ void Heuristic2(Clusters* cluster, Datapoint_info* dpInfo)
 	    }
     }
 
-    clock_gettime(CLOCK_MONOTONIC, &finish_tot);
-    elapsed_tot = (finish_tot.tv_sec - start_tot.tv_sec);
-    elapsed_tot += (finish_tot.tv_nsec - start_tot.tv_nsec) / 1000000000.0;
-    printf("\tTotal time: %.3lfs\n\n", elapsed_tot);
+	if(verbose)
+	{
+		clock_gettime(CLOCK_MONOTONIC, &finish_tot);
+		elapsed_tot = (finish_tot.tv_sec - start_tot.tv_sec);
+		elapsed_tot += (finish_tot.tv_nsec - start_tot.tv_nsec) / 1000000000.0;
+		printf("\tTotal time: %.3lfs\n\n", elapsed_tot);
+	}
 
     return;
     #undef borders
@@ -1347,7 +1380,7 @@ void fix_SparseBorders_A_into_B(idx_t s,idx_t t,Clusters* c)
 
 }
 
-void Heuristic3_sparse(Clusters* cluster, Datapoint_info* dpInfo, float_t Z, int halo)
+void Heuristic3_sparse(Clusters* cluster, Datapoint_info* dpInfo, float_t Z, int halo, int verbose)
 {
 
     /*
@@ -1363,7 +1396,6 @@ void Heuristic3_sparse(Clusters* cluster, Datapoint_info* dpInfo, float_t Z, int
      * - halo 					    : flag to set if you want to compute also the halo points                               
      */
 
-	printf("Using sparse implementation\n");
 	#define borders cluster->borders
 
 	struct timespec start_tot, finish_tot;
@@ -1372,11 +1404,14 @@ void Heuristic3_sparse(Clusters* cluster, Datapoint_info* dpInfo, float_t Z, int
 	struct timespec start, finish;
 	double elapsed;
 
-	printf("H3: Merging clusters\n");
 	clock_gettime(CLOCK_MONOTONIC, &start_tot);
-	#ifdef VERBOSE
+
+	if(verbose)
+	{
+		printf("H3: Merging clusters\n");
+		printf("Using sparse implementation\n");
 		clock_gettime(CLOCK_MONOTONIC, &start); 
-	#endif
+	}
 
 	idx_t nclus                 = cluster -> centers.count;  
 	idx_t *  surviving_clusters = (idx_t*)malloc(nclus*sizeof(idx_t));
@@ -1429,13 +1464,14 @@ void Heuristic3_sparse(Clusters* cluster, Datapoint_info* dpInfo, float_t Z, int
 
 	qsort( (void*)merging_table, merge_count, sizeof(merge_t), compare_merging_density);
 
-	#ifdef VERBOSE
+	if(verbose)
+	{
 		clock_gettime(CLOCK_MONOTONIC, &finish); 
 		elapsed = (finish.tv_sec - start.tv_sec);
 		elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
 		printf("\tFinding merges:   %.3lfs\n", elapsed);
 		clock_gettime(CLOCK_MONOTONIC, &start); 
-	#endif
+	}
   
   
     for( idx_t m = 0; m < merge_count; m++ )
@@ -1506,13 +1542,14 @@ void Heuristic3_sparse(Clusters* cluster, Datapoint_info* dpInfo, float_t Z, int
         #undef trg
     }
 
-	#ifdef VERBOSE
+	if(verbose)
+	{
 		clock_gettime(CLOCK_MONOTONIC, &finish); 
 		elapsed = (finish.tv_sec - start.tv_sec);
 		elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
 		printf("\tCluster merging:  %.3lfs\n", elapsed);
 		clock_gettime(CLOCK_MONOTONIC, &start); 
-	#endif
+	}
   
     /*Finalize clustering*/
     /*Acutally copying */
@@ -1656,25 +1693,27 @@ void Heuristic3_sparse(Clusters* cluster, Datapoint_info* dpInfo, float_t Z, int
     free(surviving_clusters);
     free(old_to_new);
 
-  #ifdef VERBOSE
-	clock_gettime(CLOCK_MONOTONIC, &finish); 
-	elapsed = (finish.tv_sec - start.tv_sec);
-	elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
-	printf("\tFinal operations: %.3lfs\n\n", elapsed);
-  #endif
+	if(verbose)
+	{
+		clock_gettime(CLOCK_MONOTONIC, &finish); 
+		elapsed = (finish.tv_sec - start.tv_sec);
+		elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+		printf("\tFinal operations: %.3lfs\n\n", elapsed);
 
-    clock_gettime(CLOCK_MONOTONIC, &finish_tot);
-    elapsed_tot = (finish_tot.tv_sec - start_tot.tv_sec);
-    elapsed_tot += (finish_tot.tv_nsec - start_tot.tv_nsec) / 1000000000.0;
-    printf("\tFound %lu possible merges\n",(uint64_t)merge_count);
-    printf("\tSurviving clusters %lu\n",(uint64_t)final_cluster_count);
-    printf("\tTotal time: %.3lfs\n\n", elapsed_tot);
+		clock_gettime(CLOCK_MONOTONIC, &finish_tot);
+		elapsed_tot = (finish_tot.tv_sec - start_tot.tv_sec);
+		elapsed_tot += (finish_tot.tv_nsec - start_tot.tv_nsec) / 1000000000.0;
+		printf("\tFound %lu possible merges\n",(uint64_t)merge_count);
+		printf("\tSurviving clusters %lu\n",(uint64_t)final_cluster_count);
+		printf("\tTotal time: %.3lfs\n\n", elapsed_tot);
+	}
+
 
   #undef  borders  
 }
 
 
-void Heuristic3_dense(Clusters* cluster, Datapoint_info* dpInfo, float_t Z, int halo)
+void Heuristic3_dense(Clusters* cluster, Datapoint_info* dpInfo, float_t Z, int halo, int verbose)
 {
     /*
      * Heurisitc 3, from paper of Errico, Facco, Laio & Rodriguez 
@@ -1689,7 +1728,6 @@ void Heuristic3_dense(Clusters* cluster, Datapoint_info* dpInfo, float_t Z, int 
      * - halo 					    : flag to set if you want to compute also the halo points                               
      */
 
-	printf("Using dense implementation\n");
 	#define borders cluster->borders
 
 	struct timespec start_tot, finish_tot;
@@ -1698,12 +1736,14 @@ void Heuristic3_dense(Clusters* cluster, Datapoint_info* dpInfo, float_t Z, int 
 	struct timespec start, finish;
 	double elapsed;
 
-	printf("H3: Merging clusters\n");
 	clock_gettime(CLOCK_MONOTONIC, &start_tot);
 
-	#ifdef VERBOSE
+	if(verbose)
+	{
+		printf("H3: Merging clusters\n");
+		printf("Using dense implementation\n");
 		clock_gettime(CLOCK_MONOTONIC, &start); 
-	#endif
+	}
 
 	idx_t nclus              	= cluster -> centers.count;  
 	idx_t *  surviving_clusters = (idx_t*)malloc(nclus*sizeof(idx_t));
@@ -1776,13 +1816,14 @@ void Heuristic3_dense(Clusters* cluster, Datapoint_info* dpInfo, float_t Z, int 
 
 	qsort( (void*)merging_table, merge_count, sizeof(merge_t), compare_merging_density);
 
-	#ifdef VERBOSE
+	if(verbose)
+	{
 		clock_gettime(CLOCK_MONOTONIC, &finish); 
 		elapsed = (finish.tv_sec - start.tv_sec);
 		elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
 		printf("\tFinding merges:   %.3lfs\n", elapsed);
 		clock_gettime(CLOCK_MONOTONIC, &start); 
-	#endif
+	}
   
   
     for( idx_t m = 0; m < merge_count; m++ )
@@ -1855,13 +1896,14 @@ void Heuristic3_dense(Clusters* cluster, Datapoint_info* dpInfo, float_t Z, int 
         #undef trg
     }
 
-	#ifdef VERBOSE
+	if(verbose)
+	{
 		clock_gettime(CLOCK_MONOTONIC, &finish); 
 		elapsed = (finish.tv_sec - start.tv_sec);
 		elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
 		printf("\tCluster merging:  %.3lfs\n", elapsed);
 		clock_gettime(CLOCK_MONOTONIC, &start); 
-	#endif
+	}
   
     /*Finalize clustering*/
     /*Acutally copying old matrices into new */
@@ -2011,36 +2053,38 @@ void Heuristic3_dense(Clusters* cluster, Datapoint_info* dpInfo, float_t Z, int 
     free(surviving_clusters);
     free(old_to_new);
 
-  #ifdef VERBOSE
-	clock_gettime(CLOCK_MONOTONIC, &finish); 
-	elapsed = (finish.tv_sec - start.tv_sec);
-	elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
-	printf("\tFinal operations: %.3lfs\n\n", elapsed);
-  #endif
+  if(verbose)
+  {
+	  clock_gettime(CLOCK_MONOTONIC, &finish); 
+	  elapsed = (finish.tv_sec - start.tv_sec);
+	  elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+	  printf("\tFinal operations: %.3lfs\n\n", elapsed);
 
-    clock_gettime(CLOCK_MONOTONIC, &finish_tot);
-    elapsed_tot = (finish_tot.tv_sec - start_tot.tv_sec);
-    elapsed_tot += (finish_tot.tv_nsec - start_tot.tv_nsec) / 1000000000.0;
-    printf("\tFound %lu possible merges\n", (uint64_t)merge_count);
-    printf("\tSurviving clusters %lu\n", (uint64_t)final_cluster_count);
-    printf("\tTotal time: %.3lfs\n\n", elapsed_tot);
+	  clock_gettime(CLOCK_MONOTONIC, &finish_tot);
+	  elapsed_tot = (finish_tot.tv_sec - start_tot.tv_sec);
+	  elapsed_tot += (finish_tot.tv_nsec - start_tot.tv_nsec) / 1000000000.0;
+	  printf("\tFound %lu possible merges\n", (uint64_t)merge_count);
+	  printf("\tSurviving clusters %lu\n", (uint64_t)final_cluster_count);
+	  printf("\tTotal time: %.3lfs\n\n", elapsed_tot);
+  }
+
 
   #undef  borders  
 }
 
 
-void Heuristic3(Clusters* cluster, Datapoint_info* dpInfo, float_t Z, int halo)
+void Heuristic3(Clusters* cluster, Datapoint_info* dpInfo, float_t Z, int halo, int verbose)
 {
 	/*
 	 * Wapper for dense and sparse implementation
 	 */
 	if(cluster -> UseSparseBorders)
 	{
-		Heuristic3_sparse(cluster, dpInfo,  Z,  halo);
+		Heuristic3_sparse(cluster, dpInfo,  Z,  halo, verbose);
 	}
 	else
 	{
-		Heuristic3_dense(cluster, dpInfo,  Z,  halo);
+		Heuristic3_dense(cluster, dpInfo,  Z,  halo, verbose);
 	}
 }
 
@@ -2053,7 +2097,7 @@ void computeLevel(kd_node* root, idx_t prev_lvl)
 	return;
 }
 
-void KNN_search_kdTreeV2(Datapoint_info * dpInfo,kdNodeV2* kdNodeArray, kdNodeV2* root, idx_t n, idx_t k)
+void KNN_search_kdTreeV2(Datapoint_info * dpInfo,kdNodeV2* kdNodeArray, kdNodeV2* root, idx_t n, idx_t k, int verbose)
 {
 	/*
 	 * Helper function for KNN serch using KDtree
@@ -2067,8 +2111,12 @@ void KNN_search_kdTreeV2(Datapoint_info * dpInfo,kdNodeV2* kdNodeArray, kdNodeV2
 	 */
     struct timespec start_tot, finish_tot;
     double elapsed_tot;
-    printf("KNN search:\n");
-    clock_gettime(CLOCK_MONOTONIC, &start_tot);
+
+	if(verbose)
+	{
+		printf("KNN search:\n");
+		clock_gettime(CLOCK_MONOTONIC, &start_tot);
+	}
 	
 	#ifdef PROGRESS_BAR
 		idx_t progress_count = 0;
@@ -2110,16 +2158,19 @@ void KNN_search_kdTreeV2(Datapoint_info * dpInfo,kdNodeV2* kdNodeArray, kdNodeV2
 	#endif
     //printf("Progress %lu/%lu\n",(uint64_t)progress_count, (uint64_t)n);
 
-    clock_gettime(CLOCK_MONOTONIC, &finish_tot);
-    elapsed_tot = (finish_tot.tv_sec - start_tot.tv_sec);
-    elapsed_tot += (finish_tot.tv_nsec - start_tot.tv_nsec) / 1000000000.0;
-    printf("\tTotal time: %.3lfs\n\n", elapsed_tot);
+	if(verbose)
+	{
+		clock_gettime(CLOCK_MONOTONIC, &finish_tot);
+		elapsed_tot = (finish_tot.tv_sec - start_tot.tv_sec);
+		elapsed_tot += (finish_tot.tv_nsec - start_tot.tv_nsec) / 1000000000.0;
+		printf("\tTotal time: %.3lfs\n\n", elapsed_tot);
+	}
     return;
 
 }
 
 
-void KNN_search_kdtree(Datapoint_info * dpInfo, float_t * data, kd_node* root, idx_t n, idx_t k)
+void KNN_search_kdtree(Datapoint_info * dpInfo, float_t * data, kd_node* root, idx_t n, idx_t k, int verbose)
 {
 	/*
 	 * Helper function for KNN serch using KDtree
@@ -2132,8 +2183,12 @@ void KNN_search_kdtree(Datapoint_info * dpInfo, float_t * data, kd_node* root, i
 	 */
     struct timespec start_tot, finish_tot;
     double elapsed_tot;
-    printf("KNN search:\n");
-    clock_gettime(CLOCK_MONOTONIC, &start_tot);
+
+	if(verbose)
+	{
+		printf("KNN search:\n");
+		clock_gettime(CLOCK_MONOTONIC, &start_tot);
+	}
 	
 	#ifdef PROGRESS_BAR
 		idx_t progress_count = 0;
@@ -2408,11 +2463,12 @@ void KNN_BruteForce(Datapoint_info* points, void* data,size_t n, size_t byteSize
 	}
 #endif
 
-Datapoint_info* NgbhSearch_bruteforce(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *))
+Datapoint_info* NgbhSearch_bruteforce(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *), int verbose)
 {
 	METRICS_DATADIMS = dims;
 
-	#ifdef VERBOSE
+	if(verbose)
+	{
 		printf("Brute-forcing kNN computation:\n");
 		if(!blas_are_in_use())
 		{
@@ -2435,7 +2491,7 @@ Datapoint_info* NgbhSearch_bruteforce(void* data, size_t n, size_t byteSize, siz
 				printf("/!\\ pass NULL to the function pointer of the metric \n");
 			}
 		}
-	#endif
+	}
     Datapoint_info* points = (Datapoint_info*)malloc(n*sizeof(Datapoint_info));
 
     struct timespec start_tot, finish_tot;
@@ -2487,7 +2543,7 @@ Datapoint_info* NgbhSearch_bruteforce(void* data, size_t n, size_t byteSize, siz
 
 }
 
-Datapoint_info* NgbhSearch_kdtree(float_t* data, size_t n, size_t ndims, size_t k)
+Datapoint_info* NgbhSearch_kdtree(float_t* data, size_t n, size_t ndims, size_t k, int verbose)
 {
 	/*
 	 * Neighborhood search using a KDtree
@@ -2504,10 +2560,11 @@ Datapoint_info* NgbhSearch_kdtree(float_t* data, size_t n, size_t ndims, size_t 
 
 	data_dims = (unsigned int)ndims;
 
-	#ifdef VERBOSE
+	if(verbose)
+	{
 		printf("Building the KDtree v1:\n");
 		clock_gettime(CLOCK_MONOTONIC, &start);
-	#endif
+	}
 
     kd_node* kd_node_array = (kd_node*)malloc(n*sizeof(kd_node));
     kd_node** kd_ptrs = (kd_node**)malloc(n*sizeof(kd_node*));
@@ -2519,12 +2576,13 @@ Datapoint_info* NgbhSearch_kdtree(float_t* data, size_t n, size_t ndims, size_t 
 
     //printf("The root of the tree is\n");
     //printKDnode(root);
-	#ifdef VERBOSE
+	if(verbose)
+	{
 		clock_gettime(CLOCK_MONOTONIC, &finish);
 		elapsed = (finish.tv_sec - start.tv_sec);
 		elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
 		printf("\tTotal time: %.3lfs\n\n", elapsed);
-	#endif
+	}
 
 
     Datapoint_info* points = (Datapoint_info*)malloc(n*sizeof(Datapoint_info));
@@ -2532,7 +2590,7 @@ Datapoint_info* NgbhSearch_kdtree(float_t* data, size_t n, size_t ndims, size_t 
     /**************
      * KNN search *
      **************/
-    KNN_search_kdtree(points,data, root, n, k);
+    KNN_search_kdtree(points,data, root, n, k, verbose);
 
     free(kd_ptrs);
     free(kd_node_array);
@@ -2540,7 +2598,7 @@ Datapoint_info* NgbhSearch_kdtree(float_t* data, size_t n, size_t ndims, size_t 
 	return points;
 }
 
-Datapoint_info* NgbhSearch_kdtree_V2(float_t* data, size_t n, size_t ndims, size_t k)
+Datapoint_info* NgbhSearch_kdtree_V2(float_t* data, size_t n, size_t ndims, size_t k, int verbose)
 {
 	/*
 	 * Neighborhood search using a KDtree
@@ -2557,10 +2615,11 @@ Datapoint_info* NgbhSearch_kdtree_V2(float_t* data, size_t n, size_t ndims, size
 
 	data_dims = (unsigned int)ndims;
 
-	#ifdef VERBOSE
+	if(verbose)
+	{
 		printf("Building the KDtree v2:\n");
 		clock_gettime(CLOCK_MONOTONIC, &start);
-	#endif
+	}
 
 	#ifdef SWMEM
 		float_t* dummy_data = malloc(sizeof(float_t)*ndims*n);
@@ -2576,12 +2635,13 @@ Datapoint_info* NgbhSearch_kdtree_V2(float_t* data, size_t n, size_t ndims, size
 
     //printf("The root of the tree is\n");
     //printKDnode(root);
-	#ifdef VERBOSE
+	if(verbose)
+	{
 		clock_gettime(CLOCK_MONOTONIC, &finish);
 		elapsed = (finish.tv_sec - start.tv_sec);
 		elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
 		printf("\tTotal time: %.3lfs\n\n", elapsed);
-	#endif
+	}
 
 
     Datapoint_info* points = (Datapoint_info*)malloc(n*sizeof(Datapoint_info));
@@ -2589,7 +2649,7 @@ Datapoint_info* NgbhSearch_kdtree_V2(float_t* data, size_t n, size_t ndims, size
     /**************
      * KNN search *
      **************/
-	KNN_search_kdTreeV2(points,kdNode_array,root,n,k);
+	KNN_search_kdTreeV2(points,kdNode_array,root,n,k,verbose);
 
 	#ifdef SWMEM
 		free(data);
@@ -2620,7 +2680,7 @@ int FloatAndUintSize()
 }
 
 
-void KNN_search_vpTree(Datapoint_info* dpInfo, vpTreeNode* vpNodeArray,vpTreeNode* root,idx_t k,size_t n, float_t (*metric)(void*, void*))
+void KNN_search_vpTree(Datapoint_info* dpInfo, vpTreeNode* vpNodeArray,vpTreeNode* root,idx_t k,size_t n, float_t (*metric)(void*, void*), int verbose)
 {	
 	/*
 	 * Helper function for performing KNN search
@@ -2634,8 +2694,12 @@ void KNN_search_vpTree(Datapoint_info* dpInfo, vpTreeNode* vpNodeArray,vpTreeNod
 	 */
     struct timespec start_tot, finish_tot;
     double elapsed_tot;
-    printf("KNN search:\n");
-    clock_gettime(CLOCK_MONOTONIC, &start_tot);
+
+	if(verbose)
+	{
+		printf("KNN search:\n");
+		clock_gettime(CLOCK_MONOTONIC, &start_tot);
+	}
 	
 
 	#ifdef PROGRESS_BAR
@@ -2688,15 +2752,18 @@ void KNN_search_vpTree(Datapoint_info* dpInfo, vpTreeNode* vpNodeArray,vpTreeNod
 	#endif
     //printf("Progress %lu/%lu\n",(uint64_t)progress_count, (uint64_t)n);
 
-    clock_gettime(CLOCK_MONOTONIC, &finish_tot);
-    elapsed_tot = (finish_tot.tv_sec - start_tot.tv_sec);
-    elapsed_tot += (finish_tot.tv_nsec - start_tot.tv_nsec) / 1000000000.0;
-    printf("\tTotal time: %.3lfs\n\n", elapsed_tot);
+	if(verbose)
+	{
+		clock_gettime(CLOCK_MONOTONIC, &finish_tot);
+		elapsed_tot = (finish_tot.tv_sec - start_tot.tv_sec);
+		elapsed_tot += (finish_tot.tv_nsec - start_tot.tv_nsec) / 1000000000.0;
+		printf("\tTotal time: %.3lfs\n\n", elapsed_tot);
+	}
     return;
 }
 
 
-Datapoint_info* NgbhSearch_vptree(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *))
+Datapoint_info* NgbhSearch_vptree(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *), int verbose)
 {
 	/*
 	 * Neighborhood search using vantage-point tree
@@ -2711,10 +2778,11 @@ Datapoint_info* NgbhSearch_vptree(void* data, size_t n, size_t byteSize, size_t 
     double elapsed;
 	METRICS_DATADIMS = (uint32_t)dims;
 	
-	#ifdef VERBOSE
+	if(verbose)
+	{
 		clock_gettime(CLOCK_MONOTONIC, &start);
 		printf("Building the vp tree v1\n");
-	#endif
+	}
 
 	vpTreeNode* vpNodeArray = (vpTreeNode*)malloc(n*sizeof(vpTreeNode));
 	vpTreeNode** vpPtrArray = (vpTreeNode**)malloc(n*sizeof(vpTreeNode*));
@@ -2722,12 +2790,13 @@ Datapoint_info* NgbhSearch_vptree(void* data, size_t n, size_t byteSize, size_t 
 	initialize_vpTreeNodes_pointers(vpPtrArray, vpNodeArray, n);
 
 	vpTreeNode* root = build_vpTree(vpPtrArray, 0, n-1, NULL, metric);
-	#ifdef VERBOSE
+	if(verbose)
+	{
 		clock_gettime(CLOCK_MONOTONIC, &finish);
 		elapsed = (finish.tv_sec - start.tv_sec);
 		elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
-    	printf("\tTotal time: %.3lfs\n\n", elapsed);
-	#endif
+		printf("\tTotal time: %.3lfs\n\n", elapsed);
+	}
 
     Datapoint_info* points = (Datapoint_info*)malloc(n*sizeof(Datapoint_info));
 
@@ -2736,7 +2805,7 @@ Datapoint_info* NgbhSearch_vptree(void* data, size_t n, size_t byteSize, size_t 
      **************/
 
 	
-	KNN_search_vpTree(points, vpNodeArray, root, k, n, metric);
+	KNN_search_vpTree(points, vpNodeArray, root, k, n, metric, verbose);
 	
 
     free(vpPtrArray);
@@ -2744,7 +2813,7 @@ Datapoint_info* NgbhSearch_vptree(void* data, size_t n, size_t byteSize, size_t 
 	return points;
 }
 
-void KNN_search_vpTree_V2(Datapoint_info* dpInfo, vpTreeNodeV2* vpNodeArray,vpTreeNodeV2* root,idx_t k,size_t n, float_t (*metric)(void*, void*))
+void KNN_search_vpTree_V2(Datapoint_info* dpInfo, vpTreeNodeV2* vpNodeArray,vpTreeNodeV2* root,idx_t k,size_t n, float_t (*metric)(void*, void*), int verbose)
 {	
 	/*
 	 * Helper function for performing KNN search
@@ -2758,8 +2827,12 @@ void KNN_search_vpTree_V2(Datapoint_info* dpInfo, vpTreeNodeV2* vpNodeArray,vpTr
 	 */
     struct timespec start_tot, finish_tot;
     double elapsed_tot;
-    printf("KNN search:\n");
-    clock_gettime(CLOCK_MONOTONIC, &start_tot);
+
+	if(verbose)
+	{
+		printf("KNN search:\n");
+		clock_gettime(CLOCK_MONOTONIC, &start_tot);
+	}
 
 	#ifdef PROGRESS_BAR
 		idx_t progress_count = 0;
@@ -2799,14 +2872,17 @@ void KNN_search_vpTree_V2(Datapoint_info* dpInfo, vpTreeNodeV2* vpNodeArray,vpTr
 	#endif
     //printf("Progress %lu/%lu\n",(uint64_t)progress_count, (uint64_t)n);
 
-    clock_gettime(CLOCK_MONOTONIC, &finish_tot);
-    elapsed_tot = (finish_tot.tv_sec - start_tot.tv_sec);
-    elapsed_tot += (finish_tot.tv_nsec - start_tot.tv_nsec) / 1000000000.0;
-    printf("\tTotal time: %.3lfs\n\n", elapsed_tot);
+	if(verbose)
+	{
+		clock_gettime(CLOCK_MONOTONIC, &finish_tot);
+		elapsed_tot = (finish_tot.tv_sec - start_tot.tv_sec);
+		elapsed_tot += (finish_tot.tv_nsec - start_tot.tv_nsec) / 1000000000.0;
+		printf("\tTotal time: %.3lfs\n\n", elapsed_tot);
+	}
     return;
 }
 
-Datapoint_info* NgbhSearch_vptree_V2(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *))
+Datapoint_info* NgbhSearch_vptree_V2(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *), int verbose)
 {
 	/*
 	 * Neighborhood search using vantage-point tree
@@ -2822,10 +2898,11 @@ Datapoint_info* NgbhSearch_vptree_V2(void* data, size_t n, size_t byteSize, size
     double elapsed;
 	METRICS_DATADIMS = (uint32_t)dims;
 	
-	#ifdef VERBOSE
+	if(verbose)
+	{
 		clock_gettime(CLOCK_MONOTONIC, &start);
 		printf("Building the vp tree v2\n");
-	#endif
+	}
 
 	#ifdef SWMEM
 		void* dummy_data = malloc(byteSize*dims*n);
@@ -2839,16 +2916,17 @@ Datapoint_info* NgbhSearch_vptree_V2(void* data, size_t n, size_t byteSize, size
 
 	//vpTreeNodeV2* root = build_vpTree_V2(vpPtrArray, 0, n-1, NULL, metric);
 	vpTreeNodeV2* root = build_vpTree_V2(vpNodeArray, 0, n-1, NULL, metric);
-	#ifdef VERBOSE
+	if(verbose)
+	{
 		clock_gettime(CLOCK_MONOTONIC, &finish);
 		elapsed = (finish.tv_sec - start.tv_sec);
 		elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
-    	printf("\tTotal time: %.3lfs\n\n", elapsed);
-	#endif
+		printf("\tTotal time: %.3lfs\n\n", elapsed);
+	}
 
     Datapoint_info* points = (Datapoint_info*)malloc(n*sizeof(Datapoint_info));
 
-	KNN_search_vpTree_V2(points, vpNodeArray, root, k, n, metric);
+	KNN_search_vpTree_V2(points, vpNodeArray, root, k, n, metric, verbose);
 	
 	#ifdef SWMEM
 		free(data);
@@ -3010,7 +3088,10 @@ void resetDatapoints(Datapoint_info* dp, size_t n)
 	}
 }
 
-
+void setVerboseOutput(int s)
+{
+	verbose = s;
+}
 
 
 

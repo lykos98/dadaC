@@ -12,7 +12,7 @@ gt_nn_dist, gt_nn_idx = nn.kneighbors(x)
 
 
 def test_ngbh_kdtree():
-    dc = dadac.Data(x)
+    dc = dadac.Data(x, verbose=False)
     dc.compute_distances(300, alg="kd")
     n2 = dc.dist_indices
     d2 = dc.distances
@@ -21,7 +21,7 @@ def test_ngbh_kdtree():
     assert np.all(np.isclose(d2,gt_nn_dist))
 
 def test_ngbh_vptree():
-    dc = dadac.Data(x)
+    dc = dadac.Data(x, verbose=False)
     dc.compute_distances(300, alg="vp")
     n2 = dc.dist_indices
     d2 = dc.distances

@@ -13,7 +13,7 @@ gt_density_PAk      = np.loadtxt(os.path.join(os.path.dirname(__file__),"gt/gt_d
 gt_density_PAk_err  = np.loadtxt(os.path.join(os.path.dirname(__file__),"gt/gt_density_PAk_err.dat"))
 
 def test_ID_twoNN():
-    dc = dadac.Data(x)
+    dc = dadac.Data(x,verbose = False)
     dc.compute_distances(300)
     dc.compute_id_2NN()
     i2 = dc.id 
@@ -37,7 +37,7 @@ def test_density_kstarNN():
     #k1 = dpy.kstar
 
 
-    dc = dadac.Data(x)
+    dc = dadac.Data(x,verbose = False)
     dc.compute_distances(300, alg="kd")
     dc.compute_id_2NN()
     dc.compute_density_kstarNN()
@@ -70,7 +70,7 @@ def test_density_PAk():
     #e1 = dpy.log_den_err
     #k1 = dpy.kstar
 
-    dc = dadac.Data(x)
+    dc = dadac.Data(x,verbose=False)
     dc.compute_distances(300, alg="kd")
     dc.compute_id_2NN()
     dc.compute_density_PAk()

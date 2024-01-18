@@ -104,7 +104,7 @@ class _dadac_loader():
         #retrieve function pointers form .so file
 
         self._NgbhSearch_kdtree = self.lib.NgbhSearch_kdtree_V2
-        self._NgbhSearch_kdtree.argtypes = [np.ctypeslib.ndpointer(ctFloatType), ct.c_uint64, ct.c_uint64, ct.c_uint64 ]
+        self._NgbhSearch_kdtree.argtypes = [np.ctypeslib.ndpointer(ctFloatType), ct.c_uint64, ct.c_uint64, ct.c_uint64, ct.c_int32 ]
         self._NgbhSearch_kdtree.restype  = ct.POINTER(DatapointInfo)
 
         #Datapoint_info* NgbhSearch_vpTree(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *));
@@ -112,7 +112,7 @@ class _dadac_loader():
         #actually do not define anything and hope for the best
         #function pointers are not documented
         #METRIC = ct.CFUNCTYPE(x) 
-        self._NgbhSearch_vptree.argtypes = [ct.c_void_p, ct.c_uint64, ct.c_uint64, ct.c_uint64, ct.c_uint64, ct.c_void_p ]
+        self._NgbhSearch_vptree.argtypes = [ct.c_void_p, ct.c_uint64, ct.c_uint64, ct.c_uint64, ct.c_uint64, ct.c_void_p, ct.c_int32 ]
         self._NgbhSearch_vptree.restype  = ct.POINTER(DatapointInfo)
         self._eud = self.lib.eud
 
@@ -120,7 +120,7 @@ class _dadac_loader():
         #actually do not define anything and hope for the best
         #function pointers are not documented
         #METRIC = ct.CFUNCTYPE(x) 
-        self._NgbhSearch_bruteforce.argtypes = [ct.c_void_p, ct.c_uint64, ct.c_uint64, ct.c_uint64, ct.c_uint64, ct.c_void_p ]
+        self._NgbhSearch_bruteforce.argtypes = [ct.c_void_p, ct.c_uint64, ct.c_uint64, ct.c_uint64, ct.c_uint64, ct.c_void_p, ct.c_int32 ]
         self._NgbhSearch_bruteforce.restype  = ct.POINTER(DatapointInfo)
         self._eud_sq = self.lib.eud_sq
 
@@ -132,7 +132,9 @@ class _dadac_loader():
                                         np.ctypeslib.ndpointer(ctIdxType),
                                         ct.c_uint64 ]
 
-
+        self._verbose = self.lib.verbose
+        self._setVerbose = self.lib.setVerboseOutput
+        self._setVerbose.argtypes = [ct.c_int32]
         #Datapoint_info* _allocDatapoints(idx_t* indeces, float_t* distances, idx_t n, idx_t k)
 
         self._allocateDatapoints = self.lib.allocDatapoints
@@ -202,21 +204,21 @@ class _dadac_loader():
 
 
         self._idEstimate = self.lib.idEstimate
-        self._idEstimate.argtypes = [ct.POINTER(DatapointInfo), ct.c_uint64, ctFloatType]
+        self._idEstimate.argtypes = [ct.POINTER(DatapointInfo), ct.c_uint64, ctFloatType, ct.c_int32]
         self._idEstimate.restype  =  ct.c_double
 
 
         self._computeRho = self.lib.computeRho
-        self._computeRho.argtypes = [ct.POINTER(DatapointInfo), ct.c_double, ct.c_uint64]
+        self._computeRho.argtypes = [ct.POINTER(DatapointInfo), ct.c_double, ct.c_uint64, ct.c_int32]
 
         self._PAk = self.lib.PAk
-        self._PAk.argtypes = [ct.POINTER(DatapointInfo), ct.c_double, ct.c_uint64]
+        self._PAk.argtypes = [ct.POINTER(DatapointInfo), ct.c_double, ct.c_uint64, ct.c_int32]
 
         self._computeCorrection = self.lib.computeCorrection
         self._computeCorrection.argtypes = [ct.POINTER(DatapointInfo), ctIdxType, ct.c_double]
 
         self._H1 = self.lib.Heuristic1
-        self._H1.argtypes = [ct.POINTER(DatapointInfo), ct.c_uint64]
+        self._H1.argtypes = [ct.POINTER(DatapointInfo), ct.c_uint64, ct.c_int32]
         self._H1.restype = Clusters
 
         self._ClustersAllocate = self.lib.Clusters_allocate
@@ -226,10 +228,10 @@ class _dadac_loader():
         self._blas_in_use.restypes = ct.c_int32
 
         self._H2 = self.lib.Heuristic2
-        self._H2.argtypes = [ct.POINTER(Clusters), ct.POINTER(DatapointInfo)]
+        self._H2.argtypes = [ct.POINTER(Clusters), ct.POINTER(DatapointInfo), ct.c_int32]
 
         self._H3 = self.lib.Heuristic3
-        self._H3.argtypes = [ct.POINTER(Clusters), ct.POINTER(DatapointInfo), ct.c_double, ct.c_int]
+        self._H3.argtypes = [ct.POINTER(Clusters), ct.POINTER(DatapointInfo), ct.c_double, ct.c_int, ct.c_int32]
         
         self._freeDatapoints = self.lib.freeDatapointArray
         self._freeDatapoints.argtypes = [ct.POINTER(DatapointInfo), ct.c_uint64]
@@ -239,7 +241,7 @@ class _dadac_loader():
 
 
 class Data(_dadac_loader):
-    def __init__(self, data : np.array):
+    def __init__(self, data : np.array, verbose = True):
         """Data object for dadaC library
 
         Args:
@@ -279,6 +281,11 @@ class Data(_dadac_loader):
 
         if len(self.data.shape) != 2:
             raise TypeError("Please provide a 2d numpy array")
+
+        if verbose:
+            self._verbose = 1
+        else:
+            self._verbose = 0
 
 
         self._datapoints     = None
@@ -331,9 +338,9 @@ class Data(_dadac_loader):
         #with sys_pipes():
         if self._running_in_notebook:
             with sys_pipes():
-                self._datapoints = self._NgbhSearch_kdtree(self.data, self.n, self.dims, self.k)
+                self._datapoints = self._NgbhSearch_kdtree(self.data, self.n, self.dims, self.k, self._verbose)
         else:
-            self._datapoints = self._NgbhSearch_kdtree(self.data, self.n, self.dims, self.k)
+            self._datapoints = self._NgbhSearch_kdtree(self.data, self.n, self.dims, self.k, self._verbose)
         #Datapoint_info* NgbhSearch_vpTree(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *));
         self.state["ngbh"] = True
         self.neighbors = None
@@ -356,9 +363,9 @@ class Data(_dadac_loader):
         #Datapoint_info* NgbhSearch_vpTree(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *));
         if self._running_in_notebook:
             with sys_pipes():
-                self._datapoints = self._NgbhSearch_vptree(self.data.ctypes.data, self.n, self.data.itemsize, self.dims, self.k, self._eud)
+                self._datapoints = self._NgbhSearch_vptree(self.data.ctypes.data, self.n, self.data.itemsize, self.dims, self.k, self._eud, self._verbose)
         else:
-            self._datapoints = self._NgbhSearch_vptree(self.data.ctypes.data, self.n, self.data.itemsize, self.dims, self.k, self._eud)
+            self._datapoints = self._NgbhSearch_vptree(self.data.ctypes.data, self.n, self.data.itemsize, self.dims, self.k, self._eud, self._verbose)
 
         self.state["ngbh"] = True
         self.neighbors = None
@@ -375,9 +382,9 @@ class Data(_dadac_loader):
         #Datapoint_info* NgbhSearch_vpTree(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *));
         if self._running_in_notebook:
             with sys_pipes():
-                self._datapoints = self._NgbhSearch_bruteforce(self.data.ctypes.data, self.n, self.data.itemsize, self.dims, self.k, 0)
+                self._datapoints = self._NgbhSearch_bruteforce(self.data.ctypes.data, self.n, self.data.itemsize, self.dims, self.k, 0, self._verbose)
         else:
-            self._datapoints = self._NgbhSearch_bruteforce(self.data.ctypes.data, self.n, self.data.itemsize, self.dims, self.k, 0)
+            self._datapoints = self._NgbhSearch_bruteforce(self.data.ctypes.data, self.n, self.data.itemsize, self.dims, self.k, 0, self._verbose)
         self.state["ngbh"] = True
         self.neighbors = None
 
@@ -400,23 +407,26 @@ class Data(_dadac_loader):
             if self.blas:
                 self.computeNeighbors_bruteforce(k)
             else:
-                print("dadac implementation not compiled with blas support for euclidean metric optimization")
-                print("if you want to use it consider compiling against a blas library implementation")
-                print("--> Falling back to sklearn brute force")
+                if self._verbose:
+                    print("dadac implementation not compiled with blas support for euclidean metric optimization")
+                    print("if you want to use it consider compiling against a blas library implementation")
+                    print("--> Falling back to sklearn brute force")
                 t1 = time.monotonic() 
                 nn = NearestNeighbors(n_neighbors=k, n_jobs=-1, p = 2, algorithm="brute").fit(self.data)
                 dist, ngbh = nn.kneighbors(self.data)
                 ngbh = ngbh.astype(self._itype)
-                print(ngbh.dtype)
+
                 dist = np.ascontiguousarray(dist.astype(self._ftype),dtype = self._ftype)
                 ngbh = np.ascontiguousarray(ngbh)
                 
                 self._datapoints = self._allocateDatapoints(self.n)
                 self._importNeighborsAndDistances(self._datapoints,ngbh,dist,self.n, self._itype(k))
-                t2 = time.monotonic()
+
+                if self._verbose:
+                    t2 = time.monotonic()
+                    print(f"\tTotal time: {t2 - t1 : .2f}s")
 
             self.state["ngbh"] = True
-            #print(f"\tTotal time: {t2 - t1 : .2f}s")
             #self.computeNeighbors_bruteforce(k)
             return
 
@@ -433,9 +443,9 @@ class Data(_dadac_loader):
             raise ValueError("Please compute Neighbors before calling this function")
         if self._running_in_notebook:
             with sys_pipes():
-                self.id = self._idEstimate(self._datapoints,self.n,fraction)
+                self.id = self._idEstimate(self._datapoints,self.n,fraction, self._verbose)
         else:
-            self.id = self._idEstimate(self._datapoints,self.n,fraction)
+            self.id = self._idEstimate(self._datapoints,self.n,fraction, self._verbose)
         self.state["id"] = True
 
     def import_neighbors_and_distances(self,ngbh,dists,dists_are_sq = False):
@@ -469,9 +479,9 @@ class Data(_dadac_loader):
             raise ValueError("Please compute ID before calling this function")
         if self._running_in_notebook:
             with sys_pipes():
-                self._computeRho(self._datapoints, self.id, self.n)
+                self._computeRho(self._datapoints, self.id, self.n, self._verbose)
         else:
-            self._computeRho(self._datapoints, self.id, self.n)
+            self._computeRho(self._datapoints, self.id, self.n, self._verbose)
 
         self.state["density"] = True
         self.density = None
@@ -488,9 +498,9 @@ class Data(_dadac_loader):
             raise ValueError("Please compute ID before calling this function")
         if self._running_in_notebook:
             with sys_pipes():
-                self._PAk(self._datapoints, self.id, self.n)
+                self._PAk(self._datapoints, self.id, self.n, self._verbose)
         else:
-            self._PAk(self._datapoints, self.id, self.n)
+            self._PAk(self._datapoints, self.id, self.n, self._verbose)
 
         self.state["density"] = True
         self.density = None
@@ -502,7 +512,7 @@ class Data(_dadac_loader):
 
         Args:
             Z (float): Z value for the method 
-            useSparse (str): optional [``auto``,`yes`,`no`], use sparse implementation of border storage between clusters. Memory usage for big datsets is significant. 
+            useSparse (str): optional [``auto``,True, False], use sparse implementation of border storage between clusters. Memory usage for big datsets is significant. 
 
         Raises:
             ValueError: Raises value error if density is not computed, use `Data.computeDensity()` method
@@ -514,7 +524,7 @@ class Data(_dadac_loader):
                 self.state["useSparse"] = True
             else: 
                 self.state["useSparse"] = False 
-        elif useSparse == "y":
+        elif useSparse == True:
             self.state["useSparse"] = True
         else:
             self.state["useSparse"] = False
@@ -530,16 +540,16 @@ class Data(_dadac_loader):
         if self._running_in_notebook:
             with sys_pipes():
                 self._computeCorrection(self._datapoints, self.n, self.Z)
-                self._clusters = self._H1(self._datapoints, self.n)
+                self._clusters = self._H1(self._datapoints, self.n, self._verbose)
                 self._ClustersAllocate(ct.pointer(self._clusters), 1 if self.state["useSparse"] else 0)
-                self._H2(ct.pointer(self._clusters), self._datapoints)
-                self._H3(ct.pointer(self._clusters), self._datapoints, self.Z, 1 if halo else 0 )
+                self._H2(ct.pointer(self._clusters), self._datapoints, self._verbose)
+                self._H3(ct.pointer(self._clusters), self._datapoints, self.Z, 1 if halo else 0, self._verbose )
         else:
             self._computeCorrection(self._datapoints, self.n, self.Z)
-            self._clusters = self._H1(self._datapoints, self.n)
+            self._clusters = self._H1(self._datapoints, self.n, self._verbose)
             self._ClustersAllocate(ct.pointer(self._clusters), 1 if self.state["useSparse"] else 0)
-            self._H2(ct.pointer(self._clusters), self._datapoints)
-            self._H3(ct.pointer(self._clusters), self._datapoints, self.Z, 1 if halo else 0 )
+            self._H2(ct.pointer(self._clusters), self._datapoints, self._verbose)
+            self._H3(ct.pointer(self._clusters), self._datapoints, self.Z, 1 if halo else 0, self._verbose )
         self.state["clustering"] = True
         self.clusterAssignment = None
 
