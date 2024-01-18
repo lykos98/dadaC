@@ -4,6 +4,7 @@ perf.data
 perf.data.old
 *test.o
 *test
+*build*
 Bunny.txt
 *Old.c
 d

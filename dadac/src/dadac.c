@@ -35,15 +35,6 @@ idx_t Npart;
 const border_t border_null = {.density = -1.0, .error = 0, .idx = NOBORDER};
 const SparseBorder_t SparseBorder_null = {.density = -1.0, .error = 0, .idx = NOBORDER, .i = NOBORDER, .j = NOBORDER};
 
-void LinkedList_Insert(LinkedList* L, Node* n)
-/*
- * DELETE
- */
-{
-    ++(L -> count);
-    n -> next = L -> head;
-    L -> head = n;
-}
 
 int blas_are_in_use()
 {
@@ -163,7 +154,9 @@ void Clusters_Reset(Clusters * c)
 
 void Clusters_free(Clusters * c)
 {
-
+	/*
+	 * Free cluster object
+	 */
     Clusters_Reset(c);
 }
 
@@ -211,7 +204,6 @@ SparseBorder_t SparseBorder_get(Clusters* c, idx_t i, idx_t j)
 			b = candidate;
 		}
 	}
-
 	return b;
 }
 
@@ -241,7 +233,8 @@ void DynamicArray_pushBack(lu_dynamicArray * a, idx_t p)
     }
 }
 
-void DynamicArray_Reset(lu_dynamicArray * a){
+void DynamicArray_Reset(lu_dynamicArray * a)
+{
     a -> count = 0;
 }
 
@@ -258,29 +251,28 @@ void DynamicArray_Init(lu_dynamicArray * a)
     a -> size = 0;
 }
 
-
-
-int cmp(const void * a, const void * b){
-    FLOAT_TYPE aa = *((FLOAT_TYPE*)a);
-    FLOAT_TYPE bb = *((FLOAT_TYPE*)b);
-    return 2*(aa > bb ) - 1; 
+int cmp(const void * a, const void * b)
+{
+    float_t aa = *((float_t*)a);
+    float_t bb = *((float_t*)b);
+    return (aa > bb ) - (aa < bb); 
 }
 
 
 
-FLOAT_TYPE avg(const FLOAT_TYPE * x, const idx_t n)
+float_t avg(const float_t * x, const idx_t n)
 {
-    FLOAT_TYPE f = 0;
+    float_t f = 0;
     for(idx_t i = 0; i < n; ++i)
     {
         f += x[i];
     }
-    return f/(FLOAT_TYPE)n;
+    return f/(float_t)n;
 }
 
 
 
-FLOAT_TYPE mEst2(FLOAT_TYPE * x, FLOAT_TYPE *y, idx_t n)
+float_t mEst2(float_t * x, float_t *y, idx_t n)
 {
 
     /*
@@ -293,14 +285,14 @@ FLOAT_TYPE mEst2(FLOAT_TYPE * x, FLOAT_TYPE *y, idx_t n)
      */
      
 
-    //FLOAT_TYPE x_avg, y_avg;
-    FLOAT_TYPE num = 0;
-    FLOAT_TYPE den = 0;
-    FLOAT_TYPE dd;
+    //float_t x_avg, y_avg;
+    float_t num = 0;
+    float_t den = 0;
+    float_t dd;
     for(idx_t i = 0; i < n; ++i)
     {
-        FLOAT_TYPE xx = x[i];
-        FLOAT_TYPE yy = y[i];
+        float_t xx = x[i];
+        float_t yy = y[i];
 
         dd = xx;
         num += dd*yy;
@@ -310,18 +302,18 @@ FLOAT_TYPE mEst2(FLOAT_TYPE * x, FLOAT_TYPE *y, idx_t n)
   
     return num/den;
 }
-FLOAT_TYPE mEst(FLOAT_TYPE * x, FLOAT_TYPE *y, idx_t n)
+float_t mEst(float_t * x, float_t *y, idx_t n)
 {
-    FLOAT_TYPE x_avg, y_avg;
+    float_t x_avg, y_avg;
     x_avg = avg(x,n);
     y_avg = avg(y,n);
-    FLOAT_TYPE num = 0;
-    FLOAT_TYPE den = 0;
-    FLOAT_TYPE dd;
+    float_t num = 0;
+    float_t den = 0;
+    float_t dd;
     for(idx_t i = 0; i < n - 1; ++i)
     {
-        FLOAT_TYPE xx = x[i];
-        FLOAT_TYPE yy = y[i];
+        float_t xx = x[i];
+        float_t yy = y[i];
 
         dd = (xx - x_avg);
         num += dd*(yy - y_avg);
@@ -332,7 +324,7 @@ FLOAT_TYPE mEst(FLOAT_TYPE * x, FLOAT_TYPE *y, idx_t n)
     return num/den;
 }
 
-FLOAT_TYPE idEstimate(Datapoint_info* dpInfo, idx_t n,FLOAT_TYPE fraction)
+float_t idEstimate(Datapoint_info* dpInfo, idx_t n,float_t fraction)
 {
 
     /*
@@ -353,20 +345,20 @@ FLOAT_TYPE idEstimate(Datapoint_info* dpInfo, idx_t n,FLOAT_TYPE fraction)
     printf("ID estimation:\n");
     clock_gettime(CLOCK_MONOTONIC, &start_tot);
 
-    //FLOAT_TYPE fraction = 0.7;
-    FLOAT_TYPE* r = (FLOAT_TYPE*)malloc(n*sizeof(FLOAT_TYPE));
-    FLOAT_TYPE* Pemp = (FLOAT_TYPE*)malloc(n*sizeof(FLOAT_TYPE));
+    //float_t fraction = 0.7;
+    float_t* r = (float_t*)malloc(n*sizeof(float_t));
+    float_t* Pemp = (float_t*)malloc(n*sizeof(float_t));
 
     for(idx_t i = 0; i < n; ++i)
     {
         r[i] = 0.5 * log(dpInfo[i].ngbh.data[2].value/dpInfo[i].ngbh.data[1].value);
-        Pemp[i] = -log(1 - (FLOAT_TYPE)(i + 1)/(FLOAT_TYPE)n);
+        Pemp[i] = -log(1 - (float_t)(i + 1)/(float_t)n);
     }
-    qsort(r,n,sizeof(FLOAT_TYPE),cmp);
+    qsort(r,n,sizeof(float_t),cmp);
 
     idx_t Neff = (idx_t)(n*fraction);
 
-    FLOAT_TYPE d = mEst2(r,Pemp,Neff); 
+    float_t d = mEst2(r,Pemp,Neff); 
     free(r);
     free(Pemp);
 
@@ -380,7 +372,7 @@ FLOAT_TYPE idEstimate(Datapoint_info* dpInfo, idx_t n,FLOAT_TYPE fraction)
 
 }
 
-void computeRho(Datapoint_info* dpInfo, const FLOAT_TYPE d, const idx_t points){
+void computeRho(Datapoint_info* dpInfo, const float_t d, const idx_t points){
 
     /*
      * Point density computation:                       
@@ -398,8 +390,8 @@ void computeRho(Datapoint_info* dpInfo, const FLOAT_TYPE d, const idx_t points){
 
     idx_t kMAX = dpInfo[0].ngbh.N - 1;   
 
-    FLOAT_TYPE omega = 0.;  
-    if(sizeof(FLOAT_TYPE) == sizeof(float)){ omega = powf(PI_F,d/2)/tgammaf(d/2.0f + 1.0f);}  
+    float_t omega = 0.;  
+    if(sizeof(float_t) == sizeof(float)){ omega = powf(PI_F,d/2)/tgammaf(d/2.0f + 1.0f);}  
     else{omega = pow(M_PI,d/2.)/tgamma(d/2.0 + 1.0);}
 
     //printf("Omega d %f\n", omega);
@@ -410,10 +402,10 @@ void computeRho(Datapoint_info* dpInfo, const FLOAT_TYPE d, const idx_t points){
 
         idx_t j = 4;
         idx_t k;
-        FLOAT_TYPE dL  = 0.;
-        FLOAT_TYPE vvi = 0.;
-		FLOAT_TYPE vvj = 0.;
-		FLOAT_TYPE vp  = 0.;
+        float_t dL  = 0.;
+        float_t vvi = 0.;
+		float_t vvj = 0.;
+		float_t vp  = 0.;
         while(j < kMAX  && dL < DTHR)
         {
             idx_t ksel = j - 1;
@@ -437,9 +429,9 @@ void computeRho(Datapoint_info* dpInfo, const FLOAT_TYPE d, const idx_t points){
             k = j - 2;
         }
         dpInfo[i].kstar = k;
-        dpInfo[i].log_rho = log((FLOAT_TYPE)(k)/vvi/((FLOAT_TYPE)(points)));
-        //dpInfo[i].log_rho = log((FLOAT_TYPE)(k)) - log(vvi) -log((FLOAT_TYPE)(points));
-        dpInfo[i].log_rho_err =   1.0/sqrt((FLOAT_TYPE)k); //(FLOAT_TYPE)(-Q_rsqrt((float)k));
+        dpInfo[i].log_rho = log((float_t)(k)/vvi/((float_t)(points)));
+        //dpInfo[i].log_rho = log((float_t)(k)) - log(vvi) -log((float_t)(points));
+        dpInfo[i].log_rho_err =   1.0/sqrt((float_t)k); //(float_t)(-Q_rsqrt((float)k));
         dpInfo[i].g = dpInfo[i].log_rho - dpInfo[i].log_rho_err;
     }
 
@@ -453,16 +445,27 @@ void computeRho(Datapoint_info* dpInfo, const FLOAT_TYPE d, const idx_t points){
 
 }
 
-void PAk(Datapoint_info* dpInfo, const FLOAT_TYPE d, const idx_t points)
+void PAk(Datapoint_info* dpInfo, const float_t d, const idx_t n)
 {
+	/*
+	 * /!\ Work in progress
+	 * Implementation of the PAk estimator (kstarnn + linear correction)
+	 * from the paper https://pubs.acs.org/doi/10.1021/acs.jctc.7b00916 
+	 *
+	 * args:
+	 * Datapoint_info* dpInfo : array of objects to store density to 
+	 * const float_t d 		  : intrinsic dimension estimator  
+	 * const idx_t n 	  	  : number of points in the dataset
+	 */
+
     float_t omega = pow(M_PI,d/2.)/tgamma(d/2.0 + 1.0);
-	computeRho(dpInfo,d,points);
+	computeRho(dpInfo,d,n);
 
 	#pragma omp parallel
 	{
 		float_t* vi = (float_t*)malloc(dpInfo[0].ngbh.count*sizeof(float_t));
 		#pragma omp for
-		for(idx_t i = 0; i < points; ++i)
+		for(idx_t i = 0; i < n; ++i)
 		{
 			vi[0] = 0.;
 			idx_t kstar = dpInfo[i].kstar;
@@ -472,12 +475,7 @@ void PAk(Datapoint_info* dpInfo, const FLOAT_TYPE d, const idx_t points)
 				vi[k] = omega * (pow(dpInfo[i].ngbh.data[k+1].value,d/2.) - pow(dpInfo[i].ngbh.data[k].value,d/2.));
 			}
 
-			float_t f = dpInfo[i].log_rho + log((double)points);
-			//if(i < 3)
-			//{
-			//	printf("ff %lf \n",f);
-			//	printf("vi %lf %lf %lf\n",vi[0],vi[1],vi[2]);
-			//}
+			float_t f = dpInfo[i].log_rho + log((double)n);
 			float_t a = 0.;
 
 			float_t H00 = 0.;
@@ -584,7 +582,7 @@ void PAk(Datapoint_info* dpInfo, const FLOAT_TYPE d, const idx_t points)
 
 				niter++;
 			}
-			dpInfo[i].log_rho =  f - log((double)points);
+			dpInfo[i].log_rho =  f - log((double)n);
 			dpInfo[i].log_rho_err = sqrt((float_t)(4*kstar + 2)/(float_t)((kstar-1)*kstar)); 
 		}
 	free(vi);
@@ -605,22 +603,22 @@ int cmpPP(const void* p1, const void *p2)
     return 2*(pp1 -> g < pp2 -> g) - 1;
 }
 
-void computeCorrection(Datapoint_info* dpInfo, idx_t n, FLOAT_TYPE Z)
+void computeCorrection(Datapoint_info* dpInfo, idx_t n, float_t Z)
 {
     /*
      * Utility function, find the minimum value of the density of the datapoints
      * and shift them up in order to further work with values greater than 0     
      */
-    FLOAT_TYPE min_log_rho = 999999.9;
+    float_t min_log_rho = 999999.9;
     
 
     #pragma omp parallel
     {
-        FLOAT_TYPE thread_min_log_rho = 9999999.;
+        float_t thread_min_log_rho = 9999999.;
         #pragma omp for
         for(idx_t i = 0; i < n; ++i)
         {
-            FLOAT_TYPE tmp = dpInfo[i].log_rho - Z*dpInfo[i].log_rho_err;
+            float_t tmp = dpInfo[i].log_rho - Z*dpInfo[i].log_rho_err;
             if(tmp < thread_min_log_rho){
                 thread_min_log_rho = tmp;
             }
@@ -641,15 +639,15 @@ void computeCorrection(Datapoint_info* dpInfo, idx_t n, FLOAT_TYPE Z)
 
 Clusters Heuristic1(Datapoint_info* dpInfo, idx_t n)
 {
-    /**************************************************************
-     * Heurisitc 1, from paper of Errico, Facco, Laio & Rodriguez *
-     * ( https://doi.org/10.1016/j.ins.2021.01.010 )              *
-     *                                                            *
-     * args:                                                      *
-     * - dpInfo: array of Datapoint structures                 *
-     * - data: pointer to the dataset                             *
-     * - n: number of Datapoints                                  *
-     **************************************************************/
+    /*
+     * Heurisitc 1, from paper of Errico, Facco, Laio & Rodriguez 
+     * ( https://doi.org/10.1016/j.ins.2021.01.010 )              
+     *                                                            
+     * args:                                                      
+     * - dpInfo: array of Datapoint structures                 
+     * - data: pointer to the dataset                             
+     * - n: number of Datapoints                                  
+     */
 
     struct timespec start_tot, finish_tot;
     double elapsed_tot;
@@ -684,7 +682,7 @@ Clusters Heuristic1(Datapoint_info* dpInfo, idx_t n)
 
         dpInfo_ptrs[i] = dpInfo + i;
         idx_t maxk = dpInfo[i].kstar + 1;
-        FLOAT_TYPE gi = dpInfo[i].g;
+        float_t gi = dpInfo[i].g;
         dpInfo[i].is_center = 1;
         dpInfo[i].cluster_idx = -1;
         //printf("%lf\n",p -> g);
@@ -692,7 +690,7 @@ Clusters Heuristic1(Datapoint_info* dpInfo, idx_t n)
         for(idx_t k = 1; k < maxk; ++k)
         {
             idx_t ngbh_index = i_ngbh.data[k].array_idx;
-            FLOAT_TYPE gj = dpInfo[ngbh_index].g;
+            float_t gj = dpInfo[ngbh_index].g;
             if(gj > gi){
                 dpInfo[i].is_center = 0;
                 break;
@@ -716,6 +714,11 @@ Clusters Heuristic1(Datapoint_info* dpInfo, idx_t n)
 
 
 	#ifdef NO_OPT_H1
+	
+	/* 
+	 * debug thing left here, implemented an aggressive optimization
+	 * in future to be removed
+	 */
 	
     idx_t * to_remove = (idx_t*)malloc(allCenters.count*sizeof(idx_t));
     for(idx_t c = 0; c < allCenters.count; ++c) {to_remove[c] = MY_SIZE_MAX;}
@@ -783,7 +786,7 @@ Clusters Heuristic1(Datapoint_info* dpInfo, idx_t n)
     {
         idx_t i = allCenters.data[p];
         int e = 0;
-        //FLOAT_TYPE gi = dpInfo[i].g;
+        //float_t gi = dpInfo[i].g;
         idx_t mr = to_remove[p];
         if(mr != MY_SIZE_MAX)
         {
@@ -820,6 +823,15 @@ Clusters Heuristic1(Datapoint_info* dpInfo, idx_t n)
 	free(to_remove);
 
 	#else	
+
+	/* 
+	 * optimized version
+	 *
+	 * Generate a mask that keeps track of the point has been eliminating the 
+	 * point considered. Each thread updates this mask, then after the procedure
+	 * ends, center, removed centers, and max_rho arrays are populated
+	 *
+	 */
 		
 	idx_t* to_remove_mask = (idx_t*)malloc(n*sizeof(idx_t));
     for(idx_t p = 0; p < n; ++p) {to_remove_mask[p] = MY_SIZE_MAX;}
@@ -847,25 +859,30 @@ Clusters Heuristic1(Datapoint_info* dpInfo, idx_t n)
 						to_remove_mask[jidx] = flag ? (pp.g > dpInfo[ppp].g ? pp.array_idx : ppp) : pp.array_idx; 
 					}
 					
-					//#pragma omp atomic read 
-					//ppp = to_remove_mask[jidx];
 
-					//flag = ppp != MY_SIZE_MAX;							
-					//
-					//#pragma omp atomic write
-					//to_remove_mask[jidx] = flag ? (pp.g > dpInfo[ppp].g ? pp.array_idx : ppp) : pp.array_idx; 
+					/* Alternative
+					 * not sure if it works
+					 
+					#pragma omp atomic read 
+					ppp = to_remove_mask[jidx];
+
+					flag = ppp != MY_SIZE_MAX;							
+					
+					#pragma omp atomic write
+					to_remove_mask[jidx] = flag ? (pp.g > dpInfo[ppp].g ? pp.array_idx : ppp) : pp.array_idx; 
+
+					*/
 				}
 			}
 		}
 	}
-    
-    
 
+	/* populate the usual arrays */
     for(idx_t p = 0; p < allCenters.count; ++p)
     {
         idx_t i = allCenters.data[p];
         int e = 0;
-        //FLOAT_TYPE gi = dpInfo[i].g;
+        //float_t gi = dpInfo[i].g;
         idx_t mr = to_remove_mask[i];
         if(mr != MY_SIZE_MAX)
         {
@@ -914,9 +931,6 @@ Clusters Heuristic1(Datapoint_info* dpInfo, idx_t n)
     #endif
 
 
-    //idx_t nclusters = 0;
-
-
     /*
      * Sort all the dpInfo based on g and then perform the cluster assignment
      * in asceding order                                                     
@@ -929,15 +943,13 @@ Clusters Heuristic1(Datapoint_info* dpInfo, idx_t n)
     for(idx_t i = 0; i < n; ++i)
     {   
         Datapoint_info* p = dpInfo_ptrs[i];
-        //idx_t ele = p -> array_idx;
-        //fprintf(f,"%lu\n",ele);
         if(!(p -> is_center))
         {
             int cluster = -1;
             idx_t k = 0;
             idx_t p_idx;
             idx_t max_k = p -> ngbh.N;
-            //assign each particle at the same cluster as the nearest particle of higher density
+            /*assign each particle at the same cluster as the nearest particle of higher density*/
             while( k < max_k - 1 && cluster == -1)
             {
                 ++k;
@@ -948,14 +960,14 @@ Clusters Heuristic1(Datapoint_info* dpInfo, idx_t n)
             //
             if(cluster == -1)
             {
-                FLOAT_TYPE gmax = -99999.;               
+                float_t gmax = -99999.;               
                 idx_t gm_index = 0;
                 for(idx_t k = 0; k < max_k; ++k)
                 {
                     idx_t ngbh_index = p -> ngbh.data[k].array_idx;
                     for(idx_t m = 0; m < removedCenters.count; ++m)
                     {
-                        FLOAT_TYPE gcand = dpInfo[max_rho.data[m]].g;
+                        float_t gcand = dpInfo[max_rho.data[m]].g;
                         if(ngbh_index == removedCenters.data[m] && gcand > gmax)
                         {   
                             //printf("%lu -- %lu\n", ele, m);
@@ -1014,6 +1026,15 @@ Clusters Heuristic1(Datapoint_info* dpInfo, idx_t n)
 
 void Heuristic2(Clusters* cluster, Datapoint_info* dpInfo)
 {
+    /*
+     * Heurisitc 2, from paper of Errico, Facco, Laio & Rodriguez 
+     * ( https://doi.org/10.1016/j.ins.2021.01.010 )              
+     *                                                            
+     * args:                                                      
+     * - Clusters* cluster 		: object containing information about the clusters (borders, centers)
+	 * - Datapoint_info* dpInfo : array of Datapoint structures                 
+	 *
+     */
 
     #define borders cluster->borders
 
@@ -1030,68 +1051,69 @@ void Heuristic2(Clusters* cluster, Datapoint_info* dpInfo)
 
     for(idx_t i = 0; i < n; ++i)
     {
-            idx_t pp = NOBORDER;
-            /*loop over n neighbors*/
-            int c = dpInfo[i].cluster_idx;
-            if(!dpInfo[i].is_center)
-            {
-                for(idx_t k = 1; k < dpInfo[i].kstar + 1; ++k)
-                {
-                    /*index of the kth ngbh of n*/
-                    idx_t j = dpInfo[i].ngbh.data[k].array_idx;
-                    pp = NOBORDER;
-                    /*Loop over kn neigbhours to find if n is the nearest*/
-                    /*if cluster of the particle in nbhg is c then check is neighborhood*/                                                
-                    if(dpInfo[j].cluster_idx != c)
-                    {
-                        pp = j;
-                        break;
-                    }
-
-                }
-            }
-
-            if(pp != NOBORDER)
-            {
-                for(idx_t k = 1; k < max_k; ++k)
-                {
-                    idx_t pp_ngbh_idx = dpInfo[pp].ngbh.data[k].array_idx;
-                    if(pp_ngbh_idx == i)
-                    {
-                        break;
-                    }
-                    if(dpInfo[pp_ngbh_idx].cluster_idx == c)
-                    {
-                        pp = NOBORDER;
-                        break;
-                    }
-                }
-            }
-                            /*if it is the maximum one add it to the cluster*/
-            if(pp != NOBORDER)
-            {
-		int ppc = dpInfo[pp].cluster_idx;
-		if(cluster -> UseSparseBorders)
+		idx_t pp = NOBORDER;
+		/*loop over n neighbors*/
+		int c = dpInfo[i].cluster_idx;
+		if(!dpInfo[i].is_center)
 		{
-			//insert one and symmetric one
-			SparseBorder_t b = {.i = c, .j = ppc, .idx = i, .density = dpInfo[i].g, .error = dpInfo[i].log_rho_err}; 
-			SparseBorder_Insert(cluster, b);
-			//get symmetric border
-			SparseBorder_t bsym = {.i = ppc, .j = c, .idx = i, .density = dpInfo[i].g, .error = dpInfo[i].log_rho_err}; 
-			SparseBorder_Insert(cluster, bsym);
-
-		}
-		else
-		{
-			if(dpInfo[i].g > borders[c][ppc].density)
+			for(idx_t k = 1; k < dpInfo[i].kstar + 1; ++k)
 			{
-			    borders[c][ppc].density = dpInfo[i].g;
-			    borders[ppc][c].density = dpInfo[i].g;
-			    borders[c][ppc].idx = i;
-			    borders[ppc][c].idx = i;
+				/*index of the kth ngbh of n*/
+				idx_t j = dpInfo[i].ngbh.data[k].array_idx;
+				pp = NOBORDER;
+				/*Loop over kn neigbhours to find if n is the nearest*/
+				/*if cluster of the particle in nbhg is c then check is neighborhood*/                                                
+				if(dpInfo[j].cluster_idx != c)
+				{
+					pp = j;
+					break;
+				}
+
 			}
 		}
-            }
+
+		if(pp != NOBORDER)
+		{
+			for(idx_t k = 1; k < max_k; ++k)
+			{
+				idx_t pp_ngbh_idx = dpInfo[pp].ngbh.data[k].array_idx;
+				if(pp_ngbh_idx == i)
+				{
+					break;
+				}
+				if(dpInfo[pp_ngbh_idx].cluster_idx == c)
+				{
+					pp = NOBORDER;
+					break;
+				}
+			}
+		}
+
+		/*if it is the maximum one add it to the cluster*/
+		if(pp != NOBORDER)
+		{
+			int ppc = dpInfo[pp].cluster_idx;
+			if(cluster -> UseSparseBorders)
+			{
+				//insert one and symmetric one
+				SparseBorder_t b = {.i = c, .j = ppc, .idx = i, .density = dpInfo[i].g, .error = dpInfo[i].log_rho_err}; 
+				SparseBorder_Insert(cluster, b);
+				//get symmetric border
+				SparseBorder_t bsym = {.i = ppc, .j = c, .idx = i, .density = dpInfo[i].g, .error = dpInfo[i].log_rho_err}; 
+				SparseBorder_Insert(cluster, bsym);
+
+			}
+			else
+			{
+				if(dpInfo[i].g > borders[c][ppc].density)
+				{
+					borders[c][ppc].density = dpInfo[i].g;
+					borders[ppc][c].density = dpInfo[i].g;
+					borders[c][ppc].idx = i;
+					borders[ppc][c].idx = i;
+				}
+			}
+		}
 
     }
 
@@ -1165,51 +1187,52 @@ void Merge_A_into_B(idx_t* who_amI, idx_t cluster_A, idx_t cluster_B, idx_t n)
 
 int compare_merging_density( const void *A, const void *B)
 {
-  FLOAT_TYPE DensA = ((merge_t*)A)->density;
-  FLOAT_TYPE DensB = ((merge_t*)B)->density;
+  float_t DensA = ((merge_t*)A)->density;
+  float_t DensB = ((merge_t*)B)->density;
 
   return - ( DensA > DensB) + (DensA < DensB);
 }
 
 
-static inline int is_a_merging( FLOAT_TYPE dens1, FLOAT_TYPE dens1_err,
-			 FLOAT_TYPE dens2, FLOAT_TYPE dens2_err,
-			 FLOAT_TYPE dens_border, FLOAT_TYPE dens_border_err,
-			 FLOAT_TYPE Z)
-/*
- * dens1 : the density of the particle that is the center of the first cluster
- * dens2 : the density of the particle that is the center of the second cluster
- * dens_border : the density of the border btw the cluster 1 and the cluster 2
- * *_err : the errors on the densities
- * Z     : the desired accuracy
- */
+static inline int is_a_merging( float_t dens1, float_t dens1_err,
+			 float_t dens2, float_t dens2_err,
+			 float_t dens_border, float_t dens_border_err,
+			 float_t Z)
 {
-  /* in the original code it was:
-   *
-  FLOAT_TYPE a1 = dpInfo[cluster->centers.data[i]].log_rho_c - border_density[i][j];
-  FLOAT_TYPE a2 = dpInfo[cluster->centers.data[j]].log_rho_c - border_density[i][j];
-  
-  FLOAT_TYPE e1 = Z*(dpInfo[cluster->centers.data[i]].log_rho_err + border_err[i][j]);
-  FLOAT_TYPE e2 = Z*(dpInfo[cluster->centers.data[j]].log_rho_err + border_err[i][j]);
-  */
+	/*
+	 * dens1 : the density of the particle that is the center of the first cluster
+	 * dens2 : the density of the particle that is the center of the second cluster
+	 * dens_border : the density of the border btw the cluster 1 and the cluster 2
+	 * *_err : the errors on the densities
+	 * Z     : the desired accuracy
+	 */
 
-  FLOAT_TYPE a1 = dens1 - dens_border;
-  FLOAT_TYPE a2 = dens2 - dens_border;
+	/* in the original code it was:
+	 *
+	 float_t a1 = dpInfo[cluster->centers.data[i]].log_rho_c - border_density[i][j];
+	 float_t a2 = dpInfo[cluster->centers.data[j]].log_rho_c - border_density[i][j];
 
-  FLOAT_TYPE e1 = Z*(dens1_err + dens_border_err);
-  FLOAT_TYPE e2 = Z*(dens2_err + dens_border_err);
+	 float_t e1 = Z*(dpInfo[cluster->centers.data[i]].log_rho_err + border_err[i][j]);
+	 float_t e2 = Z*(dpInfo[cluster->centers.data[j]].log_rho_err + border_err[i][j]);
+	 */
 
-  return (a1 < e1 || a2 < e2);
+	float_t a1 = dens1 - dens_border;
+	float_t a2 = dens2 - dens_border;
+
+	float_t e1 = Z*(dens1_err + dens_border_err);
+	float_t e2 = Z*(dens2_err + dens_border_err);
+
+	return (a1 < e1 || a2 < e2);
 }
 
 
-static inline int merging_roles( FLOAT_TYPE dens1, FLOAT_TYPE dens1_err,
-			  FLOAT_TYPE dens2, FLOAT_TYPE dens2_err,
-			  FLOAT_TYPE dens_border, FLOAT_TYPE dens_border_err )
+static inline int merging_roles( float_t dens1, float_t dens1_err,
+			  float_t dens2, float_t dens2_err,
+			  float_t dens_border, float_t dens_border_err )
 {
       
-  FLOAT_TYPE c1 = (dens1 - dens_border) / (dens1_err + dens_border_err); 
-  FLOAT_TYPE c2 = (dens2 - dens_border) / (dens2_err + dens_border_err);
+  float_t c1 = (dens1 - dens_border) / (dens1_err + dens_border_err); 
+  float_t c2 = (dens2 - dens_border) / (dens2_err + dens_border_err);
   //printf("%.10lf %.10lf %d\n",c1,c2, c1 > c2);
   
   return ( c1 < c2 );     // if 1, this signal to swap 1 and 2
@@ -1251,9 +1274,16 @@ static inline void Delete_adjlist_element(Clusters * c, const idx_t list_idx, co
 
 void fix_SparseBorders_A_into_B(idx_t s,idx_t t,Clusters* c)
 {
-	//delete border trg -> src
-	
-	//idx_t nclus = c -> centers.count;
+	/*
+	 * Handle borders after two clusters are merged
+	 * - idx_t s 	 : source cluster, the one has to be merged
+	 * - idx_t t 	 : target cluster, the one recieves the merge
+	 * - Clusters* c : object containing all the data 
+	 *
+	 * When s goes into t all the clusters which had a border with s now they must have
+	 * a border with t. If t already has a border like that, the border with higher 
+	 * density is kept
+	 */
 	
 	{
 		{
@@ -1317,80 +1347,95 @@ void fix_SparseBorders_A_into_B(idx_t s,idx_t t,Clusters* c)
 
 }
 
-void Heuristic3_sparse(Clusters* cluster, Datapoint_info* dpInfo, FLOAT_TYPE Z, int halo)
+void Heuristic3_sparse(Clusters* cluster, Datapoint_info* dpInfo, float_t Z, int halo)
 {
-  printf("Using sparse implementation\n");
-  #define borders cluster->borders
 
-  struct timespec start_tot, finish_tot;
-  double elapsed_tot;
+    /*
+     * Heurisitc 3, from paper of Errico, Facco, Laio & Rodriguez 
+     * ( https://doi.org/10.1016/j.ins.2021.01.010 )              
+	 * Dense implementation, makes use of a dense matrix to store
+	 * borders between clusters, so it is more performant when the number of clusters is low
+     *                                                            
+     * args:                                                      
+	 * - Clusters* cluster 			: cluster object storing border info and cluster centers                 
+     * - Datapoint_info* dpInfo 	: array of Datapoint structures                             
+	 * - float_t Z 					: parameter to assess density peak significance
+     * - halo 					    : flag to set if you want to compute also the halo points                               
+     */
 
-  struct timespec start, finish;
-  double elapsed;
+	printf("Using sparse implementation\n");
+	#define borders cluster->borders
 
-  printf("H3: Merging clusters\n");
-  clock_gettime(CLOCK_MONOTONIC, &start_tot);
-  #ifdef VERBOSE
- 	 clock_gettime(CLOCK_MONOTONIC, &start); 
-  #endif
+	struct timespec start_tot, finish_tot;
+	double elapsed_tot;
 
-  idx_t nclus                 = cluster -> centers.count;  
-  idx_t *  surviving_clusters = (idx_t*)malloc(nclus*sizeof(idx_t));
-  for(idx_t i = 0; i < nclus; ++i)
-    { 
-        surviving_clusters[i] = i; 
-    }
+	struct timespec start, finish;
+	double elapsed;
 
-  idx_t   merge_count        = 0;
-  idx_t   merging_table_size = 1000;
-  merge_t *merging_table      = (merge_t*)malloc(sizeof(merge_t)*merging_table_size);
-  
-  /*Find clusters to be merged*/
-  for(idx_t i = 0; i < nclus - 1; ++i)   
-  {
-    idx_t count = cluster -> SparseBorders[i].count;
-    for(idx_t el = 0; el < count; ++el)   
-    {
-	      SparseBorder_t b = cluster -> SparseBorders[i].data[el];
-	      if( b.j > b.i)
-	      {
-		      FLOAT_TYPE dens1           = dpInfo[cluster->centers.data[b.i]].log_rho_c;
-		      FLOAT_TYPE dens1_err       = dpInfo[cluster->centers.data[b.i]].log_rho_err;
-		      FLOAT_TYPE dens2           = dpInfo[cluster->centers.data[b.j]].log_rho_c;
-		      FLOAT_TYPE dens2_err       = dpInfo[cluster->centers.data[b.j]].log_rho_err;
-		      FLOAT_TYPE dens_border     = b.density;
-		      FLOAT_TYPE dens_border_err = b.error;
-	      
-		      if ( is_a_merging( dens1, dens1_err, dens2, dens2_err, dens_border, dens_border_err, Z ) )
-			{
-			  
-			  if ( merge_count == merging_table_size ) {
-			    merging_table_size *= 1.1;
-			    merging_table = (merge_t*)realloc( merging_table, sizeof(merge_t) * merging_table_size ); }
+	printf("H3: Merging clusters\n");
+	clock_gettime(CLOCK_MONOTONIC, &start_tot);
+	#ifdef VERBOSE
+		clock_gettime(CLOCK_MONOTONIC, &start); 
+	#endif
 
-			  idx_t src = b.j;
-			  idx_t trg = b.i;
-
-			  merging_table[merge_count].source = src;
-			  merging_table[merge_count].target = trg;
-			  merging_table[merge_count].density = b.density;
-			  ++merge_count;
-			}
-	      }
-
+	idx_t nclus                 = cluster -> centers.count;  
+	idx_t *  surviving_clusters = (idx_t*)malloc(nclus*sizeof(idx_t));
+	for(idx_t i = 0; i < nclus; ++i)
+	{ 
+		surviving_clusters[i] = i; 
 	}
-            
-  }
 
-  qsort( (void*)merging_table, merge_count, sizeof(merge_t), compare_merging_density);
+	idx_t   merge_count        = 0;
+	idx_t   merging_table_size = 1000;
+	merge_t *merging_table      = (merge_t*)malloc(sizeof(merge_t)*merging_table_size);
+  
+	/*
+	 * Find clusters to be merged
+	 * Loop over borders and find which ones will generate a merge,
+	 * store them later in the merging table
+	 **/
+	for(idx_t i = 0; i < nclus - 1; ++i)   
+	{
+		idx_t count = cluster -> SparseBorders[i].count;
+		for(idx_t el = 0; el < count; ++el)   
+		{
+			SparseBorder_t b = cluster -> SparseBorders[i].data[el];
+			if( b.j > b.i)
+			{
+				float_t dens1           = dpInfo[cluster->centers.data[b.i]].log_rho_c;
+				float_t dens1_err       = dpInfo[cluster->centers.data[b.i]].log_rho_err;
+				float_t dens2           = dpInfo[cluster->centers.data[b.j]].log_rho_c;
+				float_t dens2_err       = dpInfo[cluster->centers.data[b.j]].log_rho_err;
+				float_t dens_border     = b.density;
+				float_t dens_border_err = b.error;
 
-  #ifdef VERBOSE
-	clock_gettime(CLOCK_MONOTONIC, &finish); 
-	elapsed = (finish.tv_sec - start.tv_sec);
-	elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
-	printf("\tFinding merges:   %.3lfs\n", elapsed);
-	clock_gettime(CLOCK_MONOTONIC, &start); 
-  #endif
+				if ( is_a_merging( dens1, dens1_err, dens2, dens2_err, dens_border, dens_border_err, Z ) )
+				{
+					if ( merge_count == merging_table_size ) {
+					merging_table_size *= 1.1;
+					merging_table = (merge_t*)realloc( merging_table, sizeof(merge_t) * merging_table_size ); }
+
+					idx_t src = b.j;
+					idx_t trg = b.i;
+
+					merging_table[merge_count].source = src;
+					merging_table[merge_count].target = trg;
+					merging_table[merge_count].density = b.density;
+					++merge_count;
+				}
+			}
+		}
+	}
+
+	qsort( (void*)merging_table, merge_count, sizeof(merge_t), compare_merging_density);
+
+	#ifdef VERBOSE
+		clock_gettime(CLOCK_MONOTONIC, &finish); 
+		elapsed = (finish.tv_sec - start.tv_sec);
+		elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+		printf("\tFinding merges:   %.3lfs\n", elapsed);
+		clock_gettime(CLOCK_MONOTONIC, &start); 
+	#endif
   
   
     for( idx_t m = 0; m < merge_count; m++ )
@@ -1398,64 +1443,76 @@ void Heuristic3_sparse(Clusters* cluster, Datapoint_info* dpInfo, FLOAT_TYPE Z, 
       
         #define src surviving_clusters[merging_table[m].source]
         #define trg surviving_clusters[merging_table[m].target]
-        //printf("Found: %lu, %lu which now is %lu, %lu\n",merging_table[m].source, merging_table[m].target, src,trg);
 
         //int re_check = ( (src != merging_table[m].source) || (trg != merging_table[m].target) );
 		//if(re_check)
 		{
+			/* 
+			 * Enforce a that in case of symmetric merging condition the lowest idx cluster 
+			 * is merged into the higher idx cluster, only to preserve compatibility with 
+			 * original ADP implementation
+			 *
+			 * Process each element in the merging table
+			 */
 			idx_t new_src = (src < trg) ? src : trg;
 			idx_t new_trg = (src < trg) ? trg : src;
 
-					//pick who am I
+			/*
+			 * pick who am I and retrieve all needed data from the 
+			 * border matrices
+			 */
 
-					FLOAT_TYPE dens1           = dpInfo[cluster->centers.data[new_src]].log_rho_c;
-					FLOAT_TYPE dens1_err       = dpInfo[cluster->centers.data[new_src]].log_rho_err;
-					FLOAT_TYPE dens2           = dpInfo[cluster->centers.data[new_trg]].log_rho_c;
-					FLOAT_TYPE dens2_err       = dpInfo[cluster->centers.data[new_trg]].log_rho_err;
+			float_t dens1           = dpInfo[cluster->centers.data[new_src]].log_rho_c;
+			float_t dens1_err       = dpInfo[cluster->centers.data[new_src]].log_rho_err;
+			float_t dens2           = dpInfo[cluster->centers.data[new_trg]].log_rho_c;
+			float_t dens2_err       = dpInfo[cluster->centers.data[new_trg]].log_rho_err;
 
-					//borders get
-					SparseBorder_t b 	   	   = SparseBorder_get(cluster, new_src, new_trg);
-					FLOAT_TYPE dens_border     = b.density;
-					FLOAT_TYPE dens_border_err = b.error;
+			//borders get
+			SparseBorder_t b 	   	= SparseBorder_get(cluster, new_src, new_trg);
+			float_t dens_border     = b.density;
+			float_t dens_border_err = b.error;
 
-					int i_have_to_merge = is_a_merging(dens1,dens1_err,dens2,dens2_err,dens_border,dens_border_err,Z);            
-					switch (i_have_to_merge && src != trg)
+			int i_have_to_merge = is_a_merging(dens1,dens1_err,dens2,dens2_err,dens_border,dens_border_err,Z);            
+			switch (i_have_to_merge && src != trg)
+			{
+				case 1:
+				{
+					int side = merging_roles(dens1,dens1_err,dens2,dens2_err,dens_border,dens_border_err);
+					if(!side)
 					{
-					case 1:
-						{
-							int side = merging_roles(dens1,dens1_err,dens2,dens2_err,dens_border,dens_border_err);
-							if(!side)
-							{
-								idx_t tmp;
-								tmp = new_src;
-								new_src = new_trg;
-								new_trg = tmp;
-							}
-
-							//borders[new_src][new_trg] = border_null;
-							//borders[new_trg][new_src] = border_null;
-							//printf("Merging %lu into %lu\n",new_src,new_trg);
-							fix_SparseBorders_A_into_B(new_src,new_trg,cluster);
-							Merge_A_into_B ( surviving_clusters, new_src, new_trg, nclus );	  
-						}
-						break;
-					
-					default:
-						break;
+						idx_t tmp;
+						tmp = new_src;
+						new_src = new_trg;
+						new_trg = tmp;
 					}
+
+						
+					/* 
+					 * Perform the actual meriging,
+					 * first  -> fix the borders, delete old ones and spawn new one in the correct position
+					 * second -> update the surviving_clusters buffer
+					 */
+					fix_SparseBorders_A_into_B(new_src,new_trg,cluster);
+					Merge_A_into_B ( surviving_clusters, new_src, new_trg, nclus );	  
+				}
+				break;
+			
+			default:
+				break;
+			}
 		}
         
         #undef src
         #undef trg
     }
 
-  #ifdef VERBOSE
-	clock_gettime(CLOCK_MONOTONIC, &finish); 
-	elapsed = (finish.tv_sec - start.tv_sec);
-	elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
-	printf("\tCluster merging:  %.3lfs\n", elapsed);
-	clock_gettime(CLOCK_MONOTONIC, &start); 
-  #endif
+	#ifdef VERBOSE
+		clock_gettime(CLOCK_MONOTONIC, &finish); 
+		elapsed = (finish.tv_sec - start.tv_sec);
+		elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+		printf("\tCluster merging:  %.3lfs\n", elapsed);
+		clock_gettime(CLOCK_MONOTONIC, &start); 
+	#endif
   
     /*Finalize clustering*/
     /*Acutally copying */
@@ -1543,7 +1600,7 @@ void Heuristic3_sparse(Clusters* cluster, Datapoint_info* dpInfo, FLOAT_TYPE Z, 
     cluster -> centers = tmp_centers;
     /*
      * Fix center assignment
-    */
+     */
     for(idx_t i = 0; i < cluster -> centers.count; ++i)
     {
         int idx = cluster -> centers.data[i];
@@ -1554,13 +1611,13 @@ void Heuristic3_sparse(Clusters* cluster, Datapoint_info* dpInfo, FLOAT_TYPE Z, 
     {
     case 1:
 	{
-		FLOAT_TYPE* max_border_den_array = (FLOAT_TYPE*)malloc(final_cluster_count*sizeof(FLOAT_TYPE));
+		float_t* max_border_den_array = (float_t*)malloc(final_cluster_count*sizeof(float_t));
 		#pragma omp parallel
 		{
 		    #pragma omp for
 		    for(idx_t c = 0; c < final_cluster_count; ++c)
 		    {
-				FLOAT_TYPE max_border_den = -2.;
+				float_t max_border_den = -2.;
 				for(idx_t el = 0; el < cluster -> SparseBorders[c].count; ++el)
 				{
 					SparseBorder_t b = cluster -> SparseBorders[c].data[el];
@@ -1617,157 +1674,197 @@ void Heuristic3_sparse(Clusters* cluster, Datapoint_info* dpInfo, FLOAT_TYPE Z, 
 }
 
 
-void Heuristic3_dense(Clusters* cluster, Datapoint_info* dpInfo, FLOAT_TYPE Z, int halo)
+void Heuristic3_dense(Clusters* cluster, Datapoint_info* dpInfo, float_t Z, int halo)
 {
-  printf("Using dense implementation\n");
-  #define borders cluster->borders
+    /*
+     * Heurisitc 3, from paper of Errico, Facco, Laio & Rodriguez 
+     * ( https://doi.org/10.1016/j.ins.2021.01.010 )              
+	 * Dense implementation, makes use of a dense matrix to store
+	 * borders between clusters, so it is more performant when the number of clusters is low
+     *                                                            
+     * args:                                                      
+	 * - Clusters* cluster 			: cluster object storing border info and cluster centers                 
+     * - Datapoint_info* dpInfo 	: array of Datapoint structures                             
+	 * - float_t Z 					: parameter to assess density peak significance
+     * - halo 					    : flag to set if you want to compute also the halo points                               
+     */
 
-  struct timespec start_tot, finish_tot;
-  double elapsed_tot;
+	printf("Using dense implementation\n");
+	#define borders cluster->borders
 
-  struct timespec start, finish;
-  double elapsed;
+	struct timespec start_tot, finish_tot;
+	double elapsed_tot;
 
-  printf("H3: Merging clusters\n");
-  clock_gettime(CLOCK_MONOTONIC, &start_tot);
-  #ifdef VERBOSE
- 	 clock_gettime(CLOCK_MONOTONIC, &start); 
-  #endif
+	struct timespec start, finish;
+	double elapsed;
 
-  idx_t nclus              = cluster -> centers.count;  
-  idx_t *  surviving_clusters = (idx_t*)malloc(nclus*sizeof(idx_t));
-  for(idx_t i = 0; i < nclus; ++i)
-    { 
-        surviving_clusters[i] = i; 
+	printf("H3: Merging clusters\n");
+	clock_gettime(CLOCK_MONOTONIC, &start_tot);
+
+	#ifdef VERBOSE
+		clock_gettime(CLOCK_MONOTONIC, &start); 
+	#endif
+
+	idx_t nclus              	= cluster -> centers.count;  
+	idx_t *  surviving_clusters = (idx_t*)malloc(nclus*sizeof(idx_t));
+
+	for(idx_t i = 0; i < nclus; ++i)
+	{ 
+		surviving_clusters[i] = i; 
+	}
+
+	idx_t   merge_count        = 0;
+	idx_t   merging_table_size = 1000;
+	merge_t *merging_table     = (merge_t*)malloc(sizeof(merge_t)*merging_table_size);
+  
+	/*
+	 * Find clusters to be merged
+	 * Loop over borders and find which ones will generate a merge,
+	 * store them later in the merging table
+	 **/
+	for(idx_t i = 0; i < nclus - 1; ++i)   
+		for(idx_t j = i + 1; j < nclus; ++j)   
+		{
+			switch(borders[i][j].idx != NOBORDER)
+			{
+						
+				case 1:		
+				{
+					float_t dens1           = dpInfo[cluster->centers.data[i]].log_rho_c;
+					float_t dens1_err       = dpInfo[cluster->centers.data[i]].log_rho_err;
+					float_t dens2           = dpInfo[cluster->centers.data[j]].log_rho_c;
+					float_t dens2_err       = dpInfo[cluster->centers.data[j]].log_rho_err;
+					float_t dens_border     = borders[i][j].density;
+					float_t dens_border_err = borders[i][j].error;
+
+					if ( is_a_merging( dens1, dens1_err, dens2, dens2_err, dens_border, dens_border_err, Z ) )
+					{
+
+						if ( merge_count == merging_table_size ) {
+						merging_table_size *= 1.1;
+						merging_table = (merge_t*)realloc( merging_table, sizeof(merge_t) * merging_table_size ); }
+
+						idx_t src = j;
+						idx_t trg = i;
+
+						//int swap = merging_roles( dens1, dens1_err, dens2, dens2_err, dens_border, dens_border_err);
+						//switch ( swap )
+						//  {
+						//  case 0: { src = j; trg = i;} break;
+						//  case 1: { src = i; trg = j;} break;
+						//  }
+
+						merging_table[merge_count].source = src;
+						merging_table[merge_count].target = trg;
+						merging_table[merge_count].density = borders[src][trg].density;
+						++merge_count;
+					}
+					break;
+	    		}
+
+				default:
+				{
+				  break;
+				}
+            
+	  		}
     }
 
-  idx_t   merge_count        = 0;
-  idx_t   merging_table_size = 1000;
-  merge_t *merging_table      = (merge_t*)malloc(sizeof(merge_t)*merging_table_size);
-  
-  /*Find clusters to be merged*/
-  for(idx_t i = 0; i < nclus - 1; ++i)   
-    for(idx_t j = i + 1; j < nclus; ++j)   
-    {
-	switch(borders[i][j].idx != NOBORDER)
-	{
-                    
-	  case 1:		
-	    {
-	      FLOAT_TYPE dens1           = dpInfo[cluster->centers.data[i]].log_rho_c;
-	      FLOAT_TYPE dens1_err       = dpInfo[cluster->centers.data[i]].log_rho_err;
-	      FLOAT_TYPE dens2           = dpInfo[cluster->centers.data[j]].log_rho_c;
-	      FLOAT_TYPE dens2_err       = dpInfo[cluster->centers.data[j]].log_rho_err;
-	      FLOAT_TYPE dens_border     = borders[i][j].density;
-	      FLOAT_TYPE dens_border_err = borders[i][j].error;
-	      
-	    if ( is_a_merging( dens1, dens1_err, dens2, dens2_err, dens_border, dens_border_err, Z ) )
-		{
-		  
-		  if ( merge_count == merging_table_size ) {
-		    merging_table_size *= 1.1;
-		    merging_table = (merge_t*)realloc( merging_table, sizeof(merge_t) * merging_table_size ); }
+	/*
+	 * sort the merging table
+	 */
 
-		  //int swap = merging_roles( dens1, dens1_err, dens2, dens2_err, dens_border, dens_border_err);
-		  idx_t src = j;
-		  idx_t trg = i;
-		  //switch ( swap )
-		  //  {
-		  //  case 0: { src = j; trg = i;} break;
-		  //  case 1: { src = i; trg = j;} break;
-		  //  }
+	qsort( (void*)merging_table, merge_count, sizeof(merge_t), compare_merging_density);
 
-		  merging_table[merge_count].source = src;
-		  merging_table[merge_count].target = trg;
-		  merging_table[merge_count].density = borders[src][trg].density;
-          ++merge_count;
-		}
-	      break;
-	    }
-        default:
-	    {
-	      break;
-	    }
-            
-	  }
-      }
-
-  qsort( (void*)merging_table, merge_count, sizeof(merge_t), compare_merging_density);
-  #ifdef VERBOSE
-	clock_gettime(CLOCK_MONOTONIC, &finish); 
-	elapsed = (finish.tv_sec - start.tv_sec);
-	elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
-	printf("\tFinding merges:   %.3lfs\n", elapsed);
-	clock_gettime(CLOCK_MONOTONIC, &start); 
-  #endif
+	#ifdef VERBOSE
+		clock_gettime(CLOCK_MONOTONIC, &finish); 
+		elapsed = (finish.tv_sec - start.tv_sec);
+		elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+		printf("\tFinding merges:   %.3lfs\n", elapsed);
+		clock_gettime(CLOCK_MONOTONIC, &start); 
+	#endif
   
   
     for( idx_t m = 0; m < merge_count; m++ )
     {
-      
         #define src surviving_clusters[merging_table[m].source]
         #define trg surviving_clusters[merging_table[m].target]
-        //printf("Found: %lu, %lu which now is %lu, %lu\n",merging_table[m].source, merging_table[m].target, src,trg);
 
-		/* Not neede anymore */
+		/* Not needed anymore */
 
         //int re_check = ( (src != merging_table[m].source) || (trg != merging_table[m].target) );
 		//if(re_check)
 		{
+			/* 
+			 * Enforce a that in case of symmetric merging condition the lowest idx cluster 
+			 * is merged into the higher idx cluster, only to preserve compatibility with 
+			 * original ADP implementation
+			 *
+			 * Process each element in the merging table
+			 */
+
 			idx_t new_src = (src < trg) ? src : trg;
 			idx_t new_trg = (src < trg) ? trg : src;
 
-					//pick who am I
+			/*
+			 * pick who am I and retrieve all needed data from the 
+			 * border matrices
+			 */
 
-					FLOAT_TYPE dens1           = dpInfo[cluster->centers.data[new_src]].log_rho_c;
-					FLOAT_TYPE dens1_err       = dpInfo[cluster->centers.data[new_src]].log_rho_err;
-					FLOAT_TYPE dens2           = dpInfo[cluster->centers.data[new_trg]].log_rho_c;
-					FLOAT_TYPE dens2_err       = dpInfo[cluster->centers.data[new_trg]].log_rho_err;
+			float_t dens1           = dpInfo[cluster->centers.data[new_src]].log_rho_c;
+			float_t dens1_err       = dpInfo[cluster->centers.data[new_src]].log_rho_err;
+			float_t dens2           = dpInfo[cluster->centers.data[new_trg]].log_rho_c;
+			float_t dens2_err       = dpInfo[cluster->centers.data[new_trg]].log_rho_err;
 
-					FLOAT_TYPE dens_border     = borders[new_src][new_trg].density;
-					FLOAT_TYPE dens_border_err = borders[new_src][new_trg].error;
+			float_t dens_border     = borders[new_src][new_trg].density;
+			float_t dens_border_err = borders[new_src][new_trg].error;
 
-					int i_have_to_merge = is_a_merging(dens1,dens1_err,dens2,dens2_err,dens_border,dens_border_err,Z);            
-					switch (i_have_to_merge && src != trg)
+			int i_have_to_merge = is_a_merging(dens1,dens1_err,dens2,dens2_err,dens_border,dens_border_err,Z);            
+			switch (i_have_to_merge && src != trg)
+			{
+				case 1:
 					{
-					case 1:
+						int side = merging_roles(dens1,dens1_err,dens2,dens2_err,dens_border,dens_border_err);
+						if(!side)
 						{
-							int side = merging_roles(dens1,dens1_err,dens2,dens2_err,dens_border,dens_border_err);
-							if(!side)
-							{
-								idx_t tmp;
-								tmp = new_src;
-								new_src = new_trg;
-								new_trg = tmp;
-							}
-
-							borders[new_src][new_trg] = border_null;
-							borders[new_trg][new_src] = border_null;
-							//printf("Merging %lu into %lu\n",new_src,new_trg);
-							fix_borders_A_into_B(new_src,new_trg,borders,nclus);
-							Merge_A_into_B ( surviving_clusters, new_src, new_trg, nclus );	  
+							idx_t tmp;
+							tmp = new_src;
+							new_src = new_trg;
+							new_trg = tmp;
 						}
-						break;
-					
-					default:
-						break;
+
+						borders[new_src][new_trg] = border_null;
+						borders[new_trg][new_src] = border_null;
+						
+						/* 
+						 * Perform the actual meriging,
+						 * first  -> fix the borders, delete old ones and spawn new one in the correct position
+						 * second -> update the surviving_clusters buffer
+						 */
+						fix_borders_A_into_B(new_src,new_trg,borders,nclus);
+						Merge_A_into_B ( surviving_clusters, new_src, new_trg, nclus );	  
 					}
+					break;
+			
+			default:
+				break;
+			}
 		}
         
         #undef src
         #undef trg
     }
 
-  #ifdef VERBOSE
-	clock_gettime(CLOCK_MONOTONIC, &finish); 
-	elapsed = (finish.tv_sec - start.tv_sec);
-	elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
-	printf("\tCluster merging:  %.3lfs\n", elapsed);
-	clock_gettime(CLOCK_MONOTONIC, &start); 
-  #endif
+	#ifdef VERBOSE
+		clock_gettime(CLOCK_MONOTONIC, &finish); 
+		elapsed = (finish.tv_sec - start.tv_sec);
+		elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+		printf("\tCluster merging:  %.3lfs\n", elapsed);
+		clock_gettime(CLOCK_MONOTONIC, &start); 
+	#endif
   
     /*Finalize clustering*/
-    /*Acutally copying */
+    /*Acutally copying old matrices into new */
     lu_dynamicArray tmp_centers;
     lu_dynamicArray tmp_cluster_idx;
 
@@ -1782,6 +1879,11 @@ void Heuristic3_dense(Clusters* cluster, Datapoint_info* dpInfo, FLOAT_TYPE Z, i
 
     idx_t* old_to_new = (idx_t*)malloc(nclus*sizeof(idx_t));
     idx_t incremental_k = 0;
+
+	/*
+	 * Map old cluster labels to new
+	 */
+
     for(idx_t i = 0; i < nclus; ++i)
     {
         
@@ -1864,13 +1966,13 @@ void Heuristic3_dense(Clusters* cluster, Datapoint_info* dpInfo, FLOAT_TYPE Z, i
     {
     case 1:
 	{
-		FLOAT_TYPE* max_border_den_array = (FLOAT_TYPE*)malloc(final_cluster_count*sizeof(FLOAT_TYPE));
+		float_t* max_border_den_array = (float_t*)malloc(final_cluster_count*sizeof(float_t));
 		#pragma omp parallel
 		{
 		    #pragma omp for
 		    for(idx_t c = 0; c < final_cluster_count; ++c)
 		    {
-			FLOAT_TYPE max_border_den = -2.;
+			float_t max_border_den = -2.;
 			for(idx_t d = 0; d < final_cluster_count; ++d)
 			{
 			    if(tmp_borders[c][d].density > max_border_den)
@@ -1927,7 +2029,7 @@ void Heuristic3_dense(Clusters* cluster, Datapoint_info* dpInfo, FLOAT_TYPE Z, i
 }
 
 
-void Heuristic3(Clusters* cluster, Datapoint_info* dpInfo, FLOAT_TYPE Z, int halo)
+void Heuristic3(Clusters* cluster, Datapoint_info* dpInfo, float_t Z, int halo)
 {
 	/*
 	 * Wapper for dense and sparse implementation
@@ -1957,7 +2059,7 @@ void KNN_search_kdTreeV2(Datapoint_info * dpInfo,kdNodeV2* kdNodeArray, kdNodeV2
 	 * Helper function for KNN serch using KDtree
 	 *
 	 * Datapoint_info * dpInfo 	: array of datapoints information structs to store the neighborhood on 
-	 * FLOAT_TYPE * data 		: array of data 
+	 * float_t * data 			: array of data 
 	 * kdNodeV2* kdNodeArray  	: array of the nodes of the KDtree
 	 * kdNodeV2* root 			: root of the KDtree 
 	 * idx_t n 					: number of elements in the dataset 
@@ -1977,7 +2079,6 @@ void KNN_search_kdTreeV2(Datapoint_info * dpInfo,kdNodeV2* kdNodeArray, kdNodeV2
     
     #pragma omp parallel
     {
-
 	    #pragma omp for schedule(dynamic)
 	    for(int p = 0; p < n; ++p)
 	    {
@@ -2018,13 +2119,13 @@ void KNN_search_kdTreeV2(Datapoint_info * dpInfo,kdNodeV2* kdNodeArray, kdNodeV2
 }
 
 
-void KNN_search_kdtree(Datapoint_info * dpInfo, FLOAT_TYPE * data, kd_node* root, idx_t n, idx_t k)
+void KNN_search_kdtree(Datapoint_info * dpInfo, float_t * data, kd_node* root, idx_t n, idx_t k)
 {
 	/*
 	 * Helper function for KNN serch using KDtree
 	 *
 	 * Datapoint_info * dpInfo 	: array of datapoints information structs to store the neighborhood on 
-	 * FLOAT_TYPE * data 		: array of data 
+	 * float_t * data 		: array of data 
 	 * kd_node* root 			: root of the KDtree 
 	 * idx_t n 					: number of elements in the dataset 
 	 * idx_t k 					: number of neighbors to retrieve
@@ -2082,7 +2183,6 @@ void KNN_search_kdtree(Datapoint_info * dpInfo, FLOAT_TYPE * data, kd_node* root
 /*
  * Standard partition function 
  * and quick select method used for KNN_bruteforce
- *
  */
 
 int partition_heapNode(heap_node *array, int left, int right, int pivotIndex) {
@@ -2218,7 +2318,7 @@ void KNN_BruteForce(Datapoint_info* points, void* data,size_t n, size_t byteSize
 		 * ||xi|| and ||xj|| can be computed upfront, then <xi|xj> can be computed as the product 
 		 * of the matrix  X^T @ X
 		 *
-		 * Actually a slice of the dataset Y is computed against the whole dataset and then the "all-to-all" distances are 
+		 * Actually a slice of the dataset, Y, is used against the whole dataset and then the "all-to-all" distances are 
 		 * reduced to the first k ones 
 		 */
 		struct sysinfo info;
@@ -2387,12 +2487,12 @@ Datapoint_info* NgbhSearch_bruteforce(void* data, size_t n, size_t byteSize, siz
 
 }
 
-Datapoint_info* NgbhSearch_kdtree(FLOAT_TYPE* data, size_t n, size_t ndims, size_t k)
+Datapoint_info* NgbhSearch_kdtree(float_t* data, size_t n, size_t ndims, size_t k)
 {
 	/*
 	 * Neighborhood search using a KDtree
 	 *
-	 * FLOAT_TYPE* data : dataset as a matrix of float or double
+	 * float_t* data : dataset as a matrix of float or double
 	 * size_t n 		: number of elements in the dataset 
 	 * size_t ndims 	: lenght of each vector in the dataset
 	 * size_t k 		: number of neighbors to retrieve
@@ -2440,12 +2540,12 @@ Datapoint_info* NgbhSearch_kdtree(FLOAT_TYPE* data, size_t n, size_t ndims, size
 	return points;
 }
 
-Datapoint_info* NgbhSearch_kdtree_V2(FLOAT_TYPE* data, size_t n, size_t ndims, size_t k)
+Datapoint_info* NgbhSearch_kdtree_V2(float_t* data, size_t n, size_t ndims, size_t k)
 {
 	/*
 	 * Neighborhood search using a KDtree
 	 *
-	 * FLOAT_TYPE* data : dataset as a matrix of float or double
+	 * float_t* data : dataset as a matrix of float or double
 	 * size_t n 		: number of elements in the dataset 
 	 * size_t ndims 	: lenght of each vector in the dataset
 	 * size_t k 		: number of neighbors to retrieve
@@ -2463,8 +2563,8 @@ Datapoint_info* NgbhSearch_kdtree_V2(FLOAT_TYPE* data, size_t n, size_t ndims, s
 	#endif
 
 	#ifdef SWMEM
-		FLOAT_TYPE* dummy_data = malloc(sizeof(FLOAT_TYPE)*ndims*n);
-		memcpy(dummy_data,data,sizeof(FLOAT_TYPE)*ndims*n);
+		float_t* dummy_data = malloc(sizeof(float_t)*ndims*n);
+		memcpy(dummy_data,data,sizeof(float_t)*ndims*n);
 		data = dummy_data;
 	#endif
 
@@ -2513,7 +2613,7 @@ void freeDatapointArray(Datapoint_info* d, size_t n)
 int FloatAndUintSize()
 {
 	int v = 0;
-	int vf = sizeof(FLOAT_TYPE) == 8 ? 1 : 0; 
+	int vf = sizeof(float_t) == 8 ? 1 : 0; 
 	int vi = sizeof(idx_t) == 8 ? 1 : 0; 
 	v = vf + vi*2;
 	return v;
@@ -2765,7 +2865,7 @@ Datapoint_info* NgbhSearch_vptree_V2(void* data, size_t n, size_t byteSize, size
 	return points;
 }
 
-void setRhoErrK(Datapoint_info* points, FLOAT_TYPE* rho, FLOAT_TYPE* rhoErr, idx_t* k, size_t n)
+void setRhoErrK(Datapoint_info* points, float_t* rho, float_t* rhoErr, idx_t* k, size_t n)
 {
 	for(size_t i = 0; i < n; ++i)
 	{
@@ -2777,7 +2877,7 @@ void setRhoErrK(Datapoint_info* points, FLOAT_TYPE* rho, FLOAT_TYPE* rhoErr, idx
 	return;
 }
 
-void computeAvg(Datapoint_info* p, FLOAT_TYPE *va, FLOAT_TYPE* ve, FLOAT_TYPE* vals, FLOAT_TYPE* verr, size_t k, size_t n)
+void computeAvg(Datapoint_info* p, float_t *va, float_t* ve, float_t* vals, float_t* verr, size_t k, size_t n)
 {
 	#pragma omp parallel for
 	for(size_t i = 0; i < n; ++i)
@@ -2797,6 +2897,10 @@ void computeAvg(Datapoint_info* p, FLOAT_TYPE *va, FLOAT_TYPE* ve, FLOAT_TYPE* v
 		
 }
 
+/*
+ * Interface
+ * ---------
+ */
 
 Datapoint_info* allocDatapoints(idx_t n)
 {

@@ -38,20 +38,20 @@ struct lu_dynamicArray {
 };
 
 struct Datapoint_info {
-  FLOAT_TYPE g;
+  float_t g;
   Heap ngbh;
   idx_t array_idx;
-  FLOAT_TYPE log_rho;
-  FLOAT_TYPE log_rho_c;
-  FLOAT_TYPE log_rho_err;
+  float_t log_rho;
+  float_t log_rho_c;
+  float_t log_rho_err;
   idx_t kstar;
   int is_center;
   int cluster_idx;
 };
 
 struct border_t {
-  FLOAT_TYPE density;
-  FLOAT_TYPE error;
+  float_t density;
+  float_t error;
   idx_t idx;
 };
 
@@ -59,8 +59,8 @@ struct SparseBorder_t {
   idx_t i;
   idx_t j;
   idx_t idx;
-  FLOAT_TYPE density;
-  FLOAT_TYPE error;
+  float_t density;
+  float_t error;
 };
 
 struct AdjList_t {
@@ -71,11 +71,11 @@ struct AdjList_t {
 
 struct aClusters {
   struct lu_dynamicArray centers;
-  FLOAT_TYPE **border_density;
-  FLOAT_TYPE **border_err;
+  float_t **border_density;
+  float_t **border_err;
   idx_t **border_idx;
-  FLOAT_TYPE *__border_density_data;
-  FLOAT_TYPE *__border_err_data;
+  float_t *__border_density_data;
+  float_t *__border_err_data;
   idx_t *__border_idx_data;
   idx_t n;
 };
@@ -92,7 +92,7 @@ struct Clusters {
 struct merge_t {
   idx_t source;
   idx_t target;
-  FLOAT_TYPE density;
+  float_t density;
 };
 
 typedef struct Datapoint_info Datapoint_info;
@@ -113,27 +113,28 @@ void Clusters_allocate(Clusters *c, int s);
 void Clusters_free(Clusters *c);
 
 int cmp(const void *a, const void *b);
-FLOAT_TYPE avg(const FLOAT_TYPE *x, const idx_t n);
-FLOAT_TYPE mEst2(FLOAT_TYPE *x, FLOAT_TYPE *y, idx_t n);
-FLOAT_TYPE mEst(FLOAT_TYPE *x, FLOAT_TYPE *y, idx_t n);
-FLOAT_TYPE idEstimate(Datapoint_info *particles, idx_t n, FLOAT_TYPE fraction);
+float_t avg(const float_t *x, const idx_t n);
+float_t mEst2(float_t *x, float_t *y, idx_t n);
+float_t mEst(float_t *x, float_t *y, idx_t n);
+float_t idEstimate(Datapoint_info *particles, idx_t n, float_t fraction);
+
 Datapoint_info* NgbhSearch_vptree(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *));
 Datapoint_info* NgbhSearch_vptree_V2(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *));
-Datapoint_info* NgbhSearch_kdtree(FLOAT_TYPE* data, size_t n, size_t ndims, size_t k);
-Datapoint_info* NgbhSearch_kdtree_V2(FLOAT_TYPE* data, size_t n, size_t ndims, size_t k);
+Datapoint_info* NgbhSearch_kdtree(float_t* data, size_t n, size_t ndims, size_t k);
+Datapoint_info* NgbhSearch_kdtree_V2(float_t* data, size_t n, size_t ndims, size_t k);
 Datapoint_info* NgbhSearch_bruteforce(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *));
-void computeRho(Datapoint_info *particles, const FLOAT_TYPE d,
+void computeRho(Datapoint_info *particles, const float_t d,
                 const idx_t points);
 
-void PAk(Datapoint_info* dpInfo, const FLOAT_TYPE d, const idx_t points);
+void PAk(Datapoint_info* dpInfo, const float_t d, const idx_t points);
 int cmpPP(const void *p1, const void *p2);
-void computeCorrection(Datapoint_info *particles, idx_t n, FLOAT_TYPE Z);
-void KNN_search_kdtree(Datapoint_info *particles, FLOAT_TYPE *data, kd_node *root,
+void computeCorrection(Datapoint_info *particles, idx_t n, float_t Z);
+void KNN_search_kdtree(Datapoint_info *particles, float_t *data, kd_node *root,
                 idx_t n, idx_t k);
 
 Clusters Heuristic1(Datapoint_info *dp, idx_t n);
 void Heuristic2(Clusters *cluster, Datapoint_info *particles);
-void Heuristic3(Clusters *cluster, Datapoint_info *particles, FLOAT_TYPE Z,int halo);
+void Heuristic3(Clusters *cluster, Datapoint_info *particles, float_t Z,int halo);
 void freeDatapointArray(Datapoint_info* d, size_t n);
 
 float_t* eucMetricPx3(void*, void*);
