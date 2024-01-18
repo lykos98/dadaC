@@ -600,6 +600,8 @@ class Data(_dadac_loader):
     def _getNclusters(self):
         if self.state["clustering"]:
             self._N_clusters = len(set(self.cluster_assignment))
+            if self.state["computeHalo"]:
+                self._N_clusters -= 1 
         else:
             raise ValueError("Borders not computed yet use `Data.compute_clustering_[DP,ADP,...]()`")
 
