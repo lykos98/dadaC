@@ -4,6 +4,7 @@ import os
 from sklearn.neighbors import NearestNeighbors
 import time
 from wurlitzer import sys_pipes
+import platform
 
 
 ctFloatType = ct.c_double
@@ -81,13 +82,14 @@ class Clusters(ct.Structure):
 class _dadac_loader():
     def __init__(self):
         path = os.path.join(os.path.dirname(__file__), "bin/libdadac.so")
+        arch = platform.machine()
         print(path)
         if not os.path.exists(path):
-            print("dadac is not built yet, calling make for you")
-            try:
-                os.system(f"make -C {os.path.dirname(__file__)}")
-            except:
-                print("Cannot build dadac")
+            print(f"Loading (maybe) precompiled binary for architecture: {arch}")
+            print(f"If you want more perfomance you can try to install it with ")
+            print(f"->        pip install git+https://github.com/lykos98/dadaC")
+            print(f"Thus will trigger a recompile to native architecture :)")
+            path = os.path.join(os.path.dirname(__file__), f"bin/libdadac.{arch}.so")
 
         self.lib = ct.CDLL(path)
 
