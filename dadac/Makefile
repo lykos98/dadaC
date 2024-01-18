@@ -1,11 +1,9 @@
 LDFLAGS=-lm -fopenmp 
-CFLAGS=-Wall -Wextra 
+CFLAGS=-O3 -march=native -Wall -Wextra 
 DEBUG=-ggdb
 SRC="src"
 VERBOSE=-DVERBOSE
-INCLUDE=-I./include
-SOURCES=src/dadac.c src/kdtree.c src/kdtreeV2.c src/heap.c src/vptree.c src/vptreeV2.c
-OBJECTS=bin/dadac.o bin/kdtree.o bin/kdtreeV2.o bin/heap.o bin/vptree.o bin/vptreeV2.o
+
 # ----------------------------------------------------------------------
 # /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ 
 # uncomment the following lines to compile against a BLAS implementation 
@@ -14,8 +12,9 @@ OBJECTS=bin/dadac.o bin/kdtree.o bin/kdtreeV2.o bin/heap.o bin/vptree.o bin/vptr
 
 #BLAS_INCLUDE=""
 #BLAS_LIB=""
-#LDFLAGS+= -lyourblas  -L${BLAS_LIB}
-#CFLAGS+= -DUSE_BLAS -I${BLAS_INCLUDE}
+#LDFLAGS += -lyourblas  -L${BLAS_LIB}
+#CFLAGS += -DUSE_BLAS -I${BLAS_INCLUDE}
+
 
 
 
@@ -24,16 +23,11 @@ COMPILING_INFO=@echo "[\e[36mCOMPILING\e[0m]: $@"
 LINKING_INFO=@echo "[\e[34mLINKING\e[0m]: $@"
 
 
-#CFLAGS+=-O3 
-
-
-all: driver test 
-	@echo "[\e[31mFLAGS\e[0m]: ${CFLAGS}"
-
 lib: bin/libdadac.so 
 
-arm: bin/libdadac.aarch64.so
-x86: bin/libdadac.x86_64.so
+all: driver test
+	@echo "[\e[31mFLAGS\e[0m]: ${CFLAGS}"
+
 
 test: test.o bin/libdadac.so
 	${CC} test.o -L./bin -ldadac ${LDFLAGS} ${DEBUG} -o test
@@ -51,21 +45,12 @@ driver.o: driver.c
 	${CC} -c driver.c -o driver.o ${CFLAGS} -fopenmp ${DEBUG}
 	${COMPILING_INFO}
 
-bin/libdadac.so: ${OBJECTS} 
-	${CC} -shared ${OBJECTS} ${DEBUG} ${CFLAGS} ${LDFLAGS}  -o bin/libdadac.so 
+bin/libdadac.so: bin/dadac.o bin/kdtree.o bin/kdtreeV2.o bin/heap.o bin/vptree.o bin/vptreeV2.o
+	${CC} -shared bin/dadac.o bin/kdtree.o bin/heap.o bin/vptree.o bin/vptreeV2.o bin/kdtreeV2.o ${DEBUG} ${CFLAGS} ${LDFLAGS}  -o bin/libdadac.so 
 	${LINKING_INFO}
 
 bin/%.o : src/%.c
 	${CC} -c $< -o $@ ${CFLAGS} -fopenmp ${DEBUG} -fpic ${VERBOSE} 
-	${COMPILING_INFO}
-
-
-bin/libdadac.aarch64.so : ${SOURCES} 
-	@aarch64-linux-gnu-gcc ${SOURCES} ${CFLAGS} ${LDFLAGS} ${VERBOSE} ${DEBUG} -fpic -shared -o $@
-	${COMPILING_INFO}
-
-bin/libdadac.x86_64.so : ${SOURCES}
-	@gcc ${SOURCES} ${CFLAGS} ${LDFLAGS} ${VERBOSE} ${DEBUG} -fpic -shared -o $@
 	${COMPILING_INFO}
 
 clean:

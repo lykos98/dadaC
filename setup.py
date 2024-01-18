@@ -11,7 +11,6 @@ from shutil import rmtree
 
 from setuptools import find_packages, setup, Command
 from setuptools.command.install import install
-from setuptools.command.build import build
 
 # Package meta-data.
 NAME = 'dadac'
@@ -37,8 +36,7 @@ EXTRAS = {
 #compile everything
 os.system("make -C $(pwd)/dadac")
 
-
-EXT_DIR = os.path.join(os.path.dirname(__file__), 'dadac')
+EXT_DIR = os.path.join(os.path.dirname(__file__), 'bin')
 class RunMake(install):
     """Makefile on setuptools install."""
     def run(self):
@@ -46,38 +44,12 @@ class RunMake(install):
         try:
             os.chdir(EXT_DIR)
             print("Building C library ...")
-            os.system("make lib")
+            os.system("make")
             #self.spawn(['make'])
         finally:
             os.chdir(old_dir)
         install.run(self)
 
-class RunMake_precompiled(Command):
-    """Makefile on setuptools install."""
-    user_options = []
-
-    @staticmethod
-    def status(s):
-        """Prints things in bold."""
-        print('\033[1m{0}\033[0m'.format(s))
-
-    def initialize_options(self):
-        pass
-
-    def finalize_options(self):
-        pass
-
-    def run(self):
-        old_dir = os.getcwd()
-        try:
-            os.chdir(EXT_DIR)
-            print("Building C library ...")
-            os.system("make arm")
-            os.system("make x86")
-            #self.spawn(['make'])
-        finally:
-            os.chdir(old_dir)
-        #build.run(self)
 # The rest you shouldn't have to touch too much :)
 # ------------------------------------------------
 # Except, perhaps the License and Trove Classifiers!
@@ -175,8 +147,7 @@ setup(
     ],
     # $ setup.py publish support.
     cmdclass={
-        'build_precompiled': RunMake_precompiled,
         'upload': UploadCommand,
-        'install': RunMake,
+        'intall': RunMake
     },
 )
