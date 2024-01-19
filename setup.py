@@ -14,7 +14,7 @@ from setuptools.command.install import install
 
 # Package meta-data.
 NAME = 'dadac'
-DESCRIPTION = 'C accelerated implementation of dadapy'
+DESCRIPTION = 'C accelerated implementation of ADP'
 URL = 'https://github.com/lykos98/dadaC'
 EMAIL = 'francesco.tomba17@gmail.com'
 AUTHOR = 'Francesco Tomba'
