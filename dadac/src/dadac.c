@@ -272,7 +272,9 @@ float_t avg(const float_t * x, const idx_t n)
     return f/(float_t)n;
 }
 
-
+/*
+ * Density estimation
+ */
 
 float_t mEst2(float_t * x, float_t *y, idx_t n)
 {
@@ -385,9 +387,9 @@ void computeRho(Datapoint_info* dpInfo, const float_t d, const idx_t points, int
     /*
      * Point density computation:                       
      * args:                                            
-     * -   paricles: array of structs                   
-     * -   d       : intrinsic dimension of the dataset 
-     * -   points  : number of points in the dataset    
+     * - paricles: array of structs                   
+     * - d       : intrinsic dimension of the dataset 
+     * - points  : number of points in the dataset    
      */
 
     struct timespec start_tot, finish_tot;
@@ -609,7 +611,7 @@ void PAk(Datapoint_info* dpInfo, const float_t d, const idx_t n, int verbose)
 int cmpPP(const void* p1, const void *p2)
 {
     /*
-     * Utility function to perform quicksort then  
+     * Utility function to perform quicksort   
      * when clustering assignment is performed    
      */
     Datapoint_info* pp1 = *(Datapoint_info**)p1;
@@ -1203,6 +1205,12 @@ void Heuristic2(Clusters* cluster, Datapoint_info* dpInfo, int verbose)
 
 void Merge_A_into_B(idx_t* who_amI, idx_t cluster_A, idx_t cluster_B, idx_t n)
 {
+	/*
+	 * Utility function
+	 * Performs correctino of the labels in the array that
+	 * keep tracks of what cluster is after a merging
+	 */
+
     #pragma omp parallel if(n > MAX_SERIAL_MERGING)
     {
 	    idx_t tmp;
@@ -1220,17 +1228,23 @@ void Merge_A_into_B(idx_t* who_amI, idx_t cluster_A, idx_t cluster_B, idx_t n)
 
 int compare_merging_density( const void *A, const void *B)
 {
-  float_t DensA = ((merge_t*)A)->density;
-  float_t DensB = ((merge_t*)B)->density;
+	/*
+	 * Utility function 
+	 * comparision between two merging
+	 * elements
+	 */
+	
+	float_t DensA = ((merge_t*)A)->density;
+	float_t DensB = ((merge_t*)B)->density;
 
-  return - ( DensA > DensB) + (DensA < DensB);
+	return - ( DensA > DensB) + (DensA < DensB);
 }
 
 
-static inline int is_a_merging( float_t dens1, float_t dens1_err,
-			 float_t dens2, float_t dens2_err,
-			 float_t dens_border, float_t dens_border_err,
-			 float_t Z)
+static inline int is_a_merging(  float_t dens1, float_t dens1_err,
+								 float_t dens2, float_t dens2_err,
+								 float_t dens_border, float_t dens_border_err,
+								 float_t Z)
 {
 	/*
 	 * dens1 : the density of the particle that is the center of the first cluster
@@ -1259,46 +1273,65 @@ static inline int is_a_merging( float_t dens1, float_t dens1_err,
 }
 
 
-static inline int merging_roles( float_t dens1, float_t dens1_err,
-			  float_t dens2, float_t dens2_err,
-			  float_t dens_border, float_t dens_border_err )
+static inline int merging_roles(  float_t dens1, float_t dens1_err,
+								  float_t dens2, float_t dens2_err,
+								  float_t dens_border, float_t dens_border_err )
 {
+	/*
+	 * Utility function 
+	 * Retrieve if cluster 1 is merged into 2 or
+	 * vice versa
+	 */
       
-  float_t c1 = (dens1 - dens_border) / (dens1_err + dens_border_err); 
-  float_t c2 = (dens2 - dens_border) / (dens2_err + dens_border_err);
-  //printf("%.10lf %.10lf %d\n",c1,c2, c1 > c2);
-  
-  return ( c1 < c2 );     // if 1, this signal to swap 1 and 2
+	float_t c1 = (dens1 - dens_border) / (dens1_err + dens_border_err); 
+	float_t c2 = (dens2 - dens_border) / (dens2_err + dens_border_err);
+	//printf("%.10lf %.10lf %d\n",c1,c2, c1 > c2);
+
+	return ( c1 < c2 );     // if 1, this signal to swap 1 and 2
 }
 
 void fix_borders_A_into_B(idx_t A, idx_t B, border_t** borders, idx_t n)
 {
-   #pragma omp parallel for if(n > MAX_SERIAL_MERGING)
-   for(idx_t i = 0; i < n; ++i) 
-   {
-        if(borders[A][i].idx != NOBORDER )
-        {
-            if(borders[B][i].idx != NOBORDER)
-            {
-                int mb = (borders[A][i].density > borders[B][i].density); 
+	/*
+	 * Dense border implementation
+	 * - idx_t A 			: cluster A the one which goes into the other 
+	 * - idx_t B 			: cluster B the one that recieves the merging
+	 * - border_t** borders : whole border matrix
+	 * - idx_t n 			: number of clusters
+	 *
+	 */
 
-                borders[B][i] = mb ? borders[A][i] : borders[B][i];
-                borders[i][B] = borders[B][i];
-            }
-            else
-            {
-                borders[B][i] = borders[A][i];
-                borders[i][B] = borders[B][i];
-            }
-        } 
-        borders[A][i] = border_null;
-        borders[i][A] = border_null;
-   }
+	#pragma omp parallel for if(n > MAX_SERIAL_MERGING)
+	for(idx_t i = 0; i < n; ++i) 
+	{
+		if(borders[A][i].idx != NOBORDER )
+		{
+			if(borders[B][i].idx != NOBORDER)
+			{
+				int mb = (borders[A][i].density > borders[B][i].density); 
+
+				borders[B][i] = mb ? borders[A][i] : borders[B][i];
+				borders[i][B] = borders[B][i];
+			}
+			else
+			{
+				borders[B][i] = borders[A][i];
+				borders[i][B] = borders[B][i];
+			}
+		} 
+		borders[A][i] = border_null;
+		borders[i][A] = border_null;
+	}
 }
 
 static inline void Delete_adjlist_element(Clusters * c, const idx_t list_idx, const idx_t el)
 {
-	//swap last element with 
+	/*
+	 * Utility function
+	 * Deletes an element into an adjecency list,
+	 * representing the borders in the cluster topology
+	 */
+
 	idx_t count = c -> SparseBorders[list_idx].count;
 	c -> SparseBorders[list_idx].data[el] = c -> SparseBorders[list_idx].data[count-1];
 	c -> SparseBorders[list_idx].data[count-1] = SparseBorder_null;
@@ -1646,43 +1679,45 @@ void Heuristic3_sparse(Clusters* cluster, Datapoint_info* dpInfo, float_t Z, int
     /*Halo*/
     switch (halo)
     {
-    case 1:
-	{
-		float_t* max_border_den_array = (float_t*)malloc(final_cluster_count*sizeof(float_t));
-		#pragma omp parallel
+		case 1:
 		{
-		    #pragma omp for
-		    for(idx_t c = 0; c < final_cluster_count; ++c)
-		    {
-				float_t max_border_den = -2.;
-				for(idx_t el = 0; el < cluster -> SparseBorders[c].count; ++el)
+			float_t* max_border_den_array = (float_t*)malloc(final_cluster_count*sizeof(float_t));
+			#pragma omp parallel
+			{
+				#pragma omp for
+				for(idx_t c = 0; c < final_cluster_count; ++c)
 				{
-					SparseBorder_t b = cluster -> SparseBorders[c].data[el];
-					if(b.density > max_border_den)
+					float_t max_border_den = -2.;
+					for(idx_t el = 0; el < cluster -> SparseBorders[c].count; ++el)
 					{
-						max_border_den = b.density;
+						SparseBorder_t b = cluster -> SparseBorders[c].data[el];
+						if(b.density > max_border_den)
+						{
+							max_border_den = b.density;
+						}
 					}
+
+					max_border_den_array[c] = max_border_den;
+
 				}
-			max_border_den_array[c] = max_border_den;
-		    }
 
-		    #pragma omp barrier
+				#pragma omp barrier
 
-		    #pragma omp for
-		    for(idx_t i = 0; i < cluster -> n; ++i)
-		    {
-				int cidx = dpInfo[i].cluster_idx;
-				int halo_flag = dpInfo[i].log_rho_c < max_border_den_array[cidx]; 
-				//int halo_flag = max_border_den_array[cidx] > dpInfo[i].log_rho_c  ; 
-				dpInfo[i].cluster_idx = halo_flag ? -1 : cidx;
-		    }
+				#pragma omp for
+				for(idx_t i = 0; i < cluster -> n; ++i)
+				{
+					int cidx = dpInfo[i].cluster_idx;
+					int halo_flag = dpInfo[i].log_rho_c < max_border_den_array[cidx]; 
+					//int halo_flag = max_border_den_array[cidx] > dpInfo[i].log_rho_c  ; 
+					dpInfo[i].cluster_idx = halo_flag ? -1 : cidx;
+				}
+			}
+			free(max_border_den_array);
 		}
-		free(max_border_den_array);
-	}
-        break;
-    
-    default:
-        break;
+			break;
+		
+		default:
+			break;
     }    
 
     /*free memory and put the correct arrays into place*/
@@ -2006,43 +2041,43 @@ void Heuristic3_dense(Clusters* cluster, Datapoint_info* dpInfo, float_t Z, int 
     /*Halo*/
     switch (halo)
     {
-    case 1:
-	{
-		float_t* max_border_den_array = (float_t*)malloc(final_cluster_count*sizeof(float_t));
-		#pragma omp parallel
+		case 1:
 		{
-		    #pragma omp for
-		    for(idx_t c = 0; c < final_cluster_count; ++c)
-		    {
-			float_t max_border_den = -2.;
-			for(idx_t d = 0; d < final_cluster_count; ++d)
+			float_t* max_border_den_array = (float_t*)malloc(final_cluster_count*sizeof(float_t));
+			#pragma omp parallel
 			{
-			    if(tmp_borders[c][d].density > max_border_den)
-			    {
-				max_border_den = tmp_borders[c][d].density;
-			    }
+				#pragma omp for
+				for(idx_t c = 0; c < final_cluster_count; ++c)
+				{
+				float_t max_border_den = -2.;
+				for(idx_t d = 0; d < final_cluster_count; ++d)
+				{
+					if(tmp_borders[c][d].density > max_border_den)
+					{
+					max_border_den = tmp_borders[c][d].density;
+					}
+				}
+				max_border_den_array[c] = max_border_den;
+				}
+
+				#pragma omp barrier
+
+				#pragma omp for
+				for(idx_t i = 0; i < cluster -> n; ++i)
+				{
+					int cidx = dpInfo[i].cluster_idx;
+					int halo_flag = dpInfo[i].log_rho_c < max_border_den_array[cidx];  
+					//int halo_flag =  (max_border_den_array[cidx] > dpInfo[i].log_rho_c) - (max_border_den_array[cidx] < dpInfo[i].log_rho_c); 
+					//halo_flag = halo_flag > 0;
+					dpInfo[i].cluster_idx = halo_flag ? -1 : cidx;
+				}
 			}
-			max_border_den_array[c] = max_border_den;
-		    }
-
-		    #pragma omp barrier
-
-		    #pragma omp for
-		    for(idx_t i = 0; i < cluster -> n; ++i)
-		    {
-				int cidx = dpInfo[i].cluster_idx;
-				int halo_flag = dpInfo[i].log_rho_c < max_border_den_array[cidx];  
-				//int halo_flag =  (max_border_den_array[cidx] > dpInfo[i].log_rho_c) - (max_border_den_array[cidx] < dpInfo[i].log_rho_c); 
-				//halo_flag = halo_flag > 0;
-				dpInfo[i].cluster_idx = halo_flag ? -1 : cidx;
-		    }
+			free(max_border_den_array);
 		}
-		free(max_border_den_array);
-	}
-        break;
-    
-    default:
-        break;
+			break;
+		
+		default:
+			break;
     }    
 
     /*free memory and put the correct arrays into place*/
@@ -2097,17 +2132,22 @@ void computeLevel(kd_node* root, idx_t prev_lvl)
 	return;
 }
 
+/*
+ * Other Helper functions
+ *
+ */
+
 void KNN_search_kdTreeV2(Datapoint_info * dpInfo,kdNodeV2* kdNodeArray, kdNodeV2* root, idx_t n, idx_t k, int verbose)
 {
 	/*
 	 * Helper function for KNN serch using KDtree
 	 *
-	 * Datapoint_info * dpInfo 	: array of datapoints information structs to store the neighborhood on 
-	 * float_t * data 			: array of data 
-	 * kdNodeV2* kdNodeArray  	: array of the nodes of the KDtree
-	 * kdNodeV2* root 			: root of the KDtree 
-	 * idx_t n 					: number of elements in the dataset 
-	 * idx_t k 					: number of neighbors to retrieve
+	 * - Datapoint_info * dpInfo 	: array of datapoints information structs to store the neighborhood on 
+	 * - float_t * data 			: array of data 
+	 * - kdNodeV2* kdNodeArray  	: array of the nodes of the KDtree
+	 * - kdNodeV2* root 			: root of the KDtree 
+	 * - idx_t n 					: number of elements in the dataset 
+	 * - idx_t k 					: number of neighbors to retrieve
 	 */
     struct timespec start_tot, finish_tot;
     double elapsed_tot;
@@ -2175,11 +2215,11 @@ void KNN_search_kdtree(Datapoint_info * dpInfo, float_t * data, kd_node* root, i
 	/*
 	 * Helper function for KNN serch using KDtree
 	 *
-	 * Datapoint_info * dpInfo 	: array of datapoints information structs to store the neighborhood on 
-	 * float_t * data 		: array of data 
-	 * kd_node* root 			: root of the KDtree 
-	 * idx_t n 					: number of elements in the dataset 
-	 * idx_t k 					: number of neighbors to retrieve
+	 * - Datapoint_info* dpInfo : array of datapoints information structs to store the neighborhood on 
+	 * - float_t * data 		: array of data 
+	 * - kd_node* root 			: root of the KDtree 
+	 * - idx_t n 				: number of elements in the dataset 
+	 * - idx_t k 				: number of neighbors to retrieve
 	 */
     struct timespec start_tot, finish_tot;
     double elapsed_tot;
@@ -2283,8 +2323,18 @@ int quickselect_heapNode(heap_node *array, int array_size, int k){
 void KNN_BruteForce(Datapoint_info* points, void* data,size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void*, void*))
 {
 	/*
-	 * TODO: fix when threads are more than points
-	 * */
+	 * /!\ work in progress
+	 * KNN function using brute force method, possibly using BLAS for euclidean
+	 * metrics
+	 *
+	 * - Datapoint_info* points : datapoints structs to store ngbh to 
+	 * - void* data 			: dataset pointer
+	 * - size_t byteSize 		: bytesize of each element in the vector of a row of the dataset
+	 * - size_t dims 			: number of elements per row
+	 * - size_t k 				: number of neighbors to retrieve
+	 * - float_t (*metric)(void*, void*)) : callable metric function
+	 *
+	 */
 	#pragma omp parallel
 	{
 
@@ -2301,10 +2351,6 @@ void KNN_BruteForce(Datapoint_info* points, void* data,size_t n, size_t byteSize
 					pvt_working_mem[j].value = metric(data + p*dims*byteSize, data + j*dims*byteSize);
 					pvt_working_mem[j].array_idx = j; 
 				}
-				//printf("Thread %d got slice %lu to %lu\n ", omp_get_thread_num(), slice, slice + slice_len);
-
-				//points[p].ngbh = KNN_bruteforce(data + p*dims*byteSize, data,  n, byteSize*dims, k, metric);
-				//
 				Heap H = points[p].ngbh;
 
 				quickselect_heapNode(pvt_working_mem, n,  k + 1);
@@ -2369,9 +2415,9 @@ void KNN_BruteForce(Datapoint_info* points, void* data,size_t n, size_t byteSize
 	{
 		/*
 		 * A way to speed up (drammatically) euclidean metric computation, when dealing with high dimensional data
-		 * The trick is to compute ||xi - xj||^2 as ||xi||^2 + ||xj||^2 - 2*<xi|xj>
+		 * The trick is to compute ||xi - xj||^2 as ||xi||^2 - 2*<xi|xj> + ||xj||^2 
 		 * ||xi|| and ||xj|| can be computed upfront, then <xi|xj> can be computed as the product 
-		 * of the matrix  X^T @ X
+		 * of the matrix  X^T @ X, these terms are called _MIDDLE TERMS_
 		 *
 		 * Actually a slice of the dataset, Y, is used against the whole dataset and then the "all-to-all" distances are 
 		 * reduced to the first k ones 
@@ -2379,10 +2425,21 @@ void KNN_BruteForce(Datapoint_info* points, void* data,size_t n, size_t byteSize
 		struct sysinfo info;
 		sysinfo(&info);
 
+		/* 
+		 * allocate a piece of memory to perform middle term computation
+		 * estimate how much memory is free and take up to 90% for that
+		 */
+
 		size_t slice_size = (size_t)((float_t)(info.freeram)*0.9/(float_t)(8*n));
 		slice_size = MIN(n,slice_size);
+
 		printf("%lu slice size \n",slice_size);
 		float_t* norms_sq = (float_t*)malloc(n*sizeof(double));
+
+		float_t* middle_terms 	= (float_t*)malloc(slice_size*sizeof(float_t)*n); 
+
+		/* compute the norms of the vectors */
+
 		#pragma omp parallel for
 		for(size_t i = 0; i < n; ++i)
 		{
@@ -2392,6 +2449,12 @@ void KNN_BruteForce(Datapoint_info* points, void* data,size_t n, size_t byteSize
 
 		heap_node* working_mem 	= NULL;
 
+		/* 
+		 * allocate for each thread a piece of working memory to perform the reduction
+		 * this memory should contain distance and index of the kth neighbor
+		 * Recycle the heap for that purpose
+		 */
+
 		#pragma omp parallel
 		{
 			#pragma omp master
@@ -2400,59 +2463,57 @@ void KNN_BruteForce(Datapoint_info* points, void* data,size_t n, size_t byteSize
 			}
 		}
 
-		float_t* middle_terms 	= (float_t*)malloc(slice_size*sizeof(float_t)*n); 
 
 		size_t s = 0;
 		for(s = 0; s < n; s+=slice_size)
 		{
 			size_t lower_idx = s; 
 			size_t upper_idx = MIN(n,s + slice_size);
-				#pragma omp parallel
-				{
-					#pragma omp for
-					for(size_t i = lower_idx; i < upper_idx; ++i)
-						for(size_t j = 0; j < n; ++j)
-						{
-							middle_terms[(i%slice_size)*n + j] = norms_sq[i] + norms_sq[j];
-							//middle_terms[(i%DEFAULT_SLICE)*n + j] = 0;
-						}
-				}
-
-				float_t* A = data + dims*lower_idx;
-				cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasTrans,
-									upper_idx - lower_idx,n,dims, -2.0,
-									A, dims, data, dims, 1.0, middle_terms,n);
-
-				#pragma omp parallel 
-				{
-					heap_node* my_working_mem = working_mem + omp_get_thread_num()*n;
-					#pragma omp for
-					for(size_t i = lower_idx; i < upper_idx; ++i)
+			#pragma omp parallel
+			{
+				#pragma omp for
+				for(size_t i = lower_idx; i < upper_idx; ++i)
+					for(size_t j = 0; j < n; ++j)
 					{
-						/*alternative version, trying to understand what is faster*/
-
-						//for(size_t j = 0; j < n; ++j)
-						//{
-						////	my_working_mem[j].value = middle_terms[(i%DEFAULT_SLICE)*n + j];
-						////	my_working_mem[j].array_idx = j;
-						//	insertMaxHeap(&(points[i].ngbh), middle_terms[(i%DEFAULT_SLICE)*n + j],j);
-						//}
-						//HeapSort(&(points[i].ngbh));
-						//copy into the working mem
-						for(size_t j = 0; j < n; ++j)
-						{
-							my_working_mem[j].value = middle_terms[(i%slice_size)*n + j];
-							my_working_mem[j].array_idx = j;
-						}
-
-						Heap H = points[i].ngbh;
-						quickselect_heapNode(my_working_mem, n,  k + 1);
-						//printf("%lu %lf \t ",my_working_mem[k].array_idx, my_working_mem[k].value);
-						qsort(my_working_mem, k, sizeof(heap_node), cmpHeapNodes);
-						//printf("%lu %lf\n",my_working_mem[k].array_idx, my_working_mem[k].value);
-						memcpy(H.data, my_working_mem, k*sizeof(heap_node));
+						middle_terms[(i%slice_size)*n + j] = norms_sq[i] + norms_sq[j];
+						//middle_terms[(i%DEFAULT_SLICE)*n + j] = 0;
 					}
+			}
+
+			float_t* A = data + dims*lower_idx;
+			cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasTrans,
+								upper_idx - lower_idx,n,dims, -2.0,
+								A, dims, data, dims, 1.0, middle_terms,n);
+
+			#pragma omp parallel 
+			{
+				heap_node* my_working_mem = working_mem + omp_get_thread_num()*n;
+				#pragma omp for
+				for(size_t i = lower_idx; i < upper_idx; ++i)
+				{
+					/*alternative version, trying to understand what is faster*/
+
+					//for(size_t j = 0; j < n; ++j)
+					//{
+					// 		my_working_mem[j].value = middle_terms[(i%DEFAULT_SLICE)*n + j];
+					//		my_working_mem[j].array_idx = j;
+					//		insertMaxHeap(&(points[i].ngbh), middle_terms[(i%DEFAULT_SLICE)*n + j],j);
+					//}
+					//HeapSort(&(points[i].ngbh));
+
+					/* copy into the working mem */
+					for(size_t j = 0; j < n; ++j)
+					{
+						my_working_mem[j].value = middle_terms[(i%slice_size)*n + j];
+						my_working_mem[j].array_idx = j;
+					}
+
+					Heap H = points[i].ngbh;
+					quickselect_heapNode(my_working_mem, n,  k + 1);
+					qsort(my_working_mem, k, sizeof(heap_node), cmpHeapNodes);
+					memcpy(H.data, my_working_mem, k*sizeof(heap_node));
 				}
+			}
 		}
 
 		free(working_mem);
@@ -2465,6 +2526,17 @@ void KNN_BruteForce(Datapoint_info* points, void* data,size_t n, size_t byteSize
 
 Datapoint_info* NgbhSearch_bruteforce(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *), int verbose)
 {
+	/*
+	 * Neighborhood search using bruteforce method
+	 *
+	 * - void* data 	 : the dataset, in general a collection of elements					 
+	 * - size_t n 		 : number of points in the dataset
+	 * - size_t byteSize : number of bytes for each element in the vector representing a datapooint 
+	 * - size_t dims 	 : lenght of each datapoint in terms of elements 
+	 * - size_t k 		 : number of neighbors to search for 
+	 * - float_t (*metric)(void *, void *)) : distance function between two elements in the dataset MUST satisy triangle inequality 
+	 *
+	 */
 	METRICS_DATADIMS = dims;
 
 	if(verbose)
@@ -2505,6 +2577,7 @@ Datapoint_info* NgbhSearch_bruteforce(void* data, size_t n, size_t byteSize, siz
 		printf("Progress 0/%lu -> 0%%\r",(uint64_t)n);
 		fflush(stdout);
 	#endif
+
 	#pragma omp parallel for
 	for(idx_t j = 0; j < n; ++j)
 	{
@@ -2548,10 +2621,10 @@ Datapoint_info* NgbhSearch_kdtree(float_t* data, size_t n, size_t ndims, size_t 
 	/*
 	 * Neighborhood search using a KDtree
 	 *
-	 * float_t* data : dataset as a matrix of float or double
-	 * size_t n 		: number of elements in the dataset 
-	 * size_t ndims 	: lenght of each vector in the dataset
-	 * size_t k 		: number of neighbors to retrieve
+	 * - float_t* data 	: dataset as a matrix of float or double
+	 * - size_t n 		: number of elements in the dataset 
+	 * - size_t ndims 	: lenght of each vector in the dataset
+	 * - size_t k 		: number of neighbors to retrieve
 	 *
 	 */
     struct timespec start, finish;
@@ -2574,8 +2647,6 @@ Datapoint_info* NgbhSearch_kdtree(float_t* data, size_t n, size_t ndims, size_t 
 
     kd_node* root = build_tree(kd_ptrs, n, ndims);
 
-    //printf("The root of the tree is\n");
-    //printKDnode(root);
 	if(verbose)
 	{
 		clock_gettime(CLOCK_MONOTONIC, &finish);
@@ -2603,10 +2674,10 @@ Datapoint_info* NgbhSearch_kdtree_V2(float_t* data, size_t n, size_t ndims, size
 	/*
 	 * Neighborhood search using a KDtree
 	 *
-	 * float_t* data : dataset as a matrix of float or double
-	 * size_t n 		: number of elements in the dataset 
-	 * size_t ndims 	: lenght of each vector in the dataset
-	 * size_t k 		: number of neighbors to retrieve
+	 * - float_t* data 	: dataset as a matrix of float or double
+	 * - size_t n 		: number of elements in the dataset 
+	 * - size_t ndims 	: lenght of each vector in the dataset
+	 * - size_t k 		: number of neighbors to retrieve
 	 *
 	 */
     struct timespec start, finish;
@@ -2633,8 +2704,6 @@ Datapoint_info* NgbhSearch_kdtree_V2(float_t* data, size_t n, size_t ndims, size
 
     kdNodeV2* root = build_tree_kdTreeV2(kdNode_array, n, ndims);
 
-    //printf("The root of the tree is\n");
-    //printKDnode(root);
 	if(verbose)
 	{
 		clock_gettime(CLOCK_MONOTONIC, &finish);
@@ -2685,12 +2754,12 @@ void KNN_search_vpTree(Datapoint_info* dpInfo, vpTreeNode* vpNodeArray,vpTreeNod
 	/*
 	 * Helper function for performing KNN search
 	 *
-	 * Datapoint_info* dpInfo 		: array of datapoints to store the neighborhood on 
-	 * vpTreeNodeV2* vpNodeArray 	: array of nodes in the tree
-	 * vpTreeNodeV2* root 			: root of the tree
-	 * idx_t k 						: number of neighbors to retrieve
-	 * size_t n 					: number of elements in the dataset 
-	 * float_t (*metric)(void*, void*)) : distance function
+	 * - Datapoint_info* dpInfo 	: array of datapoints to store the neighborhood on 
+	 * - vpTreeNodeV2* vpNodeArray 	: array of nodes in the tree
+	 * - vpTreeNodeV2* root 		: root of the tree
+	 * - idx_t k 					: number of neighbors to retrieve
+	 * - size_t n 					: number of elements in the dataset 
+	 * - float_t (*metric)(void*, void*)) : distance function
 	 */
     struct timespec start_tot, finish_tot;
     double elapsed_tot;
@@ -2750,7 +2819,6 @@ void KNN_search_vpTree(Datapoint_info* dpInfo, vpTreeNode* vpNodeArray,vpTreeNod
 	#ifdef PROGRESS_BAR
 		printf("Progress %lu/%lu -> 100%%\n",(uint64_t)n, (uint64_t)n);
 	#endif
-    //printf("Progress %lu/%lu\n",(uint64_t)progress_count, (uint64_t)n);
 
 	if(verbose)
 	{
@@ -2767,6 +2835,7 @@ Datapoint_info* NgbhSearch_vptree(void* data, size_t n, size_t byteSize, size_t 
 {
 	/*
 	 * Neighborhood search using vantage-point tree
+	 *
 	 * - void* data 	 : the dataset, in general a collection of elements					 
 	 * - size_t n 		 : number of points in the dataset
 	 * - size_t byteSize : number of bytes for each element in the vector representing a datapooint 
@@ -2818,12 +2887,12 @@ void KNN_search_vpTree_V2(Datapoint_info* dpInfo, vpTreeNodeV2* vpNodeArray,vpTr
 	/*
 	 * Helper function for performing KNN search
 	 *
-	 * Datapoint_info* dpInfo 		: array of datapoints to store the neighborhood on 
-	 * vpTreeNodeV2* vpNodeArray 	: array of nodes in the tree
-	 * vpTreeNodeV2* root 			: root of the tree
-	 * idx_t k 						: number of neighbors to retrieve
-	 * size_t n 					: number of elements in the dataset 
-	 * float_t (*metric)(void*, void*)) : distance function
+	 * - Datapoint_info* dpInfo 	: array of datapoints to store the neighborhood on 
+	 * - vpTreeNodeV2* vpNodeArray 	: array of nodes in the tree
+	 * - vpTreeNodeV2* root 		: root of the tree
+	 * - idx_t k 					: number of neighbors to retrieve
+	 * - size_t n 					: number of elements in the dataset 
+	 * - float_t (*metric)(void*, void*)) : distance function
 	 */
     struct timespec start_tot, finish_tot;
     double elapsed_tot;
@@ -2870,7 +2939,6 @@ void KNN_search_vpTree_V2(Datapoint_info* dpInfo, vpTreeNodeV2* vpNodeArray,vpTr
 	#ifdef PROGRESS_BAR
 		printf("Progress %lu/%lu -> 100%%\n",(uint64_t)n, (uint64_t)n);
 	#endif
-    //printf("Progress %lu/%lu\n",(uint64_t)progress_count, (uint64_t)n);
 
 	if(verbose)
 	{
@@ -2886,6 +2954,7 @@ Datapoint_info* NgbhSearch_vptree_V2(void* data, size_t n, size_t byteSize, size
 {
 	/*
 	 * Neighborhood search using vantage-point tree
+	 *
 	 * - void* data 	 : the dataset, in general a collection of elements					 
 	 * - size_t n 		 : number of points in the dataset
 	 * - size_t byteSize : number of bytes for each element in the vector representing a datapooint 
@@ -2932,7 +3001,6 @@ Datapoint_info* NgbhSearch_vptree_V2(void* data, size_t n, size_t byteSize, size
 		free(data);
 	#endif
 
-	//printf("NODE STRAMBO: %lf %p %lu\n", vpNodeArray[1516].mu, vpNodeArray[1516].inside, vpNodeArray[1516].parent -> array_idx);
 	#ifdef VOPT
 		for(idx_t i = 0; i < n; ++i) if(vpNodeArray[i].nodeList.indexes) free(vpNodeArray[i].nodeList.indexes);
 	#else
@@ -2976,8 +3044,7 @@ void computeAvg(Datapoint_info* p, float_t *va, float_t* ve, float_t* vals, floa
 }
 
 /*
- * Interface
- * ---------
+ * Interface to python
  */
 
 Datapoint_info* allocDatapoints(idx_t n)
@@ -3004,11 +3071,9 @@ void importNeighborsAndDistances(Datapoint_info* points, idx_t* indeces, float_t
 		initHeap(&H);
 		for(idx_t j = 0; j < k; ++j) 
 		{
-	//		if(j < 10 && p < 10) printf("%lu %lu -> %lu;  \t",p,k, indeces[p*k + j]);
 			H.data[j].value = distances[p*k + j]*distances[p*k + j];
 			H.data[j].array_idx = indeces[p*k + j];
 		}
-	//	if(p < 10) printf("\n");
 		H.count = k;
 		points[p].ngbh = H;
 	}
