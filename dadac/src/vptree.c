@@ -94,25 +94,11 @@ int median_of_vpTreeNodes(vpTreeNode** a, int left, int right)
 {
     //printf("----------\n");
     int k = left + ((right - left + 1)/2); 
-    //:w
-    //int c = right - left + 1;
-    //if(c < 20){
-    //    v = split_var;
-    //    qsort(a + left, c, sizeof(kd_node*),cmpKDN);
-    //    return k;
-
-    //}
-
     if(left == right) return left;
     if(left == (right - 1)){
         if(cmp_vpTreeNodes(a[left],a[right])) {swap_vpTreeNode_ptrs(a + left, a + right);}
         return right;
     }
-    //if(c == 3){
-    //    printKDnode(a[left]);
-    //    printKDnode(a[left + 1]);
-    //    printKDnode(a[left + 2]);
-    //}
     while (left <= right) {
  
         // Partition a[left..right] around a pivot
@@ -156,26 +142,15 @@ vpTreeNode* build_vpTree(vpTreeNode** t, int start, int end, vpTreeNode* parent,
         return n;
     }
 
-	//int vpIdx = start + (end - start + 1)/2; 
 	int vpIdx = start; 
 
 	//compute distances
 	for(int i = start; i <= end; ++i) t[i] -> __dist = metric(t[vpIdx] -> data,t[i] -> data);
-	//for(int i = start; i <= end; ++i) 
-	//{
-	//	printf("%.5lf ", t[i] -> __dist );
-	//}
-	//printf("----\n\n");
+
 	//now swap the vpIdx in the first place to retrieve it later
 	//swap_vpTreeNode_ptrs(t + vpIdx, t + start);
 	//compute the median, as byproduct obtain the array partitioned on inside and outside BUT, with the median in the median place
     median_idx = median_of_vpTreeNodes(t, start, end);
-	//printf("Median: %d %.4lf\n\n", median_idx - start, t[median_idx] -> __dist );
-	//for(int i = start; i <= end; ++i) 
-	//{
-	//	printf("%.5lf ", t[i] -> __dist );
-	//}
-	//printf("*****\n\n");
 	float_t mu = t[median_idx]->__dist;
 	//now swap start with the median
 	
@@ -197,15 +172,6 @@ vpTreeNode* build_vpTree(vpTreeNode** t, int start, int end, vpTreeNode* parent,
         n->parent = parent;
     }
 
-	/*
-    if(median_idx > -1){
-        n = t[vpIdx];
-		n->mu = mu;
-		n->inside  = build_vpTree(t, start + 1, median_idx, n, metric);
-		n->outside = build_vpTree(t, median_idx + 1, end, n, metric);
-        n->parent = parent;
-    }
-	*/
     return n;
 
 }
@@ -216,6 +182,11 @@ vpTreeNode* build_vpTree(vpTreeNode** t, int start, int end, vpTreeNode* parent,
 #define OUTSIDE 1
 
 #ifdef ITERATIVE_VPTREE
+/* 
+ * Experimental feauture, not working so well
+ * Iterative implementation of the vp tree not being not very fast
+ * or sensibly (?) faster than recursive implementation
+ */
 
 const stackNode nodeNULL = { .node = NULL, .side = -1, .mu = 0, .current_distance = 0};
 
@@ -355,7 +326,6 @@ void KNN_sub_vpTree_search_iterative(void* point, vpTreeNode* root, Heap * H, st
 
 void KNN_sub_vpTree_search(void* point, vpTreeNode* root, Heap * H, float_t (*metric)(void*,void*))
 {
-    //int split_var = kdtree_root -> split_var;
     float_t current_distance = metric(point, root -> data);
     insertMaxHeap(H, current_distance, root -> array_idx);
 	#define INSIDE 0

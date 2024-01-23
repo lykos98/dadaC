@@ -14,12 +14,12 @@
 	#define SWMEM
 #endif
 
-/**
+/*
  * 
  * KDtree implementation 
  * 
  * 
-*/
+ */
 
 
 void* swapMem;
@@ -44,12 +44,12 @@ void swap_vpTreeNode_ptrs_V2(vpTreeNodeV2 *x, vpTreeNodeV2 *y) {
 	 
 }
 
-/**
+/*
  * 
  * KDtree implementation 
  * 
  * 
-*/
+ */
 
 void initialize_vpTreeNode_array_V2(vpTreeNodeV2* nodeArray, void* data, idx_t n, idx_t bytesPerElement)
 {
@@ -192,12 +192,6 @@ vpTreeNodeV2* build_vpTree_V2(vpTreeNodeV2* t, int start, int end, vpTreeNodeV2*
 
 	//compute distances
 	for(int i = start; i <= end; ++i) t[i].__dist = metric(t[vpIdx].data,t[i].data);
-
-	//for(int i = start; i <= end; ++i) 
-	//{
-	//	printf("%.5lf ", t[i] -> __dist );
-	//}
-	//printf("----\n\n");
 	
 	//now swap the vpIdx in the first place to retrieve it later
 	//swap_vpTreeNode_ptrs(t + vpIdx, t + start);
@@ -205,10 +199,7 @@ vpTreeNodeV2* build_vpTree_V2(vpTreeNodeV2* t, int start, int end, vpTreeNodeV2*
     median_idx = median_of_vpTreeNodes_V2(t, start, end);
 	//printf("Median: %d %.4lf\n\n", median_idx - start, t[median_idx]. __dist );
 	//for(int i = start; i <= end; ++i) 
-	//{
-	//	printf("%.5lf ", t[i].__dist );
-	//}
-	//printf("*****\n\n");
+	//
 	float_t mu = t[median_idx].__dist;
 	//now swap start with the median
 	

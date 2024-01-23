@@ -168,7 +168,7 @@ void insertMaxHeap(Heap * H,const FLOAT_TYPE val,const idx_t array_idx){
 	int ctot = c1 + 2*c2;
 	switch (ctot) {
 		case 1:
-			{
+		{
 				idx_t node = H->count;
 				++(H -> count);
 				H -> data[node].value = val;
@@ -182,12 +182,13 @@ void insertMaxHeap(Heap * H,const FLOAT_TYPE val,const idx_t array_idx){
 					node = HEAP_PARENT(node);
 					//if(node == 0) break;
 			}
-			}
+		}
 		break;
+
 		case 2: 
-			{
-				setRootMaxHeap(H,val,array_idx);
-			}
+		{
+			setRootMaxHeap(H,val,array_idx);
+		}
 			break;
 		default:
 			break;
