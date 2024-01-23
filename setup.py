@@ -35,11 +35,13 @@ EXTRAS = {
 
 
 #compile everything
-os.system("make -C $(pwd)/dadac")
+#os.system("make -C $(pwd)/dadac")
 
 
 EXT_DIR = os.path.join(os.path.dirname(__file__), 'dadac')
-class RunMake(install):
+class RunMake(install):   
+
+
     """Makefile on setuptools install."""
     def run(self):
         old_dir = os.getcwd()
@@ -52,24 +54,16 @@ class RunMake(install):
             os.chdir(old_dir)
         install.run(self)
 
-class RunMake_precompiled(Command):
+class RunMake_precompiled(build):
     """Makefile on setuptools install."""
     user_options = []
 
-    @staticmethod
-    def status(s):
-        """Prints things in bold."""
-        print('\033[1m{0}\033[0m'.format(s))
-
-    def initialize_options(self):
-        pass
-
-    def finalize_options(self):
-        pass
 
     def run(self):
         old_dir = os.getcwd()
         try:
+            if(os.path.exists("bin/libdadac.so")):
+                os.system("rm bin/libdadac.so")
             os.chdir(EXT_DIR)
             print("Building C library ...")
             os.system("make arm")
@@ -77,7 +71,7 @@ class RunMake_precompiled(Command):
             #self.spawn(['make'])
         finally:
             os.chdir(old_dir)
-        #build.run(self)
+        build.run(self)
 # The rest you shouldn't have to touch too much :)
 # ------------------------------------------------
 # Except, perhaps the License and Trove Classifiers!
@@ -151,7 +145,11 @@ setup(
     author_email=EMAIL,
     python_requires=REQUIRES_PYTHON,
     url=URL,
-    packages=find_packages(exclude=["tests", "*.tests", "*.tests.*", "tests.*"]),
+    #packages=find_packages(
+    #    include=["dadac","dadac.src"],
+    #    exclude=["tests", "*.tests", "*.tests.*", "tests.*","*src*","*include*","*src*"]
+    #    ),
+    packages=["dadac"],
     # If your package is a single module, use this instead of 'packages':
     # py_modules=['mypackage'],
 
@@ -163,6 +161,7 @@ setup(
     include_package_data=True,
     license='MIT',
     package_data={'dadac': ["bin/*.so"]},
+    exclude_package_data={"dadac": ["src/*","include/*"]},
     classifiers=[
         # Trove classifiers
         # Full list: https://pypi.python.org/pypi?%3Aaction=list_classifiers
@@ -175,8 +174,8 @@ setup(
     ],
     # $ setup.py publish support.
     cmdclass={
-        'build_precompiled': RunMake_precompiled,
-        'upload': UploadCommand,
         'install': RunMake,
+        'upload': UploadCommand,
+        'build': RunMake_precompiled,
     },
 )

@@ -85,13 +85,27 @@ class _dadac_loader():
         arch = platform.machine()
         print(path)
         if not os.path.exists(path):
+            #print("libdadac.so not found calling make for you")
+            #old_dir = os.getcwd()
+            #os.chdir(os.path.join(os.path.dirname(__file__)))
+            #if not os.path.exists(os.path.join(os.path.dirname(__file__), "bin")):
+            #    os.system("mkdir bin")
+            #os.system("make lib")
+            #os.chdir(old_dir)
+
             print(f"Loading (maybe) precompiled binary for architecture: {arch}")
             print(f"If you want more perfomance you can try to install it with ")
             print(f"->        pip install git+https://github.com/lykos98/dadaC")
             print(f"Thus will trigger a recompile to native architecture :)")
             path = os.path.join(os.path.dirname(__file__), f"bin/libdadac.{arch}.so")
+            print(f"Loading: -> {path}")
 
-        self.lib = ct.CDLL(path)
+        try:
+            self.lib = ct.CDLL(path)
+        except:
+            print(f"Failed to load library please install dadac using:")
+            print(f"  pip install git+https://github.com/lykos98/dadaC ")
+            raise()
 
         global ctFloatType, ctIdxType
         s = self.lib.FloatAndUintSize()
@@ -250,6 +264,7 @@ class Data(_dadac_loader):
         Raises:
             TypeError: Raises TypeError if a type different from a matrix is passed 
         """
+
         super().__init__()
         #initialize class
         if self._useFloat32:
@@ -282,7 +297,6 @@ class Data(_dadac_loader):
         if len(self.data.shape) != 2:
             raise TypeError("Please provide a 2d numpy array")
 
-
         self._datapoints     = None
         self._clusters       = None
         self.n              = self.data.shape[0]
@@ -302,6 +316,7 @@ class Data(_dadac_loader):
         self.borders            = None
         self._log_den           = None
         self._log_den_err       = None
+
         self.blas               = self._blas_in_use() != 0 
         self._running_in_notebook = self._is_notebook()
 

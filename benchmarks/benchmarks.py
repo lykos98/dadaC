@@ -163,7 +163,7 @@ x1 = np.random.normal([0,2,0,0,0],1,size=(n,5))
 x2 = np.random.normal([2,0,0,0,0],1,size=(n,5)) 
 x  = np.concatenate([x1,x2])
 
-profileAndRun(x, "5D Gaussian", k, Z, results)
+#profileAndRun(x, "5D Gaussian", k, Z, results)
 
 ## ---------------------------------------------------------------------
 ##
@@ -172,16 +172,16 @@ profileAndRun(x, "5D Gaussian", k, Z, results)
 ## ---------------------------------------------------------------------
 
 
-from sklearn.datasets import fetch_openml
-x, y = fetch_openml(
-    "mnist_784", version=1, return_X_y=True, as_frame=False, parser="pandas"
-)
+#from sklearn.datasets import fetch_openml
+#x, y = fetch_openml(
+#    "mnist_784", version=1, return_X_y=True, as_frame=False, parser="pandas"
+#)
+#
+#x = np.ascontiguousarray(x)
+#x = x.astype(np.float64)/255.
 
-x = np.ascontiguousarray(x)
-x = x.astype(np.float64)/255.
 
-
-profileAndRun(x, "MNIST", k, Z, results)
+#profileAndRun(x, "MNIST", k, Z, results)
 
 ## ---------------------------------------------------------------------
 ##
@@ -191,9 +191,9 @@ profileAndRun(x, "MNIST", k, Z, results)
 
 #trying to import from dadapy examples
 
-for ds_name in example_names[:2]:
-    data = getFromUrl(base_url, ds_name)
-    profileAndRun(data, ds_name, k, Z, results)
+#for ds_name in example_names[:2]:
+#    data = getFromUrl(base_url, ds_name)
+#    profileAndRun(data, ds_name, k, Z, results)
 
 ## ---------------------------------------------------------------------
 ##
@@ -203,11 +203,11 @@ for ds_name in example_names[:2]:
 
 
 data = get_example_from_drive()
-profileAndRun(data[:100000], "Astro (sub)Set 1", k, Z, results)
+#profileAndRun(data[:100000], "Astro (sub)Set 1", k, Z, results)
 
-if(run_big):
-    profileAndRun(data[:500000], "Astro (sub)Set 1", k, Z, results)
-    profileAndRun(data, "Astro (sub)Set 1", k, Z, results)
+#if(run_big):
+#    profileAndRun(data[:500000], "Astro (sub)Set 1", k, Z, results)
+#    profileAndRun(data, "Astro (sub)Set 1", k, Z, results)
 
 
 ## ---------------------------------------------------------------------

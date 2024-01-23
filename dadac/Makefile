@@ -24,9 +24,11 @@ COMPILING_INFO=@echo "[\e[36mCOMPILING\e[0m]: $@"
 LINKING_INFO=@echo "[\e[34mLINKING\e[0m]: $@"
 
 
-#CFLAGS+=-O3 
 
+CROSS_COMPILE_CFLAGS=${CFLAGS}
+CROSS_COMPILE_CFLAGS+=-O2 -nostdlib -nostartfiles -nodefaultlibs
 
+CFLAGS+=-O3 -march=native 
 all: driver test 
 	@echo "[\e[31mFLAGS\e[0m]: ${CFLAGS}"
 
@@ -61,11 +63,11 @@ bin/%.o : src/%.c
 
 
 bin/libdadac.aarch64.so : ${SOURCES} 
-	@aarch64-linux-gnu-gcc ${SOURCES} ${CFLAGS} ${LDFLAGS} ${VERBOSE} ${DEBUG} -fpic -shared -o $@
+	@aarch64-linux-gnu-gcc ${SOURCES} ${CROSS_COMPILE_FLAGS} ${LDFLAGS} ${VERBOSE} ${DEBUG} -fpic -shared -o $@
 	${COMPILING_INFO}
 
 bin/libdadac.x86_64.so : ${SOURCES}
-	@gcc ${SOURCES} ${CFLAGS} ${LDFLAGS} ${VERBOSE} ${DEBUG} -fpic -shared -o $@
+	@gcc-11 ${SOURCES} ${CROSS_COMPILE_FLAGS} ${LDFLAGS} ${VERBOSE} ${DEBUG} -fpic -shared -o $@
 	${COMPILING_INFO}
 
 clean:
