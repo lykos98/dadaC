@@ -91,11 +91,11 @@ void Clusters_allocate(Clusters * c, int s)
 
 	    for(idx_t i = 0; i < nclus; ++i)
 	    {
-		c -> borders[i]         = c -> __borders_data + i*nclus;
-		for(idx_t j = 0; j < nclus; ++j)
-		{
-		    c -> borders[i][j] = border_null;
-		}
+			c -> borders[i]         = c -> __borders_data + i*nclus;
+			for(idx_t j = 0; j < nclus; ++j)
+			{
+				c -> borders[i][j] = border_null;
+			}
 	    }
     }
 }
@@ -288,8 +288,6 @@ float_t mEst2(float_t * x, float_t *y, idx_t n)
      * - n: size of the arrays                  
      */
      
-
-    //float_t x_avg, y_avg;
     float_t num = 0;
     float_t den = 0;
     float_t dd;
@@ -406,8 +404,6 @@ void computeRho(Datapoint_info* dpInfo, const float_t d, const idx_t points, int
     float_t omega = 0.;  
     if(sizeof(float_t) == sizeof(float)){ omega = powf(PI_F,d/2)/tgammaf(d/2.0f + 1.0f);}  
     else{omega = pow(M_PI,d/2.)/tgamma(d/2.0 + 1.0);}
-
-    //printf("Omega d %f\n", omega);
 
     #pragma omp parallel for
     for(idx_t i = 0; i < points; ++i)
@@ -853,7 +849,6 @@ Clusters Heuristic1(Datapoint_info* dpInfo, idx_t n, int verbose)
 	 * Generate a mask that keeps track of the point has been eliminating the 
 	 * point considered. Each thread updates this mask, then after the procedure
 	 * ends, center, removed centers, and max_rho arrays are populated
-	 *
 	 */
 		
 	idx_t* to_remove_mask = (idx_t*)malloc(n*sizeof(idx_t));
@@ -884,7 +879,7 @@ Clusters Heuristic1(Datapoint_info* dpInfo, idx_t n, int verbose)
 
 
 					/* Alternative
-					* not sure if it works
+					 * not sure if it works
 
 					#pragma omp atomic read 
 					ppp = to_remove_mask[jidx];
@@ -962,9 +957,6 @@ Clusters Heuristic1(Datapoint_info* dpInfo, idx_t n, int verbose)
      * UPDATE: dpInfo already sorted                                          
      */
                                                                                 
-
-    //qsort(dpInfo_ptrs, n, sizeof(Datapoint_info*), cmpPP);
-
     for(idx_t i = 0; i < n; ++i)
     {   
         Datapoint_info* p = dpInfo_ptrs[i];
@@ -1247,11 +1239,11 @@ static inline int is_a_merging(  float_t dens1, float_t dens1_err,
 								 float_t Z)
 {
 	/*
-	 * dens1 : the density of the particle that is the center of the first cluster
-	 * dens2 : the density of the particle that is the center of the second cluster
+	 * dens1	   : the density of the particle that is the center of the first cluster
+	 * dens2	   : the density of the particle that is the center of the second cluster
 	 * dens_border : the density of the border btw the cluster 1 and the cluster 2
-	 * *_err : the errors on the densities
-	 * Z     : the desired accuracy
+	 * border_err  : the errors on the densities
+	 * Z     	   : the desired accuracy
 	 */
 
 	/* in the original code it was:
@@ -2191,8 +2183,6 @@ void KNN_search_kdTreeV2(Datapoint_info * dpInfo,kdNodeV2* kdNodeArray, kdNodeV2
 		}
     }
 
-	
-
 	#ifdef PROGRESS_BAR
 		printf("Progress %lu/%lu -> 100%%\n",(uint64_t)n, (uint64_t)n);
 	#endif
@@ -2273,7 +2263,6 @@ void KNN_search_kdtree(Datapoint_info * dpInfo, float_t * data, kd_node* root, i
     return;
 
 }
-
 
 /*
  * Standard partition function 
@@ -2378,7 +2367,6 @@ void KNN_BruteForce(Datapoint_info* points, void* data,size_t n, size_t byteSize
 		for(idx_t p = remainder; p < n; ++p)
 		{
 
-			//points[p].ngbh = KNN_bruteforce(data + p*dims*byteSize, data,  n, byteSize*dims, k, metric);
 			for(idx_t j = 0; j < n; ++j)
 			{
 				pvt_working_mem[j].value = metric(data + p*dims*byteSize, data + j*dims*byteSize);
