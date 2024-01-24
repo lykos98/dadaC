@@ -22,15 +22,15 @@
 #endif
 
 
-struct vpTreeNode
+struct vpnode
 {
    void * data;
    idx_t array_idx;
    float_t mu;
    float_t __dist;
-   struct vpTreeNode* parent;
-   struct vpTreeNode* outside;
-   struct vpTreeNode* inside;
+   struct vpnode* parent;
+   struct vpnode* outside;
+   struct vpnode* inside;
 
 };
 
@@ -39,12 +39,12 @@ struct vpTreeNode
 struct stackNode
 {
 	int side;
-	struct vpTreeNode* node;
+	struct vpnode* node;
 	float_t current_distance;
 	float_t mu;
 };
 
-struct stack_vpTreeNodes
+struct stack_vpnode
 {
 	struct stackNode* data;
 	size_t count;
@@ -52,7 +52,7 @@ struct stack_vpTreeNodes
 };
 
 typedef struct stackNode stackNode;
-typedef struct stack_vpTreeNodes stack_vpTreeNodes;
+typedef struct stack_vpnode stack_vpnode;
 
 #define DEFAULT_STACK_SIZE 200
 
@@ -60,18 +60,18 @@ typedef struct stack_vpTreeNodes stack_vpTreeNodes;
 
 
 
-typedef struct vpTreeNode vpTreeNode;
+typedef struct vpnode vpnode;
 
 
-void initialize_vpTreeNodes_pointers(vpTreeNode** pointersArray, vpTreeNode* nodeArray, idx_t n);
-void initialize_vpTreeNode_array(vpTreeNode* nodeArray, void* data, idx_t n, idx_t bytesPerElement);
-vpTreeNode* build_vpTree(vpTreeNode** t, int start, int end, vpTreeNode* parent, float_t (*metric)(void*, void*));
-void KNN_sub_vpTree_search(void* point, vpTreeNode* root, Heap * H, float_t (*metric)(void*,void*));
+void initialize_vpnode_ptrs(vpnode** pointersArray, vpnode* nodeArray, idx_t n);
+void initialize_vpnode_array(vpnode* nodeArray, void* data, idx_t n, idx_t bytesPerElement);
+vpnode* build_vptree(vpnode** t, int start, int end, vpnode* parent, float_t (*metric)(void*, void*));
+void knn_sub_vptree_search(void* point, vpnode* root, heap * H, float_t (*metric)(void*,void*));
 
 #ifdef ITERATIVE_VPTREE
-	Heap KNN_vpTree(void* point, vpTreeNode* root, int maxk, stack_vpTreeNodes* s, float_t (*metric)(void*, void*));
-	void stackInit(stack_vpTreeNodes* s);
+	heap knn_vptree(void* point, vpnode* root, int maxk, stack_vpnode* s, float_t (*metric)(void*, void*));
+	void stackInit(stack_vpnode* s);
 #else
-	Heap KNN_vpTree(void* point, vpTreeNode* root, int maxk, float_t (*metric)(void*, void*));
+	heap knn_vptree(void* point, vpnode* root, int maxk, float_t (*metric)(void*, void*));
 #endif 
 

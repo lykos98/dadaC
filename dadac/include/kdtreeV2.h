@@ -23,35 +23,32 @@
 	#define idx_t uint64_t
 #endif
 
-struct kdTreeNodeV2List
+struct kdnode_v2_list
 {
 	size_t count;
-	struct kdNodeV2** data;
+	struct kdnode_v2** data;
 };
 
 
-struct kdNodeV2
+struct kdnode_v2
 {   
    FLOAT_TYPE * data;
    int level;
    int split_var;
-   int isLeaf;
+   int is_leaf;
    idx_t array_idx;
-   struct kdNodeV2* parent;
-   struct kdNodeV2* lch;
-   struct kdNodeV2* rch;
-   struct kdTreeNodeV2List nodeList;
+   struct kdnode_v2* parent;
+   struct kdnode_v2* lch;
+   struct kdnode_v2* rch;
+   struct kdnode_v2_list node_list;
 };
 
-typedef struct kdNodeV2 kdNodeV2;
-typedef struct heap_node heap_node;
-typedef struct Heap Heap;
-typedef struct SimpleHeap SimpleHeap;
+typedef struct kdnode_v2 kdnode_v2;
 
-void initializeKDnodesV2(kdNodeV2* node_array, FLOAT_TYPE* d, idx_t n );
+void initialize_kdnodes_v2(kdnode_v2* node_array, FLOAT_TYPE* d, idx_t n );
 
 // Standard Lomuto partition function
 
-Heap KNN_kdTreeV2(FLOAT_TYPE* point, kdNodeV2* kdtree_root, int maxk);
+heap knn_kdtree_v2(FLOAT_TYPE* point, kdnode_v2* kdtree_root, int maxk);
 
-kdNodeV2 * build_tree_kdTreeV2(kdNodeV2* kd_ptrs, size_t n, size_t dimensions);
+kdnode_v2 * build_tree_kdtree_v2(kdnode_v2* kd_ptrs, size_t n, size_t dimensions);

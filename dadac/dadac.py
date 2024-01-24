@@ -6,39 +6,39 @@ import time
 from wurlitzer import sys_pipes
 
 
-ctFloatType = ct.c_double
-ctIdxType = ct.c_uint64
+ct_float_t = ct.c_double
+ct_idx_t = ct.c_uint64
 
-class HeapNode(ct.Structure):
+class heap_node(ct.Structure):
     _fields_ = [
-        ("value", ctFloatType),
-        ("array_idx", ctIdxType)
+        ("value", ct_float_t),
+        ("array_idx", ct_idx_t)
     ]
 
 
-class Heap(ct.Structure):
+class heap(ct.Structure):
     _fields_ = [
-        ("N", ctIdxType),
-        ("count", ctIdxType),
-        ("data", ct.POINTER(HeapNode))
+        ("N", ct_idx_t),
+        ("count", ct_idx_t),
+        ("data", ct.POINTER(heap_node))
     ]
 
-class luDynamicArray(ct.Structure):
+class lu_dynamic_array(ct.Structure):
     _fields_ = [
-        ("data", ct.POINTER(ctIdxType)),
-        ("size", ctIdxType),
-        ("count", ctIdxType)
+        ("data", ct.POINTER(ct_idx_t)),
+        ("size", ct_idx_t),
+        ("count", ct_idx_t)
     ]
 
-class DatapointInfo(ct.Structure):
+class datapoint_info(ct.Structure):
     _fields_ = [
-        ("g", ctFloatType),
-        ("ngbh", Heap),
-        ("array_idx", ctIdxType),
-        ("log_den", ctFloatType),
-        ("log_den_c", ctFloatType),
-        ("log_den_err", ctFloatType),
-        ("kstar", ctIdxType),
+        ("g", ct_float_t),
+        ("ngbh", heap),
+        ("array_idx", ct_idx_t),
+        ("log_den", ct_float_t),
+        ("log_den_c", ct_float_t),
+        ("log_den_err", ct_float_t),
+        ("kstar", ct_idx_t),
         ("is_center", ct.c_int),
         ("cluster_idx", ct.c_int)
     ]
@@ -46,37 +46,37 @@ class DatapointInfo(ct.Structure):
     def _repr_(self):
         return f"{{ g: {self.g}, ngbh: {self.ngbh}, array_idx: {self.array_idx}, log_den: {self.log_den}, log_den_c: {self.log_den_c}, log_den_err: {self.log_den_err}, kstar: {self.kstar}, isCenter: {self.is_center}, clusterIdx: {self.cluster_idx} }}"
 
-class Border_t(ct.Structure):
+class border_t(ct.Structure):
     _fields_ = [
-        ("idx", ctIdxType),
-        ("density", ctFloatType),
-        ("error", ctFloatType)
+        ("idx", ct_idx_t),
+        ("density", ct_float_t),
+        ("error", ct_float_t)
     ]
 
-class SparseBorder_t(ct.Structure):
+class sparse_border_t(ct.Structure):
     _fields_ = [
-        ("i", ctIdxType),
-        ("j", ctIdxType),
-        ("idx", ctIdxType),
-        ("density", ctFloatType),
-        ("error", ctFloatType)
+        ("i", ct_idx_t),
+        ("j", ct_idx_t),
+        ("idx", ct_idx_t),
+        ("density", ct_float_t),
+        ("error", ct_float_t)
     ]
 
-class AdjList(ct.Structure):
+class adj_list(ct.Structure):
     _fields_ = [
-        ("count", ctIdxType),
-        ("size", ctIdxType),
-        ("data", ct.POINTER(SparseBorder_t))
+        ("count", ct_idx_t),
+        ("size", ct_idx_t),
+        ("data", ct.POINTER(sparse_border_t))
     ]
 
-class Clusters(ct.Structure):
+class clusters(ct.Structure):
     _fields_ = [
-        ("UseSparseBorders", ct.c_int),
-        ("SparseBorders", ct.POINTER(AdjList)),
-        ("centers", luDynamicArray),
-        ("borders", ct.POINTER(ct.POINTER(Border_t))),
-        ("_borders_data", ct.POINTER(Border_t)),
-        ("n", ctIdxType)
+        ("use_sparse_borders", ct.c_int),
+        ("sparse_borders", ct.POINTER(adj_list)),
+        ("centers", lu_dynamic_array),
+        ("borders", ct.POINTER(ct.POINTER(border_t))),
+        ("_borders_data", ct.POINTER(border_t)),
+        ("n", ct_idx_t)
     ]
 class _dadac_loader():
     def __init__(self):
@@ -91,153 +91,153 @@ class _dadac_loader():
 
         self.lib = ct.CDLL(path)
 
-        global ctFloatType, ctIdxType
-        s = self.lib.FloatAndUintSize()
+        global ct_float_t, ct_idx_t
+        s = self.lib.float_and_uint_size()
 
-        self._useFloat32 = s < 1
-        self._useInt32   = (s == 0) or (s == 2)
+        self._use_float32 = s < 1
+        self._use_int32   = (s == 0) or (s == 2)
 
 
-        if self._useInt32:
-            ctIdxType = ct.c_uint32
+        if self._use_int32:
+            ct_idx_t = ct.c_uint32
 
         #retrieve function pointers form .so file
 
-        self._NgbhSearch_kdtree = self.lib.NgbhSearch_kdtree_V2
-        self._NgbhSearch_kdtree.argtypes = [np.ctypeslib.ndpointer(ctFloatType), ct.c_uint64, ct.c_uint64, ct.c_uint64, ct.c_int32 ]
-        self._NgbhSearch_kdtree.restype  = ct.POINTER(DatapointInfo)
+        self._ngbh_search_kdtree = self.lib.ngbh_search_kdtree_v2
+        self._ngbh_search_kdtree.argtypes = [np.ctypeslib.ndpointer(ct_float_t), ct.c_uint64, ct.c_uint64, ct.c_uint64, ct.c_int32 ]
+        self._ngbh_search_kdtree.restype  = ct.POINTER(datapoint_info)
 
-        #Datapoint_info* NgbhSearch_vpTree(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *));
-        self._NgbhSearch_vptree = self.lib.NgbhSearch_vptree_V2
+        #Datapoint_info* ngbh_search_vpTree(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *));
+        self._ngbh_search_vptree = self.lib.ngbh_search_vptree_v2
         #actually do not define anything and hope for the best
         #function pointers are not documented
         #METRIC = ct.CFUNCTYPE(x) 
-        self._NgbhSearch_vptree.argtypes = [ct.c_void_p, ct.c_uint64, ct.c_uint64, ct.c_uint64, ct.c_uint64, ct.c_void_p, ct.c_int32 ]
-        self._NgbhSearch_vptree.restype  = ct.POINTER(DatapointInfo)
+        self._ngbh_search_vptree.argtypes = [ct.c_void_p, ct.c_uint64, ct.c_uint64, ct.c_uint64, ct.c_uint64, ct.c_void_p, ct.c_int32 ]
+        self._ngbh_search_vptree.restype  = ct.POINTER(datapoint_info)
         self._eud = self.lib.eud
 
-        self._NgbhSearch_bruteforce = self.lib.NgbhSearch_bruteforce
+        self._ngbh_search_bruteforce = self.lib.ngbh_search_bruteforce
         #actually do not define anything and hope for the best
         #function pointers are not documented
         #METRIC = ct.CFUNCTYPE(x) 
-        self._NgbhSearch_bruteforce.argtypes = [ct.c_void_p, ct.c_uint64, ct.c_uint64, ct.c_uint64, ct.c_uint64, ct.c_void_p, ct.c_int32 ]
-        self._NgbhSearch_bruteforce.restype  = ct.POINTER(DatapointInfo)
+        self._ngbh_search_bruteforce.argtypes = [ct.c_void_p, ct.c_uint64, ct.c_uint64, ct.c_uint64, ct.c_uint64, ct.c_void_p, ct.c_int32 ]
+        self._ngbh_search_bruteforce.restype  = ct.POINTER(datapoint_info)
         self._eud_sq = self.lib.eud_sq
 
-        #void setRhoErrK(Datapoint_info* points, FLOAT_TYPE* rho, FLOAT_TYPE* rhoErr, idx_t* k, size_t n)
-        self._setRhoErrK = self.lib.setRhoErrK
-        self._setRhoErrK.argtypes = [  ct.POINTER(DatapointInfo),    
-                                        np.ctypeslib.ndpointer(ctFloatType), 
-                                        np.ctypeslib.ndpointer(ctFloatType),
-                                        np.ctypeslib.ndpointer(ctIdxType),
+        #void set_rho_err_k(Datapoint_info* points, FLOAT_TYPE* rho, FLOAT_TYPE* rhoErr, idx_t* k, size_t n)
+        self._set_rho_err_k = self.lib.set_rho_err_k
+        self._set_rho_err_k.argtypes = [  ct.POINTER(datapoint_info),    
+                                        np.ctypeslib.ndpointer(ct_float_t), 
+                                        np.ctypeslib.ndpointer(ct_float_t),
+                                        np.ctypeslib.ndpointer(ct_idx_t),
                                         ct.c_uint64 ]
 
         self._verbose = self.lib.verbose
-        self._setVerbose = self.lib.setVerboseOutput
-        self._setVerbose.argtypes = [ct.c_int32]
+        self._set_verbose = self.lib.set_verbose_output
+        self._set_verbose.argtypes = [ct.c_int32]
         #Datapoint_info* _allocDatapoints(idx_t* indeces, float_t* distances, idx_t n, idx_t k)
 
-        self._allocateDatapoints = self.lib.allocDatapoints
-        self._allocateDatapoints.argtypes = [ctIdxType]
-        self._allocateDatapoints.restype  = ct.POINTER(DatapointInfo)
+        self._allocate_datapoints = self.lib.alloc_datapoints
+        self._allocate_datapoints.argtypes = [ct_idx_t]
+        self._allocate_datapoints.restype  = ct.POINTER(datapoint_info)
 
 
-        self._importNeighborsAndDistances = self.lib.importNeighborsAndDistances
+        self._import_neighbors_and_distances = self.lib.import_neighbors_and_distances
 
-        #void _importNeighborsAndDistances(Datapoint_info* points, idx_t* indeces, float_t* distances, idx_t n, idx_t k)
-        self._importNeighborsAndDistances.argtypes =   [   ct.POINTER(DatapointInfo),
-                                                            np.ctypeslib.ndpointer(ctIdxType),
-                                                            np.ctypeslib.ndpointer(ctFloatType),
-                                                            ctIdxType,
-                                                            ctIdxType
+        #void _import_neighbors_and_distances(Datapoint_info* points, idx_t* indeces, float_t* distances, idx_t n, idx_t k)
+        self._import_neighbors_and_distances.argtypes =   [   ct.POINTER(datapoint_info),
+                                                            np.ctypeslib.ndpointer(ct_idx_t),
+                                                            np.ctypeslib.ndpointer(ct_float_t),
+                                                            ct_idx_t,
+                                                            ct_idx_t
                                                         ]
-        #void exportNeighborsAndDistances(Datapoint_info* points, idx_t* dist_indices, float_t* dists, idx_t n, idx_t k)
-        self._exportNeighborsAndDistances = self.lib.exportNeighborsAndDistances
-        self._exportNeighborsAndDistances.argtypes =   [   ct.POINTER(DatapointInfo),
-                                                            np.ctypeslib.ndpointer(ctIdxType),
-                                                            np.ctypeslib.ndpointer(ctFloatType),
-                                                            ctIdxType,
-                                                            ctIdxType
+        #void export_neighbors_and_distances(Datapoint_info* points, idx_t* dist_indices, float_t* dists, idx_t n, idx_t k)
+        self._export_neighbors_and_distances = self.lib.export_neighbors_and_distances
+        self._export_neighbors_and_distances.argtypes =   [   ct.POINTER(datapoint_info),
+                                                            np.ctypeslib.ndpointer(ct_idx_t),
+                                                            np.ctypeslib.ndpointer(ct_float_t),
+                                                            ct_idx_t,
+                                                            ct_idx_t
                                                         ]
 
-        #void _importDensity(Datapoint_info* points, idx_t* kstar, float_t* density, float_t* density_err, idx_t n)
-        self._importDensity = self.lib.importDensity
-        self._importDensity.argtypes = [   ct.POINTER(DatapointInfo),
-                                            np.ctypeslib.ndpointer(ctIdxType),
-                                            np.ctypeslib.ndpointer(ctFloatType),
-                                            np.ctypeslib.ndpointer(ctFloatType),
-                                            ctIdxType
+        #void _import_density(Datapoint_info* points, idx_t* kstar, float_t* density, float_t* density_err, idx_t n)
+        self._import_density = self.lib.import_density
+        self._import_density.argtypes = [   ct.POINTER(datapoint_info),
+                                            np.ctypeslib.ndpointer(ct_idx_t),
+                                            np.ctypeslib.ndpointer(ct_float_t),
+                                            np.ctypeslib.ndpointer(ct_float_t),
+                                            ct_idx_t
                                         ]
 
-        self._exportDensity = self.lib.exportDensity
-        self._exportDensity.argtypes = [   ct.POINTER(DatapointInfo),
-                                            np.ctypeslib.ndpointer(ctIdxType),
-                                            np.ctypeslib.ndpointer(ctFloatType),
-                                            np.ctypeslib.ndpointer(ctFloatType),
-                                            ctIdxType
+        self._export_density = self.lib.export_density
+        self._export_density.argtypes = [   ct.POINTER(datapoint_info),
+                                            np.ctypeslib.ndpointer(ct_idx_t),
+                                            np.ctypeslib.ndpointer(ct_float_t),
+                                            np.ctypeslib.ndpointer(ct_float_t),
+                                            ct_idx_t
                                         ]
 
-        #void computeAvg(Datapoint_info* p, FLOAT_TYPE *va, FLOAT_TYPE* ve, FLOAT_TYPE* vals, FLOAT_TYPE* verr, size_t k, size_t n)
-        self._computeAvg = self.lib.computeAvg
-        self._computeAvg.argtypes = [  ct.POINTER(DatapointInfo),    
-                                        np.ctypeslib.ndpointer(ctFloatType), 
-                                        np.ctypeslib.ndpointer(ctFloatType),
-                                        np.ctypeslib.ndpointer(ctFloatType),
-                                        np.ctypeslib.ndpointer(ctFloatType),
-                                        ctIdxType,
+        #void compute_avg(Datapoint_info* p, FLOAT_TYPE *va, FLOAT_TYPE* ve, FLOAT_TYPE* vals, FLOAT_TYPE* verr, size_t k, size_t n)
+        self._compute_avg = self.lib.compute_avg
+        self._compute_avg.argtypes = [  ct.POINTER(datapoint_info),    
+                                        np.ctypeslib.ndpointer(ct_float_t), 
+                                        np.ctypeslib.ndpointer(ct_float_t),
+                                        np.ctypeslib.ndpointer(ct_float_t),
+                                        np.ctypeslib.ndpointer(ct_float_t),
+                                        ct_idx_t,
                                         ct.c_uint64 ]
-        #void exportClusterAssignment(Datapoint_info* points, int* labels, idx_t n)
+        #void export_cluster_assignment(Datapoint_info* points, int* labels, idx_t n)
 
-        self._exportClusterAssignment = self.lib.exportClusterAssignment
-        self._exportClusterAssignment.argtypes = [ ct.POINTER(DatapointInfo),    
+        self._export_cluster_assignment = self.lib.export_cluster_assignment
+        self._export_cluster_assignment.argtypes = [ ct.POINTER(datapoint_info),    
                                                     np.ctypeslib.ndpointer(np.int32), 
                                                     ct.c_uint64 ]
 
 
-        #void exportBorders(Clusters* clusters, idx_t* border_idx, float_t* border_den, float_t* border_err)
-        self._exportBorders = self.lib.exportBorders
-        self._exportBorders.argtypes = [ct.POINTER(Clusters),
+        #void export_borders(clusters* clusters, idx_t* border_idx, float_t* border_den, float_t* border_err)
+        self._export_borders = self.lib.export_borders
+        self._export_borders.argtypes = [ct.POINTER(clusters),
                                         np.ctypeslib.ndpointer(np.int32),
-                                        np.ctypeslib.ndpointer(ctFloatType),
-                                        np.ctypeslib.ndpointer(ctFloatType),
+                                        np.ctypeslib.ndpointer(ct_float_t),
+                                        np.ctypeslib.ndpointer(ct_float_t),
                                        ]
 
 
-        self._idEstimate = self.lib.idEstimate
-        self._idEstimate.argtypes = [ct.POINTER(DatapointInfo), ct.c_uint64, ctFloatType, ct.c_int32]
-        self._idEstimate.restype  =  ct.c_double
+        self._id_estimate = self.lib.id_estimate
+        self._id_estimate.argtypes = [ct.POINTER(datapoint_info), ct.c_uint64, ct_float_t, ct.c_int32]
+        self._id_estimate.restype  =  ct.c_double
 
 
-        self._computeRho = self.lib.computeRho
-        self._computeRho.argtypes = [ct.POINTER(DatapointInfo), ct.c_double, ct.c_uint64, ct.c_int32]
+        self._compute_density_kstarnn = self.lib.compute_density_kstarnn
+        self._compute_density_kstarnn.argtypes = [ct.POINTER(datapoint_info), ct.c_double, ct.c_uint64, ct.c_int32]
 
         self._PAk = self.lib.PAk
-        self._PAk.argtypes = [ct.POINTER(DatapointInfo), ct.c_double, ct.c_uint64, ct.c_int32]
+        self._PAk.argtypes = [ct.POINTER(datapoint_info), ct.c_double, ct.c_uint64, ct.c_int32]
 
-        self._computeCorrection = self.lib.computeCorrection
-        self._computeCorrection.argtypes = [ct.POINTER(DatapointInfo), ctIdxType, ct.c_double]
+        self._compute_correction = self.lib.compute_correction
+        self._compute_correction.argtypes = [ct.POINTER(datapoint_info), ct_idx_t, ct.c_double]
 
         self._H1 = self.lib.Heuristic1
-        self._H1.argtypes = [ct.POINTER(DatapointInfo), ct.c_uint64, ct.c_int32]
-        self._H1.restype = Clusters
+        self._H1.argtypes = [ct.POINTER(datapoint_info), ct.c_uint64, ct.c_int32]
+        self._H1.restype = clusters
 
-        self._ClustersAllocate = self.lib.Clusters_allocate
-        self._ClustersAllocate.argtypes = [ct.POINTER(Clusters), ct.c_int]
+        self._clusters_allocate = self.lib.clusters_allocate
+        self._clusters_allocate.argtypes = [ct.POINTER(clusters), ct.c_int]
 
         self._blas_in_use = self.lib.blas_are_in_use
         self._blas_in_use.restypes = ct.c_int32
 
         self._H2 = self.lib.Heuristic2
-        self._H2.argtypes = [ct.POINTER(Clusters), ct.POINTER(DatapointInfo), ct.c_int32]
+        self._H2.argtypes = [ct.POINTER(clusters), ct.POINTER(datapoint_info), ct.c_int32]
 
         self._H3 = self.lib.Heuristic3
-        self._H3.argtypes = [ct.POINTER(Clusters), ct.POINTER(DatapointInfo), ct.c_double, ct.c_int, ct.c_int32]
+        self._H3.argtypes = [ct.POINTER(clusters), ct.POINTER(datapoint_info), ct.c_double, ct.c_int, ct.c_int32]
         
-        self._freeDatapoints = self.lib.freeDatapointArray
-        self._freeDatapoints.argtypes = [ct.POINTER(DatapointInfo), ct.c_uint64]
+        self._free_datapoints = self.lib.free_datapoint_array
+        self._free_datapoints.argtypes = [ct.POINTER(datapoint_info), ct.c_uint64]
 
-        self._freeClusters = self.lib.Clusters_free
-        self._freeClusters.argtypes = [ct.POINTER(Clusters)]
+        self._free_clusters = self.lib.clusters_free
+        self._free_clusters.argtypes = [ct.POINTER(clusters)]
 
 
 class Data(_dadac_loader):
@@ -252,18 +252,18 @@ class Data(_dadac_loader):
         """
         super().__init__()
         #initialize class
-        if self._useFloat32:
+        if self._use_float32:
             self._ftype = np.float32
             self.data = data.astype(np.float32)
             self.data = np.ascontiguousarray(self.data, dtype = np.float32)
-            ctFloatType = ct.c_float
+            ct_float_t = ct.c_float
         else:
             #self.data = np.ascontiguousarray(data, dtype =np.float64)
             self._ftype = np.float64
             self.data = data.astype(np.float64)
             self.data = np.ascontiguousarray(self.data, dtype = np.float64)
 
-        if self._useInt32:
+        if self._use_int32:
             self._itype = np.uint32
         else:
             self._itype = np.uint64
@@ -272,10 +272,10 @@ class Data(_dadac_loader):
                 "id" : False,
                 "density" : False,
                 "clustering" : False,
-                "useFloat32": self._useFloat32,
-                "useInt32": self._useInt32,
-                "useSparse": None,
-                "computeHalo": None 
+                "use_float32": self._use_float32,
+                "use_int32": self._use_int32,
+                "use_sparse": None,
+                "compute_halo": None 
                 }
         
 
@@ -295,7 +295,7 @@ class Data(_dadac_loader):
         self.k              = None
         self.id             = None
 
-        self._clusterAssignment = None
+        self._cluster_assignment = None
         self._distances         = None
         self._dist_indices      = None
         self._log_den_bord      = None
@@ -326,7 +326,7 @@ class Data(_dadac_loader):
         except NameError:
             return False
 
-    def computeNeighbors_kdtree(self, k : int):
+    def compute_neighbors_kdtree(self, k : int):
         
         """Compute the k nearest neighbors of each point
 
@@ -338,20 +338,20 @@ class Data(_dadac_loader):
         #with sys_pipes():
         if self._running_in_notebook:
             with sys_pipes():
-                self._datapoints = self._NgbhSearch_kdtree(self.data, self.n, self.dims, self.k, self._verbose)
+                self._datapoints = self._ngbh_search_kdtree(self.data, self.n, self.dims, self.k, self._verbose)
         else:
-            self._datapoints = self._NgbhSearch_kdtree(self.data, self.n, self.dims, self.k, self._verbose)
-        #Datapoint_info* NgbhSearch_vpTree(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *));
+            self._datapoints = self._ngbh_search_kdtree(self.data, self.n, self.dims, self.k, self._verbose)
+        #Datapoint_info* ngbh_search_vpTree(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *));
         self.state["ngbh"] = True
         self.neighbors = None
 
-    def computeAvgOverNgbh(self, vals, error,k):
+    def compute_avg_over_ngbh(self, vals, error,k):
         retVals = np.zeros_like(vals)
         retError = np.zeros_like(error)
-        self._computeAvg(self._datapoints, retVals, retError, vals, error, k, self.n)
+        self._compute_avg(self._datapoints, retVals, retError, vals, error, k, self.n)
         return retVals, retError
 
-    def computeNeighbors_vptree(self, k : int, alg="kd"):
+    def compute_neighbors_vptree(self, k : int, alg="kd"):
         
         """Compute the k nearest neighbors of each point
 
@@ -360,17 +360,17 @@ class Data(_dadac_loader):
             alg (str): default "kd" for kdtree else choose "vp" for vptree
         """
         self.k = k
-        #Datapoint_info* NgbhSearch_vpTree(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *));
+        #Datapoint_info* ngbh_search_vpTree(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *));
         if self._running_in_notebook:
             with sys_pipes():
-                self._datapoints = self._NgbhSearch_vptree(self.data.ctypes.data, self.n, self.data.itemsize, self.dims, self.k, self._eud, self._verbose)
+                self._datapoints = self._ngbh_search_vptree(self.data.ctypes.data, self.n, self.data.itemsize, self.dims, self.k, self._eud, self._verbose)
         else:
-            self._datapoints = self._NgbhSearch_vptree(self.data.ctypes.data, self.n, self.data.itemsize, self.dims, self.k, self._eud, self._verbose)
+            self._datapoints = self._ngbh_search_vptree(self.data.ctypes.data, self.n, self.data.itemsize, self.dims, self.k, self._eud, self._verbose)
 
         self.state["ngbh"] = True
         self.neighbors = None
 
-    def computeNeighbors_bruteforce(self, k : int, alg="kd"):
+    def compute_neighbors_bruteforce(self, k : int, alg="kd"):
         
         """Compute the k nearest neighbors of each point
 
@@ -379,12 +379,12 @@ class Data(_dadac_loader):
             alg (str): default "kd" for kdtree else choose "vp" for vptree
         """
         self.k = k
-        #Datapoint_info* NgbhSearch_vpTree(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *));
+        #Datapoint_info* ngbh_search_vpTree(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *));
         if self._running_in_notebook:
             with sys_pipes():
-                self._datapoints = self._NgbhSearch_bruteforce(self.data.ctypes.data, self.n, self.data.itemsize, self.dims, self.k, 0, self._verbose)
+                self._datapoints = self._ngbh_search_bruteforce(self.data.ctypes.data, self.n, self.data.itemsize, self.dims, self.k, 0, self._verbose)
         else:
-            self._datapoints = self._NgbhSearch_bruteforce(self.data.ctypes.data, self.n, self.data.itemsize, self.dims, self.k, 0, self._verbose)
+            self._datapoints = self._ngbh_search_bruteforce(self.data.ctypes.data, self.n, self.data.itemsize, self.dims, self.k, 0, self._verbose)
         self.state["ngbh"] = True
         self.neighbors = None
 
@@ -397,15 +397,15 @@ class Data(_dadac_loader):
                 alg = "kd"
         
         if alg == "kd":
-            self.computeNeighbors_kdtree(k)
+            self.compute_neighbors_kdtree(k)
             return
         if alg == "vp":
-            self.computeNeighbors_vptree(k)
+            self.compute_neighbors_vptree(k)
             return
         if alg == "bf":
             self.k = k
             if self.blas:
-                self.computeNeighbors_bruteforce(k)
+                self.compute_neighbors_bruteforce(k)
             else:
                 if self._verbose:
                     print("dadac implementation not compiled with blas support for euclidean metric optimization")
@@ -419,15 +419,15 @@ class Data(_dadac_loader):
                 dist = np.ascontiguousarray(dist.astype(self._ftype),dtype = self._ftype)
                 ngbh = np.ascontiguousarray(ngbh)
                 
-                self._datapoints = self._allocateDatapoints(self.n)
-                self._importNeighborsAndDistances(self._datapoints,ngbh,dist,self.n, self._itype(k))
+                self._datapoints = self._allocate_datapoints(self.n)
+                self._import_neighbors_and_distances(self._datapoints,ngbh,dist,self.n, self._itype(k))
 
                 if self._verbose:
                     t2 = time.monotonic()
                     print(f"\tTotal time: {t2 - t1 : .2f}s")
 
             self.state["ngbh"] = True
-            #self.computeNeighbors_bruteforce(k)
+            #self.compute_neighbors_bruteforce(k)
             return
 
     def compute_id_2NN(self,fraction = 0.9):
@@ -436,37 +436,37 @@ class Data(_dadac_loader):
             Ref. paper 
 
         Raises:
-            ValueError: Raises value error if neighbors are not computed yet, use `Data.computeNeighbors()` 
+            ValueError: Raises value error if neighbors are not computed yet, use `Data.compute_neighbors()` 
         """
 
         if not self.state["ngbh"]:
             raise ValueError("Please compute Neighbors before calling this function")
         if self._running_in_notebook:
             with sys_pipes():
-                self.id = self._idEstimate(self._datapoints,self.n,fraction, self._verbose)
+                self.id = self._id_estimate(self._datapoints,self.n,fraction, self._verbose)
         else:
-            self.id = self._idEstimate(self._datapoints,self.n,fraction, self._verbose)
+            self.id = self._id_estimate(self._datapoints,self.n,fraction, self._verbose)
         self.state["id"] = True
 
     def import_neighbors_and_distances(self,ngbh,dists,dists_are_sq = False):
         if self._datapoints is None:
-            self._datapoints = self._allocateDatapoints(self.n)
+            self._datapoints = self._allocate_datapoints(self.n)
         k = ngbh.shape[1]
         if dists_are_sq:
-            self._importNeighborsAndDistances(self._datapoints,ngbh.astype(self._itype),dists.astype(self._ftype),self.n, np.uint64(k))
+            self._import_neighbors_and_distances(self._datapoints,ngbh.astype(self._itype),dists.astype(self._ftype),self.n, np.uint64(k))
         else:
             dists = dists**2
-            self._importNeighborsAndDistances(self._datapoints,ngbh.astype(self._itype),dists.astype(self._ftype),self.n, np.uint64(k))
+            self._import_neighbors_and_distances(self._datapoints,ngbh.astype(self._itype),dists.astype(self._ftype),self.n, np.uint64(k))
 
     def import_density(self, log_den,log_den_err,kstar):
         if self._datapoints is None:
-            self._datapoints = self._allocateDatapoints(self.n)
+            self._datapoints = self._allocate_datapoints(self.n)
         self.state["density"] = True
-        #void _importDensity(Datapoint_info* points, idx_t* kstar, float_t* density, float_t* density_err, idx_t n)
+        #void _import_density(Datapoint_info* points, idx_t* kstar, float_t* density, float_t* density_err, idx_t n)
         self._log_den = log_den.astype(self._ftype)
         self._log_den_err = log_den_err.astype(self._ftype)
         self._kstar = kstar.astype(self._itype)
-        self._importDensity(self._datapoints,self.kstar,self.log_den, self.log_den_err,self.n)
+        self._import_density(self._datapoints,self.kstar,self.log_den, self.log_den_err,self.n)
 
     def compute_density_kstarNN(self):
 
@@ -479,9 +479,9 @@ class Data(_dadac_loader):
             raise ValueError("Please compute ID before calling this function")
         if self._running_in_notebook:
             with sys_pipes():
-                self._computeRho(self._datapoints, self.id, self.n, self._verbose)
+                self._compute_density_kstarnn(self._datapoints, self.id, self.n, self._verbose)
         else:
-            self._computeRho(self._datapoints, self.id, self.n, self._verbose)
+            self._compute_density_kstarnn(self._datapoints, self.id, self.n, self._verbose)
 
         self.state["density"] = True
         self.density = None
@@ -506,54 +506,54 @@ class Data(_dadac_loader):
         self.density = None
         self.densityError = None
 
-    def compute_clustering_ADP(self,Z : float, halo = False, useSparse = "auto"):
+    def compute_clustering_ADP(self,Z : float, halo = False, use_sparse = "auto"):
 
         """Compute clustering via the Advanced Density Peak method
 
         Args:
             Z (float): Z value for the method 
-            useSparse (str): optional [``auto``,True, False], use sparse implementation of border storage between clusters. Memory usage for big datsets is significant. 
+            use_sparse (str): optional [``auto``,True, False], use sparse implementation of border storage between clusters. Memory usage for big datsets is significant. 
 
         Raises:
             ValueError: Raises value error if density is not computed, use `Data.computeDensity()` method
         """
         if not self.state["density"]:
             raise ValueError("Please compute density before calling this function")
-        if useSparse == "auto":
+        if use_sparse == "auto":
             if self.n > 2e6:
-                self.state["useSparse"] = True
+                self.state["use_sparse"] = True
             else: 
-                self.state["useSparse"] = False 
-        elif useSparse == True:
-            self.state["useSparse"] = True
+                self.state["use_sparse"] = False 
+        elif use_sparse == True:
+            self.state["use_sparse"] = True
         else:
-            self.state["useSparse"] = False
+            self.state["use_sparse"] = False
 
-        self.state["computeHalo"] = halo 
+        self.state["compute_halo"] = halo 
         self.Z = Z
         if self.state["clustering"]:
-            self._freeClusters(self._clusters)
-            self._clusterAssignment = None
+            self._free_clusters(self._clusters)
+            self._cluster_assignment = None
             self._border_indices = None
             self._log_den_bord = None
             self._log_den_bord_err = None
         if self._running_in_notebook:
             with sys_pipes():
-                self._computeCorrection(self._datapoints, self.n, self.Z)
+                self._compute_correction(self._datapoints, self.n, self.Z)
                 self._clusters = self._H1(self._datapoints, self.n, self._verbose)
-                self._ClustersAllocate(ct.pointer(self._clusters), 1 if self.state["useSparse"] else 0)
+                self._clusters_allocate(ct.pointer(self._clusters), 1 if self.state["use_sparse"] else 0)
                 self._H2(ct.pointer(self._clusters), self._datapoints, self._verbose)
                 self._H3(ct.pointer(self._clusters), self._datapoints, self.Z, 1 if halo else 0, self._verbose )
         else:
-            self._computeCorrection(self._datapoints, self.n, self.Z)
+            self._compute_correction(self._datapoints, self.n, self.Z)
             self._clusters = self._H1(self._datapoints, self.n, self._verbose)
-            self._ClustersAllocate(ct.pointer(self._clusters), 1 if self.state["useSparse"] else 0)
+            self._clusters_allocate(ct.pointer(self._clusters), 1 if self.state["use_sparse"] else 0)
             self._H2(ct.pointer(self._clusters), self._datapoints, self._verbose)
             self._H3(ct.pointer(self._clusters), self._datapoints, self.Z, 1 if halo else 0, self._verbose )
         self.state["clustering"] = True
         self.clusterAssignment = None
 
-    def _getClusterAssignment(self):
+    def _get_cluster_assignment(self):
 
 
         """Retrieve cluster assignment
@@ -566,19 +566,19 @@ class Data(_dadac_loader):
             
         """
         if self.state["clustering"]:
-            self._clusterAssignment = np.zeros(self.n, np.int32)
-            self._exportClusterAssignment(self._datapoints,self._clusterAssignment,self.n)
+            self._cluster_assignment = np.zeros(self.n, np.int32)
+            self._export_cluster_assignment(self._datapoints,self._cluster_assignment,self.n)
         else:
             raise ValueError("Clustering is not computed yet")
 
     @property
     def cluster_assignment(self):
-        if self._clusterAssignment is None:
-            self._getClusterAssignment()
-        return self._clusterAssignment
+        if self._cluster_assignment is None:
+            self._get_cluster_assignment()
+        return self._cluster_assignment
 
 
-    def _getDensity(self):
+    def _get_density(self):
 
         """Retrieve list of density values
 
@@ -593,20 +593,20 @@ class Data(_dadac_loader):
             self._log_den      = np.zeros(self.n,self._ftype)
             self._log_den_err  = np.zeros(self.n,self._ftype)
             self._kstar        = np.zeros(self.n,self._itype)
-            self._exportDensity(self._datapoints,self._kstar, self._log_den, self._log_den_err, self.n)
+            self._export_density(self._datapoints,self._kstar, self._log_den, self._log_den_err, self.n)
         else:
             raise ValueError("Density is not computed yet use `Data.computeDensity()`")
 
-    def _getNclusters(self):
+    def _get_N_clusters(self):
         if self.state["clustering"]:
             self._N_clusters = len(set(self.cluster_assignment))
-            if self.state["computeHalo"]:
+            if self.state["compute_halo"]:
                 self._N_clusters -= 1 
         else:
             raise ValueError("Borders not computed yet use `Data.compute_clustering_[DP,ADP,...]()`")
 
 
-    def _getBorders(self):
+    def _get_borders(self):
 
         """Retrieve borders 
 
@@ -621,7 +621,7 @@ class Data(_dadac_loader):
             self._log_den_bord      = np.zeros((self.N_clusters,self.N_clusters),self._ftype) 
             self._log_den_bord_err  = np.zeros((self.N_clusters,self.N_clusters),self._ftype)
             self._border_indices    = np.zeros((self.N_clusters,self.N_clusters),np.int32) - 1
-            self._exportBorders(self._clusters,self._border_indices, self._log_den_bord, self._log_den_bord_err)
+            self._export_borders(self._clusters,self._border_indices, self._log_den_bord, self._log_den_bord_err)
             #ugly thing to retrieve correct thing in dadapy as border density
             mm = np.zeros_like(self._log_den_bord)
             f = np.where(self._border_indices == -1)
@@ -631,7 +631,7 @@ class Data(_dadac_loader):
         else:
             raise ValueError("Borders not computed yet use `Data.compute_clustering_[DP,ADP,...]()`")
 
-    def _getClusterCenters(self):
+    def _get_cluster_centers(self):
         if self.state["clustering"]:
             self._cluster_centers = [int(self._datapoints[i].array_idx)  for i in range(self.n) if bool(self._datapoints[i].is_center)]
         else:
@@ -640,32 +640,32 @@ class Data(_dadac_loader):
     @property
     def cluster_centers(self):
         if self._cluster_centers is None:
-            self._getClusterCenters()
+            self._get_cluster_centers()
         return self._cluster_centers
 
     @property
     def N_clusters(self):
         if self._N_clusters is None:
-            self._getNclusters()
+            self._get_N_clusters()
         return self._N_clusters
 
 
     @property
     def log_den(self):
         if self._log_den is None:
-            self._getDensity()
+            self._get_density()
         return self._log_den
 
     @property
     def log_den_err(self):
         if self._log_den_err is None:
-            self._getDensity()
+            self._get_density()
         return self._log_den_err
 
     @property
     def kstar(self):
         if self._kstar is None:
-            self._getDensity()
+            self._get_density()
         return self._kstar
 
     
@@ -674,7 +674,7 @@ class Data(_dadac_loader):
         if self._distances is None:
             self._distances = np.zeros((self.n,self.k), self._ftype)
             self._dist_indices = np.zeros((self.n,self.k), self._itype)
-            self._exportNeighborsAndDistances(self._datapoints,self._dist_indices, self._distances, self.n, self.k)
+            self._export_neighbors_and_distances(self._datapoints,self._dist_indices, self._distances, self.n, self.k)
             self._distances = np.sqrt(self._distances)
         return self._distances
 
@@ -683,35 +683,35 @@ class Data(_dadac_loader):
         if self._dist_indices is None:
             self._distances = np.zeros((self.n,self.k), self._ftype)
             self._dist_indices = np.zeros((self.n,self.k), self._itype)
-            self._exportNeighborsAndDistances(self._datapoints,self._dist_indices,self._distances, self.n, self.k)
+            self._export_neighbors_and_distances(self._datapoints,self._dist_indices,self._distances, self.n, self.k)
             self._distances = np.sqrt(self._distances)
         return self._dist_indices
 
     @property
     def log_den_bord(self):
         if self._log_den_bord is None:
-            self._getBorders()
+            self._get_borders()
         return self._log_den_bord
     
     @property
     def log_den_bord_err(self):
         if self._log_den_bord_err is None:
-            self._getBorders()
+            self._get_borders()
         return self._log_den_bord_err
 
     @property
     def border_indices(self):
         if self._border_indices is None:
-            self._getBorders()
+            self._get_borders()
         return self._border_indices
     
-    #def setRhoErrK(self, rho, err, k):
-    #    self._setRhoErrK(self._datapoints, rho, err, k, self.n)
+    #def set_rho_err_k(self, rho, err, k):
+    #    self._set_rho_err_k(self._datapoints, rho, err, k, self.n)
     #    self.state["density"] = True
     #    return
 
     def __del__(self):
         if not self._datapoints is None:
-            self._freeDatapoints(self._datapoints, self.n)
+            self._free_datapoints(self._datapoints, self.n)
         if not self._clusters is None:
-            self._freeClusters(ct.pointer(self._clusters))
+            self._free_clusters(ct.pointer(self._clusters))

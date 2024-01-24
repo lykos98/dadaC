@@ -11,7 +11,7 @@ def test_clustering_ADP():
     dc.compute_distances(300, alg="kd")
     dc.compute_id_2NN()
     dc.compute_density_kstarNN()
-    dc.compute_clustering_ADP(1.65, useSparse=True)
+    dc.compute_clustering_ADP(1.65, use_sparse=True)
 
     
     c2 = dc.cluster_assignment
@@ -20,7 +20,7 @@ def test_clustering_ADP():
     dc.compute_distances(300, alg="kd")
     dc.compute_id_2NN()
     dc.compute_density_kstarNN()
-    dc.compute_clustering_ADP(1.65, useSparse=False)
+    dc.compute_clustering_ADP(1.65, use_sparse=False)
 
     
     c3 = dc.cluster_assignment
