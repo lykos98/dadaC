@@ -1209,9 +1209,9 @@ void merge_A_into_B(idx_t* who_amI, idx_t cluster_A, idx_t cluster_B, idx_t n)
 	    #pragma omp for
 	    for(idx_t i = 0; i < n; ++i)
 	    {   
-		//substitute occurencies of b with a 
-		tmp = who_amI[i] == cluster_A ? cluster_B : who_amI[i];
-		who_amI[i] = tmp;
+			//substitute occurencies of b with a 
+			tmp = who_amI[i] == cluster_A ? cluster_B : who_amI[i];
+			who_amI[i] = tmp;
 	    }
     }
     return;
@@ -1553,8 +1553,8 @@ void Heuristic3_sparse(clusters* cluster, datapoint_info* dp_info, float_t Z, in
 					 * first  -> fix the borders, delete old ones and spawn new one in the correct position
 					 * second -> update the surviving_clusters buffer
 					 */
-					fix_sparse_borders_A_into_B(new_src,new_trg,cluster);
-					merge_A_into_B ( surviving_clusters, new_src, new_trg, nclus );	  
+					fix_sparse_borders_A_into_B(new_src, new_trg, cluster);
+					merge_A_into_B(surviving_clusters, new_src, new_trg, nclus );	  
 				}
 				break;
 			
@@ -1615,7 +1615,7 @@ void Heuristic3_sparse(clusters* cluster, datapoint_info* dp_info, float_t Z, in
 
     /*allocate auxiliary pointers to store results of the finalization of the procedure*/
 
-    adj_list_t* tmp_borders      = (adj_list_t*)malloc(final_cluster_count*sizeof(adj_list_t));
+    adj_list_t* tmp_borders = (adj_list_t*)malloc(final_cluster_count*sizeof(adj_list_t));
 
     //initialize temporary borders
     for(idx_t i = 0; i < final_cluster_count; ++i)
@@ -1668,6 +1668,7 @@ void Heuristic3_sparse(clusters* cluster, datapoint_info* dp_info, float_t Z, in
         int idx = cluster -> centers.data[i];
         dp_info[idx].is_center = 1;
     }
+
     /*Halo*/
     switch (halo)
     {
@@ -1788,7 +1789,7 @@ void Heuristic3_dense(clusters* cluster, datapoint_info* dp_info, float_t Z, int
 	 * Find clusters to be merged
 	 * Loop over borders and find which ones will generate a merge,
 	 * store them later in the merging table
-	 **/
+	 */
 	for(idx_t i = 0; i < nclus - 1; ++i)   
 		for(idx_t j = i + 1; j < nclus; ++j)   
 		{
@@ -2126,7 +2127,6 @@ void compute_level(kdnode* root, idx_t prev_lvl)
 
 /*
  * Other Helper functions
- *
  */
 
 void knn_search_kdtree_v2(datapoint_info * dp_info,kdnode_v2* kdNodeArray, kdnode_v2* root, idx_t n, idx_t k, int verbose)
