@@ -360,6 +360,11 @@ class Data(_dadac_loader):
         self._running_in_notebook = self._is_notebook()
 
     def _is_notebook(self) -> bool:
+        """
+        Private function, returns True if the class is running inside a notebook, 
+        this actually is used to use wether or not the wurlitzer lib to redirect the 
+        output of the C functions
+        """
         try:
             shell = get_ipython().__class__.__name__
             if shell == "ZMQInteractiveShell":
@@ -379,12 +384,11 @@ class Data(_dadac_loader):
         except NameError:
             return False
 
-    def compute_neighbors_kdtree(self, k: int):
+    def compute_neighbors_kdtree(self):
         """Compute the k nearest neighbors of each point
 
         Args:
             k (int): Number of neighbors to compute for each point
-            alg (str): default "kd" for kdtree else choose "vp" for vptree
         """
         self.k = k
         # with sys_pipes():
@@ -407,12 +411,11 @@ class Data(_dadac_loader):
         self._compute_avg(self._datapoints, retVals, retError, vals, error, k, self.n)
         return retVals, retError
 
-    def compute_neighbors_vptree(self, k: int, alg="kd"):
-        """Compute the k nearest neighbors of each point
+    def compute_neighbors_vptree(self, k: int):
+        """Compute the k nearest neighbors of each point using vp tree
 
         Args:
             k (int): Number of neighbors to compute for each point
-            alg (str): default "kd" for kdtree else choose "vp" for vptree
         """
         self.k = k
         # Datapoint_info* ngbh_search_vpTree(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *));
@@ -441,12 +444,11 @@ class Data(_dadac_loader):
         self.state["ngbh"] = True
         self.neighbors = None
 
-    def compute_neighbors_bruteforce(self, k: int, alg="kd"):
-        """Compute the k nearest neighbors of each point
+    def compute_neighbors_bruteforce(self, k: int):
+        """Compute the k nearest neighbors of each point using brute force implementation
 
         Args:
             k (int): Number of neighbors to compute for each point
-            alg (str): default "kd" for kdtree else choose "vp" for vptree
         """
         self.k = k
         # Datapoint_info* ngbh_search_vpTree(void* data, size_t n, size_t byteSize, size_t dims, size_t k, float_t (*metric)(void *, void *));
@@ -475,6 +477,10 @@ class Data(_dadac_loader):
         self.neighbors = None
 
     def compute_distances(self, k: int, alg="auto"):
+        """Wrapper for knn search methods
+
+        Args:
+        """
         k = k + 1
         if alg == "auto":
             if self.data.shape[1] > 15 or k > self.data.shape[0] // 2:
@@ -625,6 +631,7 @@ class Data(_dadac_loader):
         Args:
             Z (float): Z value for the method
             use_sparse (str): optional [``auto``,True, False], use sparse implementation of border storage between clusters. Memory usage for big datsets is significant.
+            halo (bool): optional [True, False] compute the halo of each cluster
 
         Raises:
             ValueError: Raises value error if density is not computed, use `Data.computeDensity()` method
