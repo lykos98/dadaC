@@ -384,7 +384,7 @@ class Data(_dadac_loader):
         except NameError:
             return False
 
-    def compute_neighbors_kdtree(self):
+    def compute_neighbors_kdtree(self, k):
         """Compute the k nearest neighbors of each point
 
         Args:
