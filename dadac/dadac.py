@@ -76,14 +76,16 @@ class _dadac_loader:
     def __init__(self):
         path = os.path.join(os.path.dirname(__file__), "bin/libdadac.so")
         # print(path)
-        if not os.path.exists(path):
-            print("dadac is not built yet, calling make for you")
-            try:
-                os.system(f"make -C {os.path.dirname(__file__)}")
-            except:
-                print("Cannot build dadac")
+        try:
+            self.lib = ct.CDLL(path)
+        except:
+            raise NameError(f"""
+                            Cannot load dadac, .so file not found. dadac currently 
+                            supported only on linux you are running on. {platform.platform()} 
+                            """
+                            )
 
-        self.lib = ct.CDLL(path)
+
 
         global ct_float_t, ct_idx_t
         s = self.lib.float_and_uint_size()
