@@ -531,7 +531,7 @@ class Data(_dadac_loader):
             return
 
     def compute_id_2NN(self, fraction=0.9):
-        """Compute the intrinsic dimension of the dataset via the TWO Nearest Neighbors method.
+        """Compute the intrinsic dimension of the dataset via the Two-Nearest-Neighbors method.
             Ref. paper
 
         Raises:
