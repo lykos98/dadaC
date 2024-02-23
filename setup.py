@@ -11,6 +11,7 @@ from shutil import rmtree
 
 from setuptools import find_packages, setup, Command
 from setuptools.command.install import install
+import platform
 
 # Package meta-data.
 NAME = "dadac"
@@ -49,7 +50,11 @@ class RunMake(install):
         try:
             os.chdir(EXT_DIR)
             print("Building C library ...")
-            os.system("make")
+            if(platform.platform() == "Linux"):
+                os.system("make")
+            else:
+                os.system("sh macos_compile.sh")
+
             # self.spawn(['make'])
         finally:
             os.chdir(old_dir)
