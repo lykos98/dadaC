@@ -3,7 +3,7 @@ name: Python packaging
 on: 
   workflow_dispatch:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "py-packaging" ]
 
 jobs:
   build:
