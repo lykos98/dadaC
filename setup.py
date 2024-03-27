@@ -39,20 +39,22 @@ EXTRAS = {
 
 
 EXT_DIR = os.path.join(os.path.dirname(__file__), 'dadac')
-#class RunMake(install):   
-#
-#
-#    """Makefile on setuptools install."""
-#    def run(self):
-#        old_dir = os.getcwd()
-#        try:
-#            os.chdir(EXT_DIR)
-#            print("Building C library ...")
-#            os.system("make lib")
-#            #self.spawn(['make'])
-#        finally:
-#            os.chdir(old_dir)
-#        install.run(self)
+class RunMake(install):   
+
+
+    """Makefile on setuptools install."""
+    def run(self):
+        old_dir = os.getcwd()
+        try:
+            os.chdir(EXT_DIR)
+            print("Building C library ...")
+            os.system("make arm")
+            os.system("make x86")
+            #os.system("make lib")
+            #self.spawn(['make'])
+        finally:
+            os.chdir(old_dir)
+        install.run(self)
 
 class RunMake_precompiled(build):
     """Makefile on setuptools install."""
@@ -183,7 +185,7 @@ setup(
     # $ setup.py publish support.
     #ext_modules=[dadac_module],
     cmdclass={
-        #'install': RunMake,
+        'install': RunMake,
         'upload': UploadCommand,
         'build': RunMake_precompiled,
     },
