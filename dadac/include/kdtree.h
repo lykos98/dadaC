@@ -25,29 +25,27 @@
 
 
 
-struct kd_node
+struct kdnode
 {   
    int level;
    int split_var;
    FLOAT_TYPE * data;
    idx_t array_idx;
-   struct kd_node* parent;
-   struct kd_node* lch;
-   struct kd_node* rch;
+   struct kdnode* parent;
+   struct kdnode* lch;
+   struct kdnode* rch;
 };
 
-typedef struct kd_node kd_node;
+typedef struct kdnode kdnode;
 typedef struct heap_node heap_node;
-typedef struct Heap Heap;
-typedef struct SimpleHeap SimpleHeap;
 
 void swap(T* a, T* b);
 
 FLOAT_TYPE euclidean_distance(FLOAT_TYPE* p1, FLOAT_TYPE* p2);
 
-void swapHeapNode(heap_node* a, heap_node* b);
+void swap_heap_node(heap_node* a, heap_node* b);
 
-void swap_kd_node_ptrs(kd_node **x, kd_node **y);
+void swap_kdnode_ptrs(kdnode **x, kdnode **y);
 
 
 /**
@@ -57,30 +55,30 @@ void swap_kd_node_ptrs(kd_node **x, kd_node **y);
  * 
 */
 
-void initializeKDnodes(kd_node * node_array, FLOAT_TYPE* d, idx_t n );
+void initialize_kdnodes(kdnode * node_array, FLOAT_TYPE* d, idx_t n );
 
-void initializePTRS(kd_node** node_ptr_array, kd_node* node_array, idx_t n );
+void initialize_kdnode_ptrs(kdnode** node_ptr_array, kdnode* node_array, idx_t n );
 
-int cmpKDnodes(kd_node* a, kd_node* b, int var);
+int cmp_kdnodes(kdnode* a, kdnode* b, int var);
 
-void printKDnode(kd_node* node);
+void print_kdnode(kdnode* node);
 
 // Standard Lomuto partition function
 
-int partition(kd_node** arr, int low, int high, int split_var);
+int partition(kdnode** arr, int low, int high, int split_var);
 
 // Implementation of QuickSelect
-int medianOfNodes(kd_node** a, int left, int right, int split_var);
+int median_of_nodes(kdnode** a, int left, int right, int split_var);
 
-kd_node* make_tree(kd_node** t, int start, int end, kd_node* parent, int level);
+kdnode* make_tree(kdnode** t, int start, int end, kdnode* parent, int level);
 
 //inline FLOAT_TYPE hyper_plane_dist(FLOAT_TYPE* p1, FLOAT_TYPE* p2, int var);
 
 //inline int hyper_plane_side(FLOAT_TYPE* p1, FLOAT_TYPE* p2, int var);
 
-void KNN_sub_tree_search(FLOAT_TYPE* point, kd_node* kdtree_root, Heap * H);
+void knn_sub_tree_search(FLOAT_TYPE* point, kdnode* kdtree_root, heap * H);
 
 
-Heap KNN(FLOAT_TYPE* point, kd_node* kdtree_root, int maxk);
+heap knn(FLOAT_TYPE* point, kdnode* kdtree_root, int maxk);
 
-kd_node * build_tree(kd_node** kd_ptrs, size_t n, size_t dimensions);
+kdnode * build_tree(kdnode** kd_ptrs, size_t n, size_t dimensions);

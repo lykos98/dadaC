@@ -17,17 +17,17 @@ struct Options
 
 };
 
-void write_border_idx(const char * fname, Clusters * c)
+void write_border_idx(const char * fname, clusters * c)
 {
     FILE * f = fopen(fname, "w");
 
-    if(c -> UseSparseBorders)
+    if(c -> use_sparse_borders)
     {
 	    for(idx_t i = 0; i < c -> centers.count; ++i)
 	    {
-		for(idx_t el = 0; el < c ->SparseBorders[i].count; ++el)
+		for(idx_t el = 0; el < c ->sparse_borders[i].count; ++el)
 		{
-		    int a = c -> SparseBorders[i].data[el].idx; 
+		    int a = c -> sparse_borders[i].data[el].idx; 
 		    fprintf(f, "%d ",a);
 		}
 		fprintf(f,"\n");
@@ -50,7 +50,7 @@ void write_border_idx(const char * fname, Clusters * c)
     fclose(f);
 }
 
-void write_point_info(const char * fname, Datapoint_info * particles, idx_t n)
+void write_point_info(const char * fname, datapoint_info * particles, idx_t n)
 {
     FILE * f = fopen(fname,"w");
     for(idx_t i = 0; i < n; ++i)
@@ -207,8 +207,8 @@ int main(){
 	
     //Start timer
 
-	Datapoint_info* particles = NgbhSearch_kdtree_V2(data, n, data_dims, k); 
-	Datapoint_info* pp = NgbhSearch_bruteforce(data,n ,sizeof(float_t),data_dims, k, NULL); 
+	datapoint_info* particles = ngbh_search_kdtree_v2(data, n, data_dims, k, VERBOSE_TRUE); 
+	datapoint_info* pp = ngbh_search_bruteforce(data,n ,sizeof(float_t),data_dims, k, NULL, VERBOSE_TRUE); 
 
 	
 	for(idx_t idx=0; idx < n; ++idx)

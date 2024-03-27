@@ -30,8 +30,8 @@
 //inline int hyper_plane_side(float_t* p1, float_t* p2, int var);
 
 
-void swap_vpTreeNode_ptrs(vpTreeNode **x, vpTreeNode **y) {
-    vpTreeNode* tmp;
+void swap_vpnode_ptrs(vpnode **x, vpnode **y) {
+    vpnode* tmp;
     tmp = *x;
     *x = *y;
     *y = tmp;
@@ -44,7 +44,7 @@ void swap_vpTreeNode_ptrs(vpTreeNode **x, vpTreeNode **y) {
  * 
 */
 
-void initialize_vpTreeNode_array(vpTreeNode* nodeArray, void* data, idx_t n, idx_t bytesPerElement)
+void initialize_vpnode_array(vpnode* nodeArray, void* data, idx_t n, idx_t bytesPerElement)
 {
     for(idx_t i = 0; i < n; ++i)
     {
@@ -60,13 +60,13 @@ void initialize_vpTreeNode_array(vpTreeNode* nodeArray, void* data, idx_t n, idx
 
 }
 
-void initialize_vpTreeNodes_pointers(vpTreeNode** pointersArray, vpTreeNode* nodeArray, idx_t n)
+void initialize_vpnode_ptrs(vpnode** pointersArray, vpnode* nodeArray, idx_t n)
 {
     for(idx_t i = 0; i < n; ++i) pointersArray[i] = nodeArray + i;
 
 }
 
-int cmp_vpTreeNodes(vpTreeNode* point, vpTreeNode* pivot)
+int cmp_vpnodes(vpnode* point, vpnode* pivot)
 {
     float_t res = point->__dist - pivot->__dist;
     return (res > 0);
@@ -74,50 +74,36 @@ int cmp_vpTreeNodes(vpTreeNode* point, vpTreeNode* pivot)
 
 // Standard Lomuto partition function
 
-int partition_vpTreeNodes(vpTreeNode** arr, int low, int high)
+int partition_vpnodes(vpnode** arr, int low, int high)
 {
-    vpTreeNode* pivot = arr[high];
+    vpnode* pivot = arr[high];
     
     int i = (low - 1);
     for (int j = low; j <= high - 1; j++) {
-        if (!cmp_vpTreeNodes(arr[j],pivot)) {
+        if (!cmp_vpnodes(arr[j],pivot)) {
             i++;
-            swap_vpTreeNode_ptrs(arr + i, arr + j);
+            swap_vpnode_ptrs(arr + i, arr + j);
         }
     }
-    swap_vpTreeNode_ptrs(arr + i + 1, arr + high);
+    swap_vpnode_ptrs(arr + i + 1, arr + high);
     return (i + 1);
 
 }
 
-int median_of_vpTreeNodes(vpTreeNode** a, int left, int right)
+int median_of_vpnodes(vpnode** a, int left, int right)
 {
     //printf("----------\n");
     int k = left + ((right - left + 1)/2); 
-    //:w
-    //int c = right - left + 1;
-    //if(c < 20){
-    //    v = split_var;
-    //    qsort(a + left, c, sizeof(kd_node*),cmpKDN);
-    //    return k;
-
-    //}
-
     if(left == right) return left;
     if(left == (right - 1)){
-        if(cmp_vpTreeNodes(a[left],a[right])) {swap_vpTreeNode_ptrs(a + left, a + right);}
+        if(cmp_vpnodes(a[left],a[right])) {swap_vpnode_ptrs(a + left, a + right);}
         return right;
     }
-    //if(c == 3){
-    //    printKDnode(a[left]);
-    //    printKDnode(a[left + 1]);
-    //    printKDnode(a[left + 2]);
-    //}
     while (left <= right) {
  
         // Partition a[left..right] around a pivot
         // and find the position of the pivot
-        int pivotIndex = partition_vpTreeNodes(a, left, right);
+        int pivotIndex = partition_vpnodes(a, left, right);
         //printf("%d %d %d %d\n",left, right, k, pivotIndex);
 
         // If pivot itself is the k-th smallest element
@@ -140,9 +126,9 @@ int median_of_vpTreeNodes(vpTreeNode** a, int left, int right)
 
 
 
-vpTreeNode* build_vpTree(vpTreeNode** t, int start, int end, vpTreeNode* parent, float_t (*metric)(void*, void*))
+vpnode* build_vptree(vpnode** t, int start, int end, vpnode* parent, float_t (*metric)(void*, void*))
 {
-    vpTreeNode *n = NULL;
+    vpnode *n = NULL;
     //printf("%d \n",level);
 
     int median_idx = -1;
@@ -156,26 +142,15 @@ vpTreeNode* build_vpTree(vpTreeNode** t, int start, int end, vpTreeNode* parent,
         return n;
     }
 
-	//int vpIdx = start + (end - start + 1)/2; 
 	int vpIdx = start; 
 
 	//compute distances
 	for(int i = start; i <= end; ++i) t[i] -> __dist = metric(t[vpIdx] -> data,t[i] -> data);
-	//for(int i = start; i <= end; ++i) 
-	//{
-	//	printf("%.5lf ", t[i] -> __dist );
-	//}
-	//printf("----\n\n");
+
 	//now swap the vpIdx in the first place to retrieve it later
-	//swap_vpTreeNode_ptrs(t + vpIdx, t + start);
+	//swap_vpnode_ptrs(t + vpIdx, t + start);
 	//compute the median, as byproduct obtain the array partitioned on inside and outside BUT, with the median in the median place
-    median_idx = median_of_vpTreeNodes(t, start, end);
-	//printf("Median: %d %.4lf\n\n", median_idx - start, t[median_idx] -> __dist );
-	//for(int i = start; i <= end; ++i) 
-	//{
-	//	printf("%.5lf ", t[i] -> __dist );
-	//}
-	//printf("*****\n\n");
+    median_idx = median_of_vpnodes(t, start, end);
 	float_t mu = t[median_idx]->__dist;
 	//now swap start with the median
 	
@@ -187,9 +162,9 @@ vpTreeNode* build_vpTree(vpTreeNode** t, int start, int end, vpTreeNode* parent,
 			#pragma omp single
 			{
 				#pragma omp task shared(n)
-				n->inside  = build_vpTree(t, start + 1, median_idx, n, metric);
+				n->inside  = build_vptree(t, start + 1, median_idx, n, metric);
 				#pragma omp task shared(n)
-				n->outside = build_vpTree(t, median_idx + 1, end, n, metric);
+				n->outside = build_vptree(t, median_idx + 1, end, n, metric);
 				//#pragma omp taskwait
 			}
 
@@ -197,15 +172,6 @@ vpTreeNode* build_vpTree(vpTreeNode** t, int start, int end, vpTreeNode* parent,
         n->parent = parent;
     }
 
-	/*
-    if(median_idx > -1){
-        n = t[vpIdx];
-		n->mu = mu;
-		n->inside  = build_vpTree(t, start + 1, median_idx, n, metric);
-		n->outside = build_vpTree(t, median_idx + 1, end, n, metric);
-        n->parent = parent;
-    }
-	*/
     return n;
 
 }
@@ -216,17 +182,22 @@ vpTreeNode* build_vpTree(vpTreeNode** t, int start, int end, vpTreeNode* parent,
 #define OUTSIDE 1
 
 #ifdef ITERATIVE_VPTREE
+/* 
+ * Experimental feauture, not working so well
+ * Iterative implementation of the vp tree not being not very fast
+ * or sensibly (?) faster than recursive implementation
+ */
 
 const stackNode nodeNULL = { .node = NULL, .side = -1, .mu = 0, .current_distance = 0};
 
-void stackInit(stack_vpTreeNodes* s)
+void stackInit(stack_vpnodes* s)
 {
 	s -> count = 0;
 	s -> size  = DEFAULT_STACK_SIZE;
 	s -> data  = (stackNode*)malloc(DEFAULT_STACK_SIZE*sizeof(stackNode));
 }
 
-void stackPush(stack_vpTreeNodes* s, stackNode n)
+void stackPush(stack_vpnodes* s, stackNode n)
 {
 	if(s -> count < s -> size)	
 	{
@@ -245,7 +216,7 @@ void stackPush(stack_vpTreeNodes* s, stackNode n)
 	}
 }
 
-stackNode stackPop(stack_vpTreeNodes* s)
+stackNode stackPop(stack_vpnodes* s)
 {
 	if(s -> count == 0)
 	{
@@ -258,18 +229,18 @@ stackNode stackPop(stack_vpTreeNodes* s)
 	}
 }
 
-void stackReset(stack_vpTreeNodes* s)
+void stackReset(stack_vpnodes* s)
 {
 	s -> count = 0;
 	return;
 }
 
-void KNN_sub_vpTree_search_iterative(void* point, vpTreeNode* root, Heap * H, stack_vpTreeNodes* s, float_t (*metric)(void*,void*))
+void knn_sub_vptree_search_iterative(void* point, vpnode* root, heap * H, stack_vpnodes* s, float_t (*metric)(void*,void*))
 {
     //int split_var = kdtree_root -> split_var;
-	vpTreeNode* n = root;
+	vpnode* n = root;
     //float_t current_distance = metric(point, root -> data);
-    //insertMaxHeap(H, current_distance, root -> array_idx);
+    //insert_max_heap(H, current_distance, root -> array_idx);
 	stackReset(s);
 
 	while(s -> count > 0 || n != NULL)
@@ -279,7 +250,7 @@ void KNN_sub_vpTree_search_iterative(void* point, vpTreeNode* root, Heap * H, st
 			case 1:
 				{
 					float_t current_distance = metric(point, n -> data);
-					insertMaxHeap(H, current_distance, n -> array_idx);
+					insert_max_heap(H, current_distance, n -> array_idx);
 					int side = (current_distance > n -> mu);
 					switch (side)
 					{
@@ -319,7 +290,7 @@ void KNN_sub_vpTree_search_iterative(void* point, vpTreeNode* root, Heap * H, st
 					switch (sn.side)
 					{
 						case INSIDE:
-							// the node MUST have the CHILD, then or the condition holds or the Heap is not full yet 
+							// the node MUST have the CHILD, then or the condition holds or the heap is not full yet 
 							//if ((sn.current_distance + tau) > sn.mu  || heapNotFull) 
 							//{
 							//	n = sn.node;
@@ -328,7 +299,7 @@ void KNN_sub_vpTree_search_iterative(void* point, vpTreeNode* root, Heap * H, st
 							break;
 
 						case OUTSIDE:
-							//if 	( root -> inside && ((current_distance - tau) < root->mu  || heapNotFull)) KNN_sub_vpTree_search(point, root -> inside, H, metric);
+							//if 	( root -> inside && ((current_distance - tau) < root->mu  || heapNotFull)) knn_sub_vptree_search(point, root -> inside, H, metric);
 							//if 	(sn.current_distance  < (sn.mu + tau)  || heapNotFull) 
 							//{
 							//	n = sn.node;
@@ -353,11 +324,10 @@ void KNN_sub_vpTree_search_iterative(void* point, vpTreeNode* root, Heap * H, st
 
 #else
 
-void KNN_sub_vpTree_search(void* point, vpTreeNode* root, Heap * H, float_t (*metric)(void*,void*))
+void knn_sub_vptree_search(void* point, vpnode* root, heap * H, float_t (*metric)(void*,void*))
 {
-    //int split_var = kdtree_root -> split_var;
     float_t current_distance = metric(point, root -> data);
-    insertMaxHeap(H, current_distance, root -> array_idx);
+    insert_max_heap(H, current_distance, root -> array_idx);
 	#define INSIDE 0
 	#define OUTSIDE 1
 	int side = (current_distance > root -> mu);
@@ -365,10 +335,10 @@ void KNN_sub_vpTree_search(void* point, vpTreeNode* root, Heap * H, float_t (*me
     switch (side)
     {
         case INSIDE:
-            if(root -> inside) KNN_sub_vpTree_search(point, root -> inside, H, metric);
+            if(root -> inside) knn_sub_vptree_search(point, root -> inside, H, metric);
             break;
         case OUTSIDE:
-            if(root -> outside) KNN_sub_vpTree_search(point, root -> outside, H, metric);
+            if(root -> outside) knn_sub_vptree_search(point, root -> outside, H, metric);
             break;
 
         default:
@@ -380,13 +350,13 @@ void KNN_sub_vpTree_search(void* point, vpTreeNode* root, Heap * H, float_t (*me
 	switch (side)
 	{
 		case INSIDE:
-			// the node MUST have the CHILD, then or the condition holds or the Heap is not full yet 
-			if 	( root -> outside && ((current_distance + tau) > root->mu  || heapNotFull)) KNN_sub_vpTree_search(point, root -> outside, H, metric);
+			// the node MUST have the CHILD, then or the condition holds or the heap is not full yet 
+			if 	( root -> outside && ((current_distance + tau) > root->mu  || heapNotFull)) knn_sub_vptree_search(point, root -> outside, H, metric);
 			break;
 
 		case OUTSIDE:
-			//if 	( root -> inside && ((current_distance - tau) < root->mu  || heapNotFull)) KNN_sub_vpTree_search(point, root -> inside, H, metric);
-			if 	( root -> inside && (current_distance  < (root->mu + tau)  || heapNotFull)) KNN_sub_vpTree_search(point, root -> inside, H, metric);
+			//if 	( root -> inside && ((current_distance - tau) < root->mu  || heapNotFull)) knn_sub_vptree_search(point, root -> inside, H, metric);
+			if 	( root -> inside && (current_distance  < (root->mu + tau)  || heapNotFull)) knn_sub_vptree_search(point, root -> inside, H, metric);
 			break;
 		
 		default:
@@ -402,20 +372,20 @@ void KNN_sub_vpTree_search(void* point, vpTreeNode* root, Heap * H, float_t (*me
 
 
 #ifdef ITERATIVE_VPTREE 
-Heap KNN_vpTree(void* point, vpTreeNode* root, int maxk, stack_vpTreeNodes* s, float_t (*metric)(void*, void*))
+	heap knn_vptree(void* point, vpnode* root, int maxk, stack_vpnodes* s, float_t (*metric)(void*, void*))
 #else
-Heap KNN_vpTree(void* point, vpTreeNode* root, int maxk, float_t (*metric)(void*, void*))
+	heap knn_vptree(void* point, vpnode* root, int maxk, float_t (*metric)(void*, void*))
 #endif
 {
-    Heap H;
-	allocateHeap(&H, maxk);
-    initHeap(&H);
+    heap H;
+	allocate_heap(&H, maxk);
+    init_heap(&H);
 	#ifdef ITERATIVE_VPTREE
-		KNN_sub_vpTree_search_iterative(point, root,&H,s,metric);
+		knn_sub_vptree_search_iterative(point, root,&H,s,metric);
 	#else
-		KNN_sub_vpTree_search(point, root,&H,metric);
+		knn_sub_vptree_search(point, root,&H,metric);
 	#endif
-    HeapSort(&H);
+    heap_sort(&H);
 	for(size_t i = 0; i < H.count; ++i) H.data[i].value = H.data[i].value*H.data[i].value;
     return H;
 }

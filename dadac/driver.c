@@ -15,17 +15,17 @@ struct Options
 
 };
 
-void write_border_idx(const char * fname, Clusters * c)
+void write_border_idx(const char * fname, clusters * c)
 {
     FILE * f = fopen(fname, "w");
 
-    if(c -> UseSparseBorders)
+    if(c -> use_sparse_borders)
     {
 	    for(idx_t i = 0; i < c -> centers.count; ++i)
 	    {
-		for(idx_t el = 0; el < c ->SparseBorders[i].count; ++el)
+		for(idx_t el = 0; el < c ->sparse_borders[i].count; ++el)
 		{
-		    int a = c -> SparseBorders[i].data[el].idx; 
+		    int a = c -> sparse_borders[i].data[el].idx; 
 		    fprintf(f, "%d ",a);
 		}
 		fprintf(f,"\n");
@@ -48,7 +48,7 @@ void write_border_idx(const char * fname, Clusters * c)
     fclose(f);
 }
 
-void write_point_info(const char * fname, Datapoint_info * particles, idx_t n)
+void write_point_info(const char * fname, datapoint_info * particles, idx_t n)
 {
     FILE * f = fopen(fname,"w");
     for(idx_t i = 0; i < n; ++i)
@@ -242,51 +242,51 @@ int main(int argc, char** argv){
 		free(df);
 	}
 
-	Datapoint_info* particles = NgbhSearch_kdtree_V2(data, n, opt.data_dims, opt.k); 
-	//Datapoint_info* particles = NgbhSearch_vptree_V2(data, n,sizeof(FLOAT_TYPE), opt.data_dims, opt.k, eud); 
-	//Datapoint_info* particles = NgbhSearch_bruteforce(data, n,sizeof(FLOAT_TYPE), opt.data_dims, opt.k, NULL); 
+	datapoint_info* particles = ngbh_search_kdtree_v2(data, n, opt.data_dims, opt.k, VERBOSE_TRUE); 
+	//datapoint_info* particles = NgbhSearch_vptree_V2(data, n,sizeof(FLOAT_TYPE), opt.data_dims, opt.k, eud); 
+	//datapoint_info* particles = NgbhSearch_bruteforce(data, n,sizeof(FLOAT_TYPE), opt.data_dims, opt.k, NULL); 
     /********************************
      * Intrinsic Dimension estimate *
      ********************************/
 
-    double id = idEstimate(particles, n,0.9);
+    double id = id_estimate(particles, n,0.9, VERBOSE_TRUE);
 
     /***********************
      * Density computation *
      ***********************/
-    //computeRho(particles,id,n);
-    PAk(particles,id,n);
-    computeCorrection(particles,n,opt.Z);
+    compute_density_kstarnn(particles,id,n,VERBOSE_TRUE);
+    //PAk(particles,id,n, VERBOSE_TRUE);
+    compute_correction(particles,n,opt.Z);
 
     /********************
      * First clustering *
      ********************/
 
-    Clusters c = Heuristic1(particles, n);
+    clusters c = Heuristic1(particles, n, VERBOSE_TRUE);
 
     /***************************************************************************************
      * Allocate borders and other things to store clustering info                          *
      * Then Find borders between clusters and then merge clusters using peaks significance *
      ***************************************************************************************/
    // Clusters_allocate(&c);  
-    Clusters_allocate(&c, opt.UseSparseBorders);  
+    clusters_allocate(&c, opt.UseSparseBorders);  
 
     // sprintf(aux_fname, "%s_int", argv[2]);
     // write_point_info(aux_fname,particles,n);
 
-    Heuristic2(&c, particles);
+    Heuristic2(&c, particles, VERBOSE_TRUE);
 
     //sprintf(aux_fname, "%s_bord_int", argv[2]);
     //write_border_idx(aux_fname,&c);
 
     c.n = n;
     
-    Heuristic3(&c, particles, opt.Z, opt.halo);
+    Heuristic3(&c, particles, opt.Z, opt.halo, VERBOSE_TRUE);
 
 	write_point_info(opt.outputFile, particles, n);
 	free(data);
-	freeDatapointArray(particles,n);
-	Clusters_free(&c);
+	free_datapoint_array(particles,n);
+	clusters_free(&c);
 
 
     clock_gettime(CLOCK_MONOTONIC, &finish_tot);

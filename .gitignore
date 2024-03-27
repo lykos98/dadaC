@@ -2,10 +2,12 @@
 *build*
 dist/*
 *demo_2*
+*dist*
 perf.data
 perf.data.old
 *test.o
 *test
+*build*
 Bunny.txt
 *Old.c
 d

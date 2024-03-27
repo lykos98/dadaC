@@ -21,7 +21,7 @@
 	#define idx_t uint64_t
 #endif
 
-struct vpTreeNodeV2List
+struct vpnode_v2_list
 {
 	size_t count;
 	#ifdef VOPT
@@ -29,33 +29,33 @@ struct vpTreeNodeV2List
 		void* start_ptr;
 		void* end_ptr;
 	#else
-		struct vpTreeNodeV2** data;
+		struct vpnode_v2** data;
 	#endif
 };
 
 
-struct vpTreeNodeV2
+struct vpnode_v2
 {
    void * data;
-   struct vpTreeNodeV2List nodeList;
+   struct vpnode_v2_list node_list;
    idx_t array_idx;
-   struct vpTreeNodeV2* outside;
-   struct vpTreeNodeV2* inside;
-   struct vpTreeNodeV2* parent;
+   struct vpnode_v2* outside;
+   struct vpnode_v2* inside;
+   struct vpnode_v2* parent;
    float_t mu;
    float_t __dist;
-   int isLeaf;
+   int is_leaf;
    idx_t __bytesize;
 };
 
 
-typedef struct vpTreeNodeV2 vpTreeNodeV2;
-typedef struct vpTreeNodeV2List vpTreeNodeV2List;
+typedef struct vpnode_v2 vpnode_v2;
+typedef struct vpnode_v2_list vpnode_v2_list;
 
 
-void initialize_vpTreeNodes_pointers_V2(vpTreeNodeV2** pointersArray, vpTreeNodeV2* nodeArray, idx_t n);
-void initialize_vpTreeNode_array_V2(vpTreeNodeV2* noV2deArray, void* data, idx_t n, idx_t bytesPerElement);
-vpTreeNodeV2* build_vpTree_V2(vpTreeNodeV2* t, int start, int end, vpTreeNodeV2* parent, float_t (*metric)(void*, void*));
-void KNN_sub_vpTree_search_V2(void* point, vpTreeNodeV2* root, Heap * H, float_t (*metric)(void*,void*));
-Heap KNN_vpTree_V2(void* point, vpTreeNodeV2* root, int maxk, float_t (*metric)(void*, void*));
+void initialize_vpnode_v2_ptrs(vpnode_v2** pointersArray, vpnode_v2* nodeArray, idx_t n);
+void initialize_vpnode_v2_array(vpnode_v2* noV2deArray, void* data, idx_t n, idx_t bytesPerElement);
+vpnode_v2* build_vptree_v2(vpnode_v2* t, int start, int end, vpnode_v2* parent, float_t (*metric)(void*, void*));
+void knn_sub_vptree_v2_search(void* point, vpnode_v2* root, heap * H, float_t (*metric)(void*,void*));
+heap knn_vptree_v2(void* point, vpnode_v2* root, int maxk, float_t (*metric)(void*, void*));
 

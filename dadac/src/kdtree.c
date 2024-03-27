@@ -56,8 +56,8 @@ FLOAT_TYPE euclidean_distance2(FLOAT_TYPE* restrict u, FLOAT_TYPE* restrict v)
 }
 
 
-void swap_kd_node_ptrs(kd_node **x, kd_node **y) {
-    kd_node* tmp;
+void swap_kd_node_ptrs(kdnode **x, kdnode **y) {
+    kdnode* tmp;
     tmp = *x;
     *x = *y;
     *y = tmp;
@@ -74,7 +74,7 @@ void swap_kd_node_ptrs(kd_node **x, kd_node **y) {
  * 
 */
 
-void initializeKDnodes(kd_node * node_array, FLOAT_TYPE* d, idx_t n )
+void initialize_kdnodes(kdnode * node_array, FLOAT_TYPE* d, idx_t n )
 {
     for(idx_t i = 0; i < n; ++i)
     {
@@ -88,7 +88,7 @@ void initializeKDnodes(kd_node * node_array, FLOAT_TYPE* d, idx_t n )
     }
 }
 
-void initializePTRS(kd_node** node_ptr_array, kd_node* node_array, idx_t n )
+void initialize_kdnode_ptrs(kdnode** node_ptr_array, kdnode* node_array, idx_t n )
 {
     for(idx_t i = 0; i < n; ++i)
     {
@@ -96,13 +96,13 @@ void initializePTRS(kd_node** node_ptr_array, kd_node* node_array, idx_t n )
     }
 }
 
-int cmpKDnodes(kd_node* a, kd_node* b, int var){
+int cmp_kdnodes(kdnode* a, kdnode* b, int var){
     
     FLOAT_TYPE res = a->data[var] - b->data[var];
     return (res > 0);
 }
 
-void printKDnode(kd_node* node)
+void print_kdnode(kdnode* node)
 {
     printf("Node %p:\n",node);
     printf("\t array_idx: %lu\n", (uint64_t)(node -> array_idx));
@@ -119,13 +119,13 @@ void printKDnode(kd_node* node)
 
 // Standard Lomuto partition function
 
-int partition(kd_node** arr, int low, int high, int split_var)
+int partition(kdnode** arr, int low, int high, int split_var)
 {
-    kd_node* pivot = arr[high];
+    kdnode* pivot = arr[high];
     
     int i = (low - 1);
     for (int j = low; j <= high - 1; j++) {
-        if (!cmpKDnodes(arr[j],pivot,split_var)) {
+        if (!cmp_kdnodes(arr[j],pivot,split_var)) {
             i++;
             swap_kd_node_ptrs(arr + i, arr + j);
         }
@@ -135,7 +135,7 @@ int partition(kd_node** arr, int low, int high, int split_var)
 }
 
 // Implementation of QuickSelect
-int medianOfNodes(kd_node** a, int left, int right, int split_var)
+int median_of_nodes(kdnode** a, int left, int right, int split_var)
 {
     //printf("----------\n");
     int k = left + ((right - left + 1)/2); 
@@ -143,14 +143,14 @@ int medianOfNodes(kd_node** a, int left, int right, int split_var)
     //int c = right - left + 1;
     //if(c < 20){
     //    v = split_var;
-    //    qsort(a + left, c, sizeof(kd_node*),cmpKDN);
+    //    qsort(a + left, c, sizeof(kdnode*),cmpKDN);
     //    return k;
 
     //}
 
     if(left == right) return left;
     if(left == (right - 1)){
-        if(cmpKDnodes(a[left],a[right],split_var)) {swap_kd_node_ptrs(a + left, a + right);}
+        if(cmp_kdnodes(a[left],a[right],split_var)) {swap_kd_node_ptrs(a + left, a + right);}
         return right;
     }
     //if(c == 3){
@@ -183,9 +183,9 @@ int medianOfNodes(kd_node** a, int left, int right, int split_var)
     return -1;
 }
 
-kd_node* make_tree(kd_node** t, int start, int end, kd_node* parent, int level)
+kdnode* make_tree(kdnode** t, int start, int end, kdnode* parent, int level)
 {
-    kd_node *n = NULL;
+    kdnode *n = NULL;
     int split_var = level % data_dims; 
     //printf("%d \n",level);
 
@@ -200,7 +200,7 @@ kd_node* make_tree(kd_node** t, int start, int end, kd_node* parent, int level)
         n -> rch = NULL;
         return n;
     }
-    median_idx = medianOfNodes(t, start, end, split_var);
+    median_idx = median_of_nodes(t, start, end, split_var);
     //printf("%d median idx\n", median_idx);
     if(median_idx > -1){
         n = t[median_idx];
@@ -241,26 +241,26 @@ inline int hyper_plane_side(FLOAT_TYPE* p1, FLOAT_TYPE* p2, int var)
     return p1[var] > p2[var];
 }
 
-void KNN_sub_tree_search(FLOAT_TYPE* point, kd_node* kdtree_root, Heap * H)
+void knn_sub_tree_search(FLOAT_TYPE* point, kdnode* kdtree_root, heap * H)
 {
     //int split_var = kdtree_root -> split_var;
     FLOAT_TYPE current_distance = euclidean_distance(point, kdtree_root -> data);
     FLOAT_TYPE hp_distance = hyper_plane_dist(point, kdtree_root -> data, kdtree_root -> split_var);
-    insertMaxHeap(H, current_distance, kdtree_root -> array_idx);
+    insert_max_heap(H, current_distance, kdtree_root -> array_idx);
 	__builtin_prefetch(kdtree_root -> lch, 0, 3);
 	__builtin_prefetch(kdtree_root -> rch, 0, 3);
 
     int side = hp_distance > 0.f;
 
-    //if(kdtree_root -> lch) KNN_sub_tree_search(point, kdtree_root -> lch, H);
-    //if(kdtree_root -> rch) KNN_sub_tree_search(point, kdtree_root -> rch, H);
+    //if(kdtree_root -> lch) knn_sub_tree_search(point, kdtree_root -> lch, H);
+    //if(kdtree_root -> rch) knn_sub_tree_search(point, kdtree_root -> rch, H);
     switch (side)
     {
         case HP_LEFT_SIDE:
             if(kdtree_root -> lch)
 			{
 				__builtin_prefetch(kdtree_root -> lch -> data);
-				KNN_sub_tree_search(point, kdtree_root -> lch, H);
+				knn_sub_tree_search(point, kdtree_root -> lch, H);
 			}
             break;
         
@@ -268,7 +268,7 @@ void KNN_sub_tree_search(FLOAT_TYPE* point, kd_node* kdtree_root, Heap * H)
 			if(kdtree_root -> rch)
 			{
 				__builtin_prefetch(kdtree_root -> rch -> data);
-				KNN_sub_tree_search(point, kdtree_root -> rch, H);
+				knn_sub_tree_search(point, kdtree_root -> rch, H);
 			}
             break;
 
@@ -289,7 +289,7 @@ void KNN_sub_tree_search(FLOAT_TYPE* point, kd_node* kdtree_root, Heap * H)
                 if(kdtree_root -> rch) 
 				{
 					__builtin_prefetch(kdtree_root -> rch -> data);
-					KNN_sub_tree_search(point, kdtree_root -> rch, H);
+					knn_sub_tree_search(point, kdtree_root -> rch, H);
 				}
                 break;
             
@@ -297,7 +297,7 @@ void KNN_sub_tree_search(FLOAT_TYPE* point, kd_node* kdtree_root, Heap * H)
                 if(kdtree_root -> lch) 
 				{
 					__builtin_prefetch(kdtree_root -> lch -> data);
-					KNN_sub_tree_search(point, kdtree_root -> lch, H);
+					knn_sub_tree_search(point, kdtree_root -> lch, H);
 				}
                 break;
 
@@ -311,17 +311,17 @@ void KNN_sub_tree_search(FLOAT_TYPE* point, kd_node* kdtree_root, Heap * H)
 
 
 
-Heap KNN(FLOAT_TYPE* point, kd_node* kdtree_root, int maxk)
+heap knn(FLOAT_TYPE* point, kdnode* kdtree_root, int maxk)
 {
-    Heap H;
-    allocateHeap(&H,maxk);
-    initHeap(&H);
-    KNN_sub_tree_search(point, kdtree_root,&H);
-    HeapSort(&H);
+    heap H;
+    allocate_heap(&H,maxk);
+    init_heap(&H);
+    knn_sub_tree_search(point, kdtree_root,&H);
+    heap_sort(&H);
     return H;
 }
 
-kd_node * build_tree(kd_node** kd_ptrs, size_t n, size_t dimensions )
+kdnode * build_tree(kdnode** kd_ptrs, size_t n, size_t dimensions )
 {
 	
     
@@ -333,7 +333,7 @@ kd_node * build_tree(kd_node** kd_ptrs, size_t n, size_t dimensions )
     
    	data_dims = dimensions; 
 
-    kd_node* root = make_tree(kd_ptrs, 0, n-1, NULL ,0);
+    kdnode* root = make_tree(kd_ptrs, 0, n-1, NULL ,0);
 
     return root;
 

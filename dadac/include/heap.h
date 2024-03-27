@@ -1,5 +1,4 @@
 #pragma once
-#include "kdtree.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -37,7 +36,7 @@ struct heap_node
    idx_t array_idx;
 } ;
 
-struct Heap
+struct heap
 {
    idx_t N; 
    idx_t count;
@@ -52,33 +51,24 @@ struct SimpleHeap
 } ;
 
 typedef struct SimpleHeap SimpleHeap;
-typedef struct Heap Heap;
+typedef struct heap heap;
 typedef struct heap_node heap_node;
 
-void allocateSimpleHeap(SimpleHeap* H, idx_t n);
 
-void allocateHeap(Heap* H, idx_t n);
+void allocate_heap(heap* H, idx_t n);
 
-void initSimpleHeap(SimpleHeap* H);
+void init_heap(heap* H);
 
-void initHeap(Heap* H);
+void free_heap(heap * H);
 
-void freeSimpleHeap(SimpleHeap * H);
+void heapify_max_heap(heap* H, idx_t node);
 
-void freeHeap(Heap * H);
+void set_root_max_heap(heap * H, FLOAT_TYPE val, idx_t array_idx);
 
-void heapifyMaxSimpleHeap(SimpleHeap* H, idx_t node);
+void insert_max_heap(heap * H, FLOAT_TYPE val, idx_t array_idx);
 
-void heapifyMaxHeap(Heap* H, idx_t node);
-
-void setRootMaxSimpleHeap(SimpleHeap * H, T val);
-
-void setRootMaxHeap(Heap * H, FLOAT_TYPE val, idx_t array_idx);
-
-void insertMaxHeap(Heap * H, FLOAT_TYPE val, idx_t array_idx);
-
-void HeapSort(Heap* H);
-void insertMaxHeap_InsertionSort(Heap * H,const FLOAT_TYPE val,const idx_t array_idx);
+void heap_sort(heap* H);
+void insert_max_heap_insertion_sort(heap * H,const FLOAT_TYPE val,const idx_t array_idx);
 
 
-int cmpHeapNodes(const void* a, const void* b);
+int cmp_heap_nodes(const void* a, const void* b);

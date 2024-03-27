@@ -32,8 +32,13 @@ float_t eud_sq2(void* a, void* b)
 	//return acc; 
 }
 
+
 float_t eudOpt(void* uvoid, void* vvoid)
 {
+	/*
+	 * Experimental optimization, coming from sklearn source code
+	 */
+
     float_t s;
     uint32_t i = 0;
 	float_t* u = (float_t*)uvoid;
@@ -47,6 +52,7 @@ float_t eudOpt(void* uvoid, void* vvoid)
                                _u[1] - _v[1],
                                _u[2] - _v[2],
                                _u[3] - _v[3]};
+
         acc[0] += diff[0] * diff[0];
         acc[1] += diff[1] * diff[1];
         acc[2] += diff[2] * diff[2];
@@ -64,6 +70,9 @@ float_t eudOpt(void* uvoid, void* vvoid)
 
 float_t eud_sq(void* uvoid, void* vvoid)
 {
+	/*
+	 * Experimental optimization, coming from sklearn source code
+	 */
     float_t s;
     uint32_t i = 0;
 	float_t* u = (float_t*)uvoid;

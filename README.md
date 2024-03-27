@@ -102,11 +102,15 @@ Relies on kd-Tree or vantage point tree alogirthms in order to perform neighborh
 
 dadac comes also with a python interface build with `ctypes` which leverages the capabilities of the C-compiled library. In order to use it, build the package and then import `dadac` module from python
 
+**REQUIRES** make build system and a C compiler to properly install (on linux system this works fine)
+
 dadac can be installed with pip on linux systems using:
 
 ```
 pip install git+https://github.com/lykos98/dadaC
 ```
+
+On MacOS this cannot compile the required shared library if gcc and make are not installed I am still working on that.
 
 If you want to use it on windows use it under WLS
 
