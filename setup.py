@@ -11,6 +11,8 @@ from shutil import rmtree
 
 from setuptools import find_packages, setup, Command, Extension
 from setuptools.command.install import install
+from setuptools.command.build import build
+
 
 # Package meta-data.
 NAME = "dadac"
