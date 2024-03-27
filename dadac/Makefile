@@ -26,7 +26,7 @@ LINKING_INFO=@echo "[\e[34mLINKING\e[0m]: $@"
 
 
 CROSS_COMPILE_CFLAGS=${CFLAGS}
-CROSS_COMPILE_CFLAGS+=-O2 -nostdlib -nostartfiles -nodefaultlibs
+CROSS_COMPILE_CFLAGS+=-O3 -nostdlib -nostartfiles -nodefaultlibs
 
 CFLAGS+=-O3 -march=native 
 all: driver test 

@@ -9,7 +9,7 @@ import os
 import sys
 from shutil import rmtree
 
-from setuptools import find_packages, setup, Command
+from setuptools import find_packages, setup, Command, Extension
 from setuptools.command.install import install
 from setuptools.command.build import build
 
@@ -39,20 +39,20 @@ EXTRAS = {
 
 
 EXT_DIR = os.path.join(os.path.dirname(__file__), 'dadac')
-class RunMake(install):   
-
-
-    """Makefile on setuptools install."""
-    def run(self):
-        old_dir = os.getcwd()
-        try:
-            os.chdir(EXT_DIR)
-            print("Building C library ...")
-            os.system("make lib")
-            #self.spawn(['make'])
-        finally:
-            os.chdir(old_dir)
-        install.run(self)
+#class RunMake(install):   
+#
+#
+#    """Makefile on setuptools install."""
+#    def run(self):
+#        old_dir = os.getcwd()
+#        try:
+#            os.chdir(EXT_DIR)
+#            print("Building C library ...")
+#            os.system("make lib")
+#            #self.spawn(['make'])
+#        finally:
+#            os.chdir(old_dir)
+#        install.run(self)
 
 class RunMake_precompiled(build):
     """Makefile on setuptools install."""
@@ -133,6 +133,14 @@ class UploadCommand(Command):
 
         sys.exit()
 
+dadac_module = Extension(
+    "dadac.core",
+    sources = ["dadac/src/dadac.c", "dadac/src/kdtree.c", "dadac/src/kdtreeV2.c", "dadac/src/heap.c",  "dadac/src/vptree.c", "dadac/src/vptreeV2.c"],
+    include_dirs=["dadac/include"],
+    extra_compile_args=["-O3","-fopenmp"],
+    extra_link_args=["-fopenmp", "-lm"]
+)
+
 
 # Where the magic happens:
 setup(
@@ -173,8 +181,9 @@ setup(
         'Programming Language :: Python :: Implementation :: PyPy'
     ],
     # $ setup.py publish support.
+    #ext_modules=[dadac_module],
     cmdclass={
-        'install': RunMake,
+        #'install': RunMake,
         'upload': UploadCommand,
         'build': RunMake_precompiled,
     },
