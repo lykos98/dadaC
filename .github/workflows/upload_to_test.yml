@@ -23,7 +23,7 @@ jobs:
         run: python -c "import sys; print(sys.version)"
 
       - name: Install arm gcc
-        run: apt install gcc-arm-linux-gnueabi
+        run: sudo apt install gcc-arm-linux-gnueabi
       - name: Install dependencies 
         run: python -m pip install build, twine
       - name: Build
