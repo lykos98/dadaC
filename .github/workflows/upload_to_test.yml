@@ -27,4 +27,4 @@ jobs:
       - name: Install dependencies 
         run: pip install build twine
       - name: Build
-        run: python -m build .
+        run: python -m build
