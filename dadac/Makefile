@@ -3,6 +3,8 @@ CFLAGS=-O3 -march=native -Wall -Wextra
 DEBUG=-ggdb
 SRC="src"
 VERBOSE=-DVERBOSE
+SOURCES=src/dadac.c src/kdtree.c src/kdtreeV2.c src/heap.c src/vptree.c src/vptreeV2.c
+OBJECTS=bin/dadac.o bin/kdtree.o bin/kdtreeV2.o bin/heap.o bin/vptree.o bin/vptreeV2.o
 
 # ----------------------------------------------------------------------
 # /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ 
@@ -15,15 +17,16 @@ VERBOSE=-DVERBOSE
 #LDFLAGS += -lyourblas  -L${BLAS_LIB}
 #CFLAGS += -DUSE_BLAS -I${BLAS_INCLUDE}
 
-
-
-
 CC=@gcc
 COMPILING_INFO=@echo "[\e[36mCOMPILING\e[0m]: $@"
 LINKING_INFO=@echo "[\e[34mLINKING\e[0m]: $@"
 
+CROSS_COMPILE_CFLAGS+=-O3 -nostdlib -nostartfiles -nodefaultlibs
 
 lib: bin/libdadac.so 
+
+arm: bin/libdadac.aarch64.so
+x86: bin/libdadac.x86_64.so
 
 all: driver test
 	@echo "[\e[31mFLAGS\e[0m]: ${CFLAGS}"
@@ -51,6 +54,14 @@ bin/libdadac.so: bin/dadac.o bin/kdtree.o bin/kdtreeV2.o bin/heap.o bin/vptree.o
 
 bin/%.o : src/%.c
 	${CC} -c $< -o $@ ${CFLAGS} -fopenmp ${DEBUG} -fpic ${VERBOSE} 
+	${COMPILING_INFO}
+
+bin/libdadac.aarch64.so : ${SOURCES} 
+	@aarch64-linux-gnu-gcc ${SOURCES} ${CROSS_COMPILE_FLAGS} ${LDFLAGS} ${VERBOSE} ${DEBUG} -fpic -shared -o $@
+	${COMPILING_INFO}
+
+bin/libdadac.x86_64.so : ${SOURCES}
+	@gcc-11 ${SOURCES} ${CROSS_COMPILE_FLAGS} ${LDFLAGS} ${VERBOSE} ${DEBUG} -fpic -shared -o $@
 	${COMPILING_INFO}
 
 clean:

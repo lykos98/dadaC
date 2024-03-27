@@ -75,8 +75,12 @@ class clusters(ct.Structure):
 
 class _dadac_loader:
     def __init__(self):
-        path = os.path.join(os.path.dirname(__file__), "bin/libdadac.so")
-        # print(path)
+        #path = os.path.join(os.path.dirname(__file__), "bin/libdadac.so")
+        arch = platform.machine()
+        print(f"Loading binary for architecture: {arch}")
+        path = os.path.join(os.path.dirname(__file__), f"bin/libdadac.{arch}.so")
+        print(f"Loading: -> {path}")
+        print(path)
         try:
             self.lib = ct.CDLL(path)
         except:

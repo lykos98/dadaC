@@ -11,6 +11,7 @@ from shutil import rmtree
 
 from setuptools import find_packages, setup, Command
 from setuptools.command.install import install
+from setuptools.command.build import build
 
 # Package meta-data.
 NAME = "dadac"
@@ -36,24 +37,29 @@ EXTRAS = {
 
 
 # compile everything
-os.system("make -C $(pwd)/dadac")
+#os.system("make -C $(pwd)/dadac")
+os.system("make -C $(pwd)/dadac x86")
+os.system("make -C $(pwd)/dadac arm")
 
-EXT_DIR = os.path.join(os.path.dirname(__file__), "bin")
+EXT_DIR = os.path.join(os.path.dirname(__file__), "dadac")
 
 
-class RunMake(install):
+class RunMake(build):
     """Makefile on setuptools install."""
 
     def run(self):
         old_dir = os.getcwd()
         try:
-            os.chdir(EXT_DIR)
+            #os.chdir(EXT_DIR)
             print("Building C library ...")
-            os.system("make")
+            os.system("make -C $(pwd)/dadac x86")
+            os.system("make -C $(pwd)/dadac arm")
+            #os.system("make arm")
+            #os.system("make x86")
             # self.spawn(['make'])
         finally:
             os.chdir(old_dir)
-        install.run(self)
+        build.run(self)
 
 
 # The rest you shouldn't have to touch too much :)
@@ -151,5 +157,5 @@ setup(
         "Programming Language :: Python :: Implementation :: PyPy",
     ],
     # $ setup.py publish support.
-    cmdclass={"upload": UploadCommand, "intall": RunMake},
+    cmdclass={"upload": UploadCommand},
 )
