@@ -9,8 +9,10 @@ import os
 import sys
 from shutil import rmtree
 
-from setuptools import find_packages, setup, Command
+from setuptools import find_packages, setup, Command, Extension
 from setuptools.command.install import install
+from setuptools.command.build import build
+
 
 # Package meta-data.
 NAME = "dadac"
@@ -35,10 +37,8 @@ EXTRAS = {
 }
 
 
-# compile everything
-os.system("make -C $(pwd)/dadac")
-
 EXT_DIR = os.path.join(os.path.dirname(__file__), "bin")
+
 
 
 class RunMake(install):
@@ -49,12 +49,35 @@ class RunMake(install):
         try:
             os.chdir(EXT_DIR)
             print("Building C library ...")
-            os.system("make")
-            # self.spawn(['make'])
+
+            os.system("make arm")
+            os.system("make x86")
+            #os.system("make lib")
+            #self.spawn(['make'])
+
         finally:
             os.chdir(old_dir)
         install.run(self)
 
+
+class RunMake_precompiled(build):
+    """Makefile on setuptools install."""
+    user_options = []
+
+
+    def run(self):
+        old_dir = os.getcwd()
+        try:
+            if(os.path.exists("bin/libdadac.so")):
+                os.system("rm bin/libdadac.so")
+            os.chdir(EXT_DIR)
+            print("Building C library ...")
+            os.system("make arm")
+            os.system("make x86")
+            #self.spawn(['make'])
+        finally:
+            os.chdir(old_dir)
+        build.run(self)
 
 # The rest you shouldn't have to touch too much :)
 # ------------------------------------------------
@@ -117,6 +140,14 @@ class UploadCommand(Command):
 
         sys.exit()
 
+dadac_module = Extension(
+    "dadac.core",
+    sources = ["dadac/src/dadac.c", "dadac/src/kdtree.c", "dadac/src/kdtreeV2.c", "dadac/src/heap.c",  "dadac/src/vptree.c", "dadac/src/vptreeV2.c"],
+    include_dirs=["dadac/include"],
+    extra_compile_args=["-O3","-fopenmp"],
+    extra_link_args=["-fopenmp", "-lm"]
+)
+
 
 # Where the magic happens:
 setup(
@@ -129,7 +160,11 @@ setup(
     author_email=EMAIL,
     python_requires=REQUIRES_PYTHON,
     url=URL,
-    packages=find_packages(exclude=["tests", "*.tests", "*.tests.*", "tests.*"]),
+    #packages=find_packages(
+    #    include=["dadac","dadac.src"],
+    #    exclude=["tests", "*.tests", "*.tests.*", "tests.*","*src*","*include*","*src*"]
+    #    ),
+    packages=["dadac"],
     # If your package is a single module, use this instead of 'packages':
     # py_modules=['mypackage'],
     # entry_points={
@@ -138,6 +173,7 @@ setup(
     install_requires=REQUIRED,
     extras_require=EXTRAS,
     include_package_data=True,
+
     license="MIT",
     package_data={"dadac": ["bin/*.so"]},
     classifiers=[
@@ -151,5 +187,11 @@ setup(
         "Programming Language :: Python :: Implementation :: PyPy",
     ],
     # $ setup.py publish support.
-    cmdclass={"upload": UploadCommand, "intall": RunMake},
+    #ext_modules=[dadac_module],
+    cmdclass={
+        'install': RunMake,
+        'upload': UploadCommand,
+        'build': RunMake_precompiled,
+    },
+
 )

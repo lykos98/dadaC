@@ -1,4 +1,6 @@
 *ipynb*
+*build*
+dist/*
 *demo_2*
 *dist*
 perf.data
