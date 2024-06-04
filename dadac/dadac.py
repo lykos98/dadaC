@@ -5,6 +5,7 @@ import os
 from sklearn.neighbors import NearestNeighbors
 import time
 from wurlitzer import sys_pipes
+from copy import deepcopy
 
 
 ct_float_t = ct.c_double
@@ -238,6 +239,17 @@ class _dadac_loader:
         ]
         self._id_estimate.restype = ct.c_double
 
+
+        #float_t compute_ID_two_NN_ML(datapoint_info* dp_info, idx_t n, int verbose)
+
+        self._id_estimate_ml = self.lib.compute_ID_two_NN_ML
+        self._id_estimate_ml.argtypes = [
+            ct.POINTER(datapoint_info),
+            ct.c_uint64,
+            ct.c_int32,
+        ]
+        self._id_estimate_ml.restype = ct.c_double
+
         self._compute_density_kstarnn = self.lib.compute_density_kstarnn
         self._compute_density_kstarnn.argtypes = [
             ct.POINTER(datapoint_info),
@@ -368,24 +380,25 @@ class Data(_dadac_loader):
         this actually is used to use wether or not the wurlitzer lib to redirect the 
         output of the C functions
         """
-        try:
-            shell = get_ipython().__class__.__name__
-            if shell == "ZMQInteractiveShell":
-                print(
-                    "You are running in a notebook maybe the timing output will break, but everything should be fine "
-                )
-                return True  # Jupyter notebook or qtconsole
-            elif shell == "google.colab._shell":
-                print(
-                    "You are running in a google colab notebook maybe the timing output will break, but everything should be fine "
-                )
-                return True
-            elif shell == "TerminalInteractiveShell":
-                return False  # Terminal running IPython
-            else:
-                return True  # Other type (?)
-        except NameError:
-            return False
+        if self._verbose:
+            try:
+                shell = get_ipython().__class__.__name__
+                if shell == "ZMQInteractiveShell":
+                    print(
+                        "You are running in a notebook maybe the timing output will break, but everything should be fine "
+                    )
+                    return True  # Jupyter notebook or qtconsole
+                elif shell == "google.colab._shell":
+                    print(
+                        "You are running in a google colab notebook maybe the timing output will break, but everything should be fine "
+                    )
+                    return True
+                elif shell == "TerminalInteractiveShell":
+                    return False  # Terminal running IPython
+                else:
+                    return True  # Other type (?)
+            except NameError:
+                return False
 
     def compute_neighbors_kdtree(self, k):
         """Compute the k nearest neighbors of each point
@@ -533,7 +546,7 @@ class Data(_dadac_loader):
             # self.compute_neighbors_bruteforce(k)
             return
 
-    def compute_id_2NN(self, fraction=0.9):
+    def compute_id_2NN(self, fraction=0.9, alg = "base"):
         """Compute the intrinsic dimension of the dataset via the Two-Nearest-Neighbors method.
             Ref. paper
 
@@ -543,15 +556,28 @@ class Data(_dadac_loader):
 
         if not self.state["ngbh"]:
             raise ValueError("Please compute Neighbors before calling this function")
-        if self._running_in_notebook:
-            with sys_pipes():
+        if alg == "base":
+            if self._running_in_notebook:
+                with sys_pipes():
+                    self.id = self._id_estimate(
+                        self._datapoints, self.n, fraction, self._verbose
+                    )
+            else:
                 self.id = self._id_estimate(
                     self._datapoints, self.n, fraction, self._verbose
                 )
+        elif alg == "ml":
+            if self._running_in_notebook:
+                with sys_pipes():
+                    self.id = self._id_estimate_ml(
+                        self._datapoints, self.n, self._verbose
+                    )
+            else:
+                self.id = self._id_estimate_ml(
+                    self._datapoints, self.n, self._verbose
+                )
         else:
-            self.id = self._id_estimate(
-                self._datapoints, self.n, fraction, self._verbose
-            )
+            raise NotImplementedError("Please provide a valid algorithm (`base`, `ml`)")
         self.state["id"] = True
 
     def import_neighbors_and_distances(self, ngbh, dists, dists_are_sq=False):
@@ -663,6 +689,15 @@ class Data(_dadac_loader):
             with sys_pipes():
                 self._compute_correction(self._datapoints, self.n, self.Z)
                 self._clusters = self._H1(self._datapoints, self.n, self._verbose)
+
+                # to remove 
+
+                self.c2 = np.zeros(self.n, np.int32)
+                self._export_cluster_assignment(
+                    self._datapoints, self.c2, self.n
+                )
+                
+                #---
                 self._clusters_allocate(
                     ct.pointer(self._clusters), 1 if self.state["use_sparse"] else 0
                 )
@@ -677,6 +712,14 @@ class Data(_dadac_loader):
         else:
             self._compute_correction(self._datapoints, self.n, self.Z)
             self._clusters = self._H1(self._datapoints, self.n, self._verbose)
+            # to remove 
+
+            self.c2 = np.zeros(self.n, np.int32)
+            self._export_cluster_assignment(
+                self._datapoints, self.c2, self.n
+            )
+            
+            #---
             self._clusters_allocate(
                 ct.pointer(self._clusters), 1 if self.state["use_sparse"] else 0
             )

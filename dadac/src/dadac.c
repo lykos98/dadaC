@@ -326,6 +326,49 @@ float_t mEst(float_t * x, float_t *y, idx_t n)
     return num/den;
 }
 
+float_t compute_ID_two_NN_ML(datapoint_info* dp_info, idx_t n, int verbose)
+{
+
+    /*
+     * Estimation of the intrinsic dimension of a dataset                                       
+     * args:                                                                                    
+     * - dp_info: array of structs                                                             
+     * - n: number of dp_info                                                                  
+     * intrinsic_dim = (N - 1) / np.sum(log_mus)
+     */
+
+    struct timespec start_tot, finish_tot;
+    double elapsed_tot;
+
+	if(verbose) 
+    {
+		printf("ID estimation:\n");
+		clock_gettime(CLOCK_MONOTONIC, &start_tot);
+	}
+    
+    float_t log_mus = 0;
+    for(idx_t i = 0; i < n; ++i)
+    {
+        log_mus += 0.5 * log(dp_info[i].ngbh.data[2].value/dp_info[i].ngbh.data[1].value);
+    }
+
+    float_t d = 0;
+    d = (n - 1)/log_mus;
+	if(verbose)
+	{
+		clock_gettime(CLOCK_MONOTONIC, &finish_tot);
+		elapsed_tot = (finish_tot.tv_sec - start_tot.tv_sec);
+		elapsed_tot += (finish_tot.tv_nsec - start_tot.tv_nsec) / 1000000000.0;
+		printf("\tID value: %.6lf\n", d);
+		printf("\tTotal time: %.3lfs\n\n", elapsed_tot);
+	}
+
+    return d;
+
+}
+
+
+
 float_t id_estimate(datapoint_info* dp_info, idx_t n,float_t fraction, int verbose)
 {
 
@@ -423,7 +466,8 @@ void compute_density_kstarnn(datapoint_info* dp_info, const float_t d, const idx
             idx_t jj = dp_info[i].ngbh.data[j].array_idx;
 
             vvj = omega * pow(dp_info[jj].ngbh.data[ksel].value,d/2.);
-
+            /*
+             * REMOVE */
             vp = (vvi + vvj)*(vvi + vvj);
             dL = -2.0 * ksel * log(4.*vvi*vvj/vp);
             j = j + 1;
@@ -432,6 +476,7 @@ void compute_density_kstarnn(datapoint_info* dp_info, const float_t d, const idx
         {
             k = j - 1;
             vvi = omega * pow(dp_info[i].ngbh.data[k].value,d/2.);
+
         }
         else
         {
@@ -612,8 +657,13 @@ int cmpPP(const void* p1, const void *p2)
      */
     datapoint_info* pp1 = *(datapoint_info**)p1;
     datapoint_info* pp2 = *(datapoint_info**)p2;
-    return 2*(pp1 -> g < pp2 -> g) - 1;
+    int v = (pp1 -> g < pp2 -> g) - (pp1 -> g > pp2 -> g);
+    //int a = (pp1 -> array_idx < pp2 -> array_idx) -  (pp1 -> array_idx > pp2 -> array_idx);
+    //return v == 0 ? a : v;
+    return v;
 }
+
+
 
 void compute_correction(datapoint_info* dp_info, idx_t n, float_t Z)
 {
@@ -782,17 +832,17 @@ clusters Heuristic1(datapoint_info* dp_info, idx_t n, int verbose)
         	for(idx_t c = 0; c < all_centers.count; ++c)
         	{
         		if(to_remove_private[c] != MY_SIZE_MAX)
-			{
-				if(to_remove[c] != MY_SIZE_MAX)
-				{
-					to_remove[c] = dp_info[to_remove_private[c]].g > dp_info[to_remove[c]].g ?
-						       to_remove_private[c] : to_remove[c];
-				}
-				else
-				{
-					to_remove[c] = to_remove_private[c];
-				}
-			}
+                {
+                    if(to_remove[c] != MY_SIZE_MAX)
+                    {
+                        to_remove[c] = dp_info[to_remove_private[c]].g > dp_info[to_remove[c]].g ?
+                                   to_remove_private[c] : to_remove[c];
+                    }
+                    else
+                    {
+                        to_remove[c] = to_remove_private[c];
+                    }
+                }
         	}
         }
 
@@ -966,15 +1016,14 @@ clusters Heuristic1(datapoint_info* dp_info, idx_t n, int verbose)
             idx_t k = 0;
             idx_t p_idx;
             idx_t max_k = p -> ngbh.N;
-            /*assign each particle at the same cluster as the nearest particle of higher density*/
             while( k < max_k - 1 && cluster == -1)
             {
                 ++k;
                 p_idx = p -> ngbh.data[k].array_idx;
                 cluster = dp_info[p_idx].cluster_idx; 
+
             }
 
-            //
             if(cluster == -1)
             {
                 float_t gmax = -99999.;               
@@ -987,7 +1036,6 @@ clusters Heuristic1(datapoint_info* dp_info, idx_t n, int verbose)
                         float_t gcand = dp_info[max_rho.data[m]].g;
                         if(ngbh_index == removed_centers.data[m] && gcand > gmax)
                         {   
-                            //printf("%lu -- %lu\n", ele, m);
                             gmax = gcand;
                             gm_index = max_rho.data[m];
                         }
