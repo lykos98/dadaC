@@ -53,6 +53,31 @@ class sparse_border_t(ct.Structure):
         ("density", ct_float_t),
         ("error", ct_float_t),
     ]
+class _dadac_loader():
+    def __init__(self):
+        path = os.path.join(os.path.dirname(__file__), "bin/libdadac.so")
+        arch = platform.machine()
+        print(path)
+        if not os.path.exists(path):
+            #print("libdadac.so not found calling make for you")
+            #old_dir = os.getcwd()
+            #os.chdir(os.path.join(os.path.dirname(__file__)))
+            #if not os.path.exists(os.path.join(os.path.dirname(__file__), "bin")):
+            #    os.system("mkdir bin")
+            #os.system("make lib")
+            #os.chdir(old_dir)
+
+            print(f"Loading binary for architecture: {arch}")
+            path = os.path.join(os.path.dirname(__file__), f"bin/libdadac.{arch}.so")
+            print(f"Loading: -> {path}")
+
+        try:
+            self.lib = ct.CDLL(path)
+        except:
+            print(f"Failed to load library please install dadac using:")
+            print(f"  pip install git+https://github.com/lykos98/dadaC ")
+            raise()
+
 
 
 class adj_list(ct.Structure):
@@ -316,6 +341,7 @@ class Data(_dadac_loader):
         Raises:
             TypeError: Raises TypeError if a type different from a matrix is passed
         """
+
         super().__init__()
         # initialize class
         if self._use_float32:
@@ -347,6 +373,8 @@ class Data(_dadac_loader):
         if len(self.data.shape) != 2:
             raise TypeError("Please provide a 2d numpy array")
 
+        self.blas               = self._blas_in_use() != 0 
+
         if verbose:
             self._verbose = 1
         else:
@@ -372,6 +400,7 @@ class Data(_dadac_loader):
         self._log_den = None
         self._log_den_err = None
         self.blas = self._blas_in_use() != 0
+
         self._running_in_notebook = self._is_notebook()
 
     def _is_notebook(self) -> bool:

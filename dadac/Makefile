@@ -23,10 +23,17 @@ COMPILING_INFO=@echo "[\e[36mCOMPILING\e[0m]: $@"
 LINKING_INFO=@echo "[\e[34mLINKING\e[0m]: $@"
 
 
+CROSS_COMPILE_CFLAGS=${CFLAGS}
+CROSS_COMPILE_CFLAGS+=-O3 -nostdlib -nostartfiles -nodefaultlibs
+
+CFLAGS+=-O3 -march=native 
+all: driver test 
+	@echo "[\e[31mFLAGS\e[0m]: ${CFLAGS}"
+
 lib: bin/libdadac.so 
 
-all: driver test
-	@echo "[\e[31mFLAGS\e[0m]: ${CFLAGS}"
+arm: bin/libdadac.aarch64.so
+x86: bin/libdadac.x86_64.so
 
 
 test: test.o bin/libdadac.so
@@ -52,6 +59,15 @@ bin/libdadac.so: bin/dadac.o bin/kdtree.o bin/kdtreeV2.o bin/heap.o bin/vptree.o
 bin/%.o : src/%.c
 	${CC} -c $< -o $@ ${CFLAGS} -fopenmp ${DEBUG} -fpic ${VERBOSE} 
 	${COMPILING_INFO}
+
+bin/libdadac.aarch64.so : ${SOURCES} 
+	@aarch64-linux-gnu-gcc ${SOURCES} ${CROSS_COMPILE_FLAGS} ${LDFLAGS} ${VERBOSE} ${DEBUG} -fpic -shared -o $@
+	${COMPILING_INFO}
+
+bin/libdadac.x86_64.so : ${SOURCES}
+	@gcc-11 ${SOURCES} ${CROSS_COMPILE_FLAGS} ${LDFLAGS} ${VERBOSE} ${DEBUG} -fpic -shared -o $@
+	${COMPILING_INFO}
+
 
 clean:
 	rm bin/*.so bin/*.o *.o driver test

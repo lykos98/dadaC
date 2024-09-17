@@ -1,0 +1,5 @@
+include dadac/src/*
+include dadac/bin/.placeholder
+include dadac/include/*
+include dadac/Makefile
+include dadac/__init__.py
