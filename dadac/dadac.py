@@ -803,13 +803,18 @@ class Data(_dadac_loader):
         if self.state["clustering"]:
             self._log_den_bord = np.zeros(
                 (self.N_clusters, self.N_clusters), self._ftype
-            )
+            ) - 1
             self._log_den_bord_err = np.zeros(
                 (self.N_clusters, self.N_clusters), self._ftype
             )
             self._border_indices = (
                 np.zeros((self.N_clusters, self.N_clusters), np.int32) - 1
             )
+
+            self._log_den_bord = np.ascontiguousarray(self._log_den_bord)
+            self._log_den_bord_err = np.ascontiguousarray(self._log_den_bord_err)
+            self._border_indices = np.ascontiguousarray(self._border_indices)
+
             self._export_borders(
                 self._clusters,
                 self._datapoints,
@@ -817,12 +822,14 @@ class Data(_dadac_loader):
                 self._log_den_bord,
                 self._log_den_bord_err,
             )
-            # ugly thing to retrieve correct thing in dadapy as border density
+            # ugly thing to retrieve correct dadapy border density
+            # DENSITY where no border exists should be either 0 (or 1 if log)
+            # Densities in dadapy are a MESS
+
             mm = np.zeros_like(self._log_den_bord)
-            f = np.where(self._border_indices == -1)
-            mm[f] = -1
-            mm += np.eye(self._N_clusters)
-            self._log_den_bord -= mm
+            mm = np.min(self.log_den - self.Z*self.log_den_err) - 1
+            mm -= np.eye(self._N_clusters)
+            self._log_den_bord += mm 
         else:
             raise ValueError(
                 "Borders not computed yet use `Data.compute_clustering_[DP,ADP,...]()`"

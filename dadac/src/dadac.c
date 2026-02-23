@@ -3165,7 +3165,7 @@ void export_borders(clusters* clusters, datapoint_info* points, int* border_idx,
 				idx_t p = i*nclus + j;
                 idx_t index = clusters -> sparse_borders[i].data[el].idx;  
 				border_idx[p] = (int)index;  
-				border_den[p] = points[index].log_rho; 
+				border_den[p] = points[index].log_rho_c; 
 				border_err[p] = points[index].log_rho_err;
 			}
 	}
@@ -3177,7 +3177,7 @@ void export_borders(clusters* clusters, datapoint_info* points, int* border_idx,
 				idx_t p = i*nclus + j;
                 idx_t index = clusters -> __borders_data[p].idx;  
 				border_idx[p] = (int)index;  
-				border_den[p] = points[index].log_rho; 
+				border_den[p] = points[index].log_rho_c; 
 				border_err[p] = points[index].log_rho_err;
 			}
 	}
