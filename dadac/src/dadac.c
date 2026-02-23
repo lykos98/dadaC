@@ -3153,7 +3153,7 @@ void export_cluster_assignment(datapoint_info* points, int* labels, idx_t n)
 	for(idx_t i = 0; i < n; ++i) labels[i] = points[i].cluster_idx;
 }
 
-void export_borders(clusters* clusters, int* border_idx, float_t* border_den, float_t* border_err)
+void export_borders(clusters* clusters, datapoint_info* points, int* border_idx, float_t* border_den, float_t* border_err)
 {
 	idx_t nclus = clusters -> centers.count; 
 	if(clusters->use_sparse_borders)		
@@ -3163,9 +3163,10 @@ void export_borders(clusters* clusters, int* border_idx, float_t* border_den, fl
 			{
 				idx_t j = clusters -> sparse_borders[i].data[el].i;
 				idx_t p = i*nclus + j;
-				border_idx[p] = (int)j;  
-				border_den[p] = clusters -> sparse_borders[i].data[el].density; 
-				border_err[p] = clusters -> sparse_borders[i].data[el].error;
+                idx_t index = clusters -> sparse_borders[i].data[el].idx;  
+				border_idx[p] = (int)index;  
+				border_den[p] = points[index].log_rho_c; 
+				border_err[p] = points[index].log_rho_err;
 			}
 	}
 	else
@@ -3174,9 +3175,10 @@ void export_borders(clusters* clusters, int* border_idx, float_t* border_den, fl
 			for(idx_t j = 0; j < nclus; ++j)
 			{
 				idx_t p = i*nclus + j;
-				border_idx[p] = (int)clusters -> __borders_data[p].idx;
-				border_den[p] = clusters -> __borders_data[p].density;
-				border_err[p] = clusters -> __borders_data[p].error;
+                idx_t index = clusters -> __borders_data[p].idx;  
+				border_idx[p] = (int)index;  
+				border_den[p] = points[index].log_rho_c; 
+				border_err[p] = points[index].log_rho_err;
 			}
 	}
 }
