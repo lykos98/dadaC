@@ -3175,10 +3175,12 @@ void export_borders(clusters* clusters, datapoint_info* points, int* border_idx,
 			for(idx_t j = 0; j < nclus; ++j)
 			{
 				idx_t p = i*nclus + j;
-                idx_t index = clusters -> __borders_data[p].idx;  
-				border_idx[p] = (int)index;  
-				border_den[p] = points[index].log_rho_c; 
-				border_err[p] = points[index].log_rho_err;
+                idx_t index = clusters -> __borders_data[p].idx;
+				border_idx[p] = (int)index;
+				if (index != NOBORDER) {
+					border_den[p] = points[index].log_rho_c;
+					border_err[p] = points[index].log_rho_err;
+				}
 			}
 	}
 }
