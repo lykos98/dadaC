@@ -3161,7 +3161,7 @@ void export_borders(clusters* clusters, datapoint_info* points, int* border_idx,
 		for(idx_t i = 0; i < nclus; ++i)		
 			for(idx_t el = 0; el < clusters -> sparse_borders[i].count; ++el)
 			{
-				idx_t j = clusters -> sparse_borders[i].data[el].i;
+				idx_t j = clusters -> sparse_borders[i].data[el].j;
 				idx_t p = i*nclus + j;
                 idx_t index = clusters -> sparse_borders[i].data[el].idx;  
 				border_idx[p] = (int)index;  
